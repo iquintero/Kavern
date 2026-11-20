@@ -45,11 +45,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,7 +66,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -284,11 +282,10 @@ fun LibraryV2Screen(
         if (canHandleBack) {
             BackHandler { viewModel.handleBack() }
         }
-        val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         Column(
-            modifier = Modifier.fillMaxSize().nestedScroll(topBarScrollBehavior.nestedScrollConnection),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            MediumTopAppBar(
+            TopAppBar(
                 title = { Text(text = topTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 // The app Scaffold already pads for the status bar.
                 windowInsets = WindowInsets(0),
@@ -302,7 +299,6 @@ fun LibraryV2Screen(
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
                 },
-                scrollBehavior = topBarScrollBehavior,
             )
             when (uiState.selectedSection) {
                 LibraryV2Section.Home -> {
