@@ -20,9 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
@@ -43,10 +45,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +67,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -280,11 +284,12 @@ fun LibraryV2Screen(
         if (canHandleBack) {
             BackHandler { viewModel.handleBack() }
         }
+        val topBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         ) {
-            TopAppBar(
-                title = { Text(text = topTitle) },
+            MediumTopAppBar(
+                title = { Text(text = topTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 // The app Scaffold already pads for the status bar.
                 windowInsets = WindowInsets(0),
                 navigationIcon = {
@@ -297,6 +302,7 @@ fun LibraryV2Screen(
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
                 },
+                scrollBehavior = topBarScrollBehavior,
             )
             when (uiState.selectedSection) {
                 LibraryV2Section.Home -> {
@@ -441,6 +447,12 @@ private fun DrawerItem(
     }
 }
 
+/** Smallest width of a cover cell; the grid fits as many columns as the window allows. */
+private val COVER_MIN_WIDTH = 110.dp
+
+/** Book covers are close to 2:3. */
+private const val COVER_ASPECT_RATIO = 2f / 3f
+
 /** A thin bar along the bottom of a cover for books that are started but not finished. */
 @Composable
 private fun CoverProgressBar(
@@ -454,10 +466,7 @@ private fun CoverProgressBar(
             modifier
                 .fillMaxWidth()
                 .height(4.dp)
-                .clip(
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
-                ),
+                .clip(MaterialTheme.shapes.medium.copy(topStart = CornerSize(0.dp), topEnd = CornerSize(0.dp))),
         trackColor = Color.Black.copy(alpha = 0.45f),
         gapSize = 0.dp,
         drawStopIndicator = {},
@@ -508,7 +517,7 @@ private fun WantToReadGrid(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -556,11 +565,9 @@ private fun WantToReadCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(8.dp),
-                        ),
+                        .aspectRatio(COVER_ASPECT_RATIO)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentScale = ContentScale.Crop,
             )
             CoverProgressBar(
@@ -580,7 +587,7 @@ private fun WantToReadCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = series.name.ifBlank { "Series ${series.id}" },
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelLarge,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -629,7 +636,7 @@ private fun CollectionsGrid(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -770,7 +777,7 @@ private fun ReadingListGrid(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -889,7 +896,7 @@ private fun PeopleGrid(
 
             else -> {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
                     modifier = Modifier.fillMaxSize(),
                     state = gridState,
                     contentPadding = PaddingValues(12.dp),
@@ -909,8 +916,7 @@ private fun PeopleGrid(
                     }
                     if (isLoadingMore) {
                         item(span = {
-                            androidx.compose.foundation.lazy.grid
-                                .GridItemSpan(3)
+                            GridItemSpan(maxLineSpan)
                         }) {
                             Box(
                                 modifier =
@@ -1047,7 +1053,7 @@ private fun LibrarySeriesGrid(
 
                 else -> {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
+                        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
                         modifier = Modifier.fillMaxSize(),
                         state = gridState,
                         contentPadding = PaddingValues(12.dp),
@@ -1064,10 +1070,7 @@ private fun LibrarySeriesGrid(
                             )
                         }
                         if (isLoadingMore) {
-                            item(span = {
-                                androidx.compose.foundation.lazy.grid
-                                    .GridItemSpan(3)
-                            }) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 Box(
                                     modifier =
                                         Modifier
