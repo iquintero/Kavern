@@ -98,7 +98,6 @@ import com.iquintero.kavern.ui.reader.screen.ReaderScreen
 import com.iquintero.kavern.ui.seriesdetail.SeriesDetailScreenV2
 import com.iquintero.kavern.ui.settings.SettingsScreen
 import com.iquintero.kavern.ui.theme.KavernTheme
-import com.iquintero.kavern.ui.updates.UpdatesScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -503,7 +502,6 @@ fun KavernApp(
                                 initialCollectionName = collectionNameArg,
                             )
                         }
-                        composable(MainScreen.Updates.route) { UpdatesScreen() }
                         composable(MainScreen.History.route) {
                             HistoryScreen(
                                 appPreferences = appPreferences,
