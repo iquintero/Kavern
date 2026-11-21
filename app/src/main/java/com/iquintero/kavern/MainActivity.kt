@@ -72,6 +72,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil.ImageLoader
 import coil.compose.LocalImageLoader
+import coil.disk.DiskCache
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.forKavita
@@ -221,6 +222,8 @@ private const val SCREEN_FADE_MS = 700
 
 /** Windows at least this wide (tablets, unfolded foldables) get a navigation rail instead of a bar. */
 private const val RAIL_MIN_WIDTH_DP = 600
+private const val COVER_CACHE_DIR = "image_cache"
+private const val COVER_CACHE_BYTES = 64L * 1024 * 1024
 
 @Suppress("UnusedPrivateProperty")
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -399,7 +402,16 @@ fun KavernApp(
                 ImageLoader
                     .Builder(context)
                     .callFactory(okHttpClient.forKavita(config))
-                    .components {
+                    // Keep covers on disk so the library still looks right offline. Kavita's
+                    // cache headers are short-lived, so ignore them and rely on the size cap.
+                    .respectCacheHeaders(false)
+                    .diskCache {
+                        DiskCache
+                            .Builder()
+                            .directory(context.cacheDir.resolve(COVER_CACHE_DIR))
+                            .maxSizeBytes(COVER_CACHE_BYTES)
+                            .build()
+                    }.components {
                         add(
                             ComicPageFallback(context, config) {
                                 NetworkMonitor
