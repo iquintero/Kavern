@@ -284,6 +284,14 @@ interface KavitaApi {
     @GET("api/Account")
     suspend fun getAccount(): Response<com.iquintero.kavern.data.api.dto.UserDto>
 
+    /** Kavita 0.8.9 and newer. Older servers answer 404 and need [getReadingHistory]. */
+    @GET("api/Stats/reading-history")
+    suspend fun getReadingHistorySessions(
+        @Query("PageNumber") pageNumber: Int = 1,
+        @Query("PageSize") pageSize: Int = 100,
+        @Query("TimeZoneId") timeZoneId: String? = null,
+    ): Response<List<com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto>>
+
     @GET("api/Stats/user/reading-history")
     suspend fun getReadingHistory(
         @Query("userId") userId: Int? = null,

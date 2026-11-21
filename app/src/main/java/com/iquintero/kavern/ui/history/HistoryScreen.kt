@@ -42,8 +42,13 @@ import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.data.api.dto.ReadHistoryEventDto
+import com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto
 import com.iquintero.kavern.ui.common.seriesCoverUrl
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -56,6 +61,7 @@ fun HistoryScreen(appPreferences: AppPreferences) {
     val isLoading = remember { mutableStateOf(true) }
     val error = remember { mutableStateOf<String?>(null) }
     val history = remember { mutableStateOf<List<ReadHistoryEventDto>>(emptyList()) }
+    val sessions = remember { mutableStateOf<List<ReadingHistorySessionDto>>(emptyList()) }
     val context = LocalContext.current
 
     LaunchedEffect(config.serverUrl, config.apiKey, config.caCertificate) {
@@ -72,21 +78,38 @@ fun HistoryScreen(appPreferences: AppPreferences) {
         isLoading.value = true
         error.value = null
         val api = KavitaApiFactory.createAuthenticated(config)
-        val userIdToUse =
-            if (config.userId > 0) {
-                config.userId
-            } else {
-                val acc = runCatching { api.getAccount() }.getOrNull()
-                acc?.body()?.id ?: 0
+        // Kavita 0.8.9 replaced the history route; older servers still use the original one.
+        val sessionsResponse =
+            runCatching {
+                api.getReadingHistorySessions(pageSize = HISTORY_PAGE_SIZE, timeZoneId = ZoneId.systemDefault().id)
             }
-        runCatching { api.getReadingHistory(userId = userIdToUse) }
-            .onSuccess { resp ->
-                if (resp.isSuccessful) {
-                    history.value = resp.body().orEmpty()
-                } else {
-                    error.value = context.getString(R.string.history_error_http, resp.code())
-                }
-            }.onFailure { e -> error.value = e.message }
+        val sessionsBody = sessionsResponse.getOrNull()
+        when {
+            sessionsBody?.isSuccessful == true -> sessions.value = sessionsBody.body().orEmpty()
+
+            sessionsBody != null && sessionsBody.code() != HTTP_NOT_FOUND ->
+                error.value = context.getString(R.string.history_error_http, sessionsBody.code())
+
+            sessionsBody == null -> error.value = sessionsResponse.exceptionOrNull()?.message
+
+            else -> {
+                val userIdToUse =
+                    if (config.userId > 0) {
+                        config.userId
+                    } else {
+                        val acc = runCatching { api.getAccount() }.getOrNull()
+                        acc?.body()?.id ?: 0
+                    }
+                runCatching { api.getReadingHistory(userId = userIdToUse) }
+                    .onSuccess { resp ->
+                        if (resp.isSuccessful) {
+                            history.value = resp.body().orEmpty()
+                        } else {
+                            error.value = context.getString(R.string.history_error_http, resp.code())
+                        }
+                    }.onFailure { e -> error.value = e.message }
+            }
+        }
         isLoading.value = false
     }
 
@@ -97,27 +120,31 @@ fun HistoryScreen(appPreferences: AppPreferences) {
             date to evt
         }
     val groupedByDate: Map<LocalDate?, List<DaySeriesItem>> =
-        withDate
-            .groupBy { it.first }
-            .mapValues { (_, list) ->
-                list
-                    .groupBy { it.second.seriesId ?: it.second.seriesName ?: it.hashCode() }
-                    .values
-                    .map { events ->
-                        val sorted = events.sortedBy { it.second.readDate ?: it.second.readDateUtc ?: "" }
-                        val first = sorted.first().second
-                        val last = sorted.last().second
-                        DaySeriesItem(
-                            seriesId = last.seriesId,
-                            seriesName = last.seriesName.orEmpty(),
-                            chapterStart = first.chapterNumber,
-                            chapterEnd = last.chapterNumber,
-                            count = events.size,
-                            timeStart = first.readDate ?: first.readDateUtc,
-                            timeEnd = last.readDate ?: last.readDateUtc,
-                        )
-                    }
-            }
+        if (sessions.value.isNotEmpty()) {
+            sessionsByDay(sessions.value)
+        } else {
+            withDate
+                .groupBy { it.first }
+                .mapValues { (_, list) ->
+                    list
+                        .groupBy { it.second.seriesId ?: it.second.seriesName ?: it.hashCode() }
+                        .values
+                        .map { events ->
+                            val sorted = events.sortedBy { it.second.readDate ?: it.second.readDateUtc ?: "" }
+                            val first = sorted.first().second
+                            val last = sorted.last().second
+                            DaySeriesItem(
+                                seriesId = last.seriesId,
+                                seriesName = last.seriesName.orEmpty(),
+                                chapterStart = first.chapterNumber,
+                                chapterEnd = last.chapterNumber,
+                                count = events.size,
+                                timeStart = first.readDate ?: first.readDateUtc,
+                                timeEnd = last.readDate ?: last.readDateUtc,
+                            )
+                        }
+                }
+        }
     val sortedKeys: List<LocalDate?> =
         groupedByDate.keys
             .filterIsInstance<LocalDate>()
@@ -240,6 +267,7 @@ private fun HistoryRow(
             )
             val chapterRange =
                 when {
+                    item.chapterText != null -> item.chapterText
                     item.chapterStart != null && item.chapterEnd != null && item.chapterStart != item.chapterEnd ->
                         stringResource(
                             R.string.history_chapter_range,
@@ -252,11 +280,15 @@ private fun HistoryRow(
             chapterRange?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            val timeRange = formatTimeRange(item.timeStart, item.timeEnd)
+            val timeRange = item.timeText ?: formatTimeRange(item.timeStart, item.timeEnd)
             if (timeRange != null) {
                 Text(timeRange, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(stringResource(R.string.history_entries_count, item.count), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val summary =
+                item.pagesRead?.let { pages ->
+                    stringResource(R.string.history_session_summary, pages, item.minutes ?: 0)
+                } ?: stringResource(R.string.history_entries_count, item.count)
+            Text(summary, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -300,4 +332,65 @@ private data class DaySeriesItem(
     val count: Int,
     val timeStart: String?,
     val timeEnd: String?,
+    /** Set for sessions from newer servers, which already carry display-ready values. */
+    val chapterText: String? = null,
+    val timeText: String? = null,
+    val pagesRead: Int? = null,
+    val minutes: Int? = null,
 )
+
+private const val HISTORY_PAGE_SIZE = 100
+private const val HTTP_NOT_FOUND = 404
+private const val SECONDS_PER_MINUTE = 60
+
+/** Groups sessions by their local day, newest first, in the order the server returned them. */
+private fun sessionsByDay(sessions: List<ReadingHistorySessionDto>): Map<LocalDate?, List<DaySeriesItem>> =
+    sessions
+        .groupBy { session -> session.localDate?.take(DATE_LENGTH)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } }
+        .mapValues { (_, list) ->
+            list.map { session ->
+                val labels = session.chapters.orEmpty().mapNotNull { it.label?.takeIf { label -> label.isNotBlank() } }
+                DaySeriesItem(
+                    seriesId = session.seriesId,
+                    seriesName = session.seriesName.orEmpty(),
+                    chapterStart = null,
+                    chapterEnd = null,
+                    count = 1,
+                    timeStart = session.startTimeUtc,
+                    timeEnd = session.endTimeUtc,
+                    chapterText =
+                        when {
+                            labels.isEmpty() -> null
+                            labels.size == 1 -> labels.first()
+                            else -> "${labels.first()} – ${labels.last()}"
+                        },
+                    timeText = localTimeRange(session.startTimeUtc, session.endTimeUtc),
+                    pagesRead = session.pagesRead ?: 0,
+                    minutes = maxOf(1, ((session.durationSeconds ?: 0) + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE),
+                )
+            }
+        }
+
+private const val DATE_LENGTH = 10
+
+/** Formats UTC timestamps as a range in the device's time zone, e.g. "21:05 – 21:40". */
+private fun localTimeRange(
+    startUtc: String?,
+    endUtc: String?,
+): String? {
+    val formatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+
+    fun parse(value: String?): String? =
+        value?.let {
+            runCatching {
+                val instant = if (it.endsWith("Z")) Instant.parse(it) else LocalDateTime.parse(it).toInstant(ZoneOffset.UTC)
+                formatter.format(instant.atZone(ZoneId.systemDefault()))
+            }.getOrNull()
+        }
+    val start = parse(startUtc)
+    val end = parse(endUtc)
+    return when {
+        start != null && end != null -> "$start – $end"
+        else -> start ?: end
+    }
+}

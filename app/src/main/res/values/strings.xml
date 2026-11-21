@@ -604,4 +604,5 @@
     <string name="history_entries_count">Entries: %1$d</string>
     <string name="history_chapter_range">Ch. %1$s–%2$s</string>
     <string name="history_chapter_single">Ch. %1$s</string>
+    <string name="history_session_summary">%1$d pages · %2$d min</string>
 </resources>
