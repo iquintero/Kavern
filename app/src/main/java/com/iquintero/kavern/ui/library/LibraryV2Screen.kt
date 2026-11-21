@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalLibrary
@@ -87,9 +89,11 @@ import com.iquintero.kavern.domain.repository.ReadingListRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateBadge
+import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.collectionCoverUrl
 import com.iquintero.kavern.ui.common.personCoverUrl
 import com.iquintero.kavern.ui.common.readingListCoverUrl
+import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -295,6 +299,10 @@ fun LibraryV2Screen(
                     }
                 },
                 actions = {
+                    ServerConnectionIndicator(
+                        connection = rememberServerConnection(),
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
@@ -445,6 +453,9 @@ private fun DrawerItem(
 
 /** Smallest width of a cover cell; the grid fits as many columns as the window allows. */
 private val COVER_MIN_WIDTH = 110.dp
+private const val UNAVAILABLE_ALPHA = 0.4f
+private val UNAVAILABLE_BADGE_SIZE = 40.dp
+private val UNAVAILABLE_BADGE_PADDING = 8.dp
 
 /** Book covers are close to 2:3. */
 private const val COVER_ASPECT_RATIO = 2f / 3f
@@ -543,11 +554,14 @@ private fun WantToReadCard(
     onOpenSeries: (Int) -> Unit,
 ) {
     val imageUrl = seriesCoverUrl(config, series.id)
+    // Without the server only downloaded series can be opened, so fade out the rest.
+    val unavailable = rememberServerConnection().isUnavailable && downloadState == DownloadState.None
+    val coverAlpha = if (unavailable) UNAVAILABLE_ALPHA else 1f
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onOpenSeries(series.id) },
+                .clickable(enabled = !unavailable) { onOpenSeries(series.id) },
     ) {
         Box {
             AsyncImage(
@@ -563,9 +577,24 @@ private fun WantToReadCard(
                         .fillMaxWidth()
                         .aspectRatio(COVER_ASPECT_RATIO)
                         .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .alpha(coverAlpha),
                 contentScale = ContentScale.Crop,
             )
+            if (unavailable) {
+                // A solid badge stays readable on e-ink screens where the fade alone is subtle.
+                Icon(
+                    imageVector = Icons.Filled.CloudOff,
+                    contentDescription = stringResource(R.string.server_status_unreachable),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(UNAVAILABLE_BADGE_SIZE)
+                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                            .padding(UNAVAILABLE_BADGE_PADDING),
+                )
+            }
             CoverProgressBar(
                 progress = seriesProgress(series.pagesRead, series.pages),
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -586,6 +615,7 @@ private fun WantToReadCard(
             style = MaterialTheme.typography.labelLarge,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.alpha(coverAlpha),
         )
     }
 }

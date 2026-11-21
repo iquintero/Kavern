@@ -4,12 +4,18 @@ import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.storage.AppConfig
 import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
 import java.net.SocketTimeoutException
@@ -26,6 +32,43 @@ class ServerReachabilityTest {
     @After
     fun tearDown() {
         ServerReachability.setClockForTesting(System::currentTimeMillis)
+    }
+
+    private fun client(respond: (Interceptor.Chain) -> Response) = OkHttpClient.Builder().addInterceptor(respond).build()
+
+    private fun reply(
+        chain: Interceptor.Chain,
+        code: Int,
+    ) = Response
+        .Builder()
+        .request(chain.request())
+        .protocol(Protocol.HTTP_1_1)
+        .code(code)
+        .message("test")
+        .body("".toResponseBody())
+        .build()
+
+    @Test
+    fun probeMarksTheServerReachableOnAnyHealthyAnswer() {
+        ServerReachability.markUnreachable()
+        runBlocking { ServerReachability.probe(client { reply(it, 200) }, "https://kavita.example") }
+        assertFalse(ServerReachability.isUnreachable())
+        assertTrue(ServerReachability.verified.value)
+    }
+
+    @Test
+    fun probeMarksTheServerUnreachableWhenTheCallTimesOut() {
+        runBlocking {
+            ServerReachability.probe(client { throw InterruptedIOException("timeout") }, "https://kavita.example")
+        }
+        assertTrue(ServerReachability.isUnreachable())
+        assertTrue(ServerReachability.verified.value)
+    }
+
+    @Test
+    fun probeMarksTheServerUnreachableOnAProxyErrorPage() {
+        runBlocking { ServerReachability.probe(client { reply(it, 502) }, "https://kavita.example") }
+        assertTrue(ServerReachability.isUnreachable())
     }
 
     @Test

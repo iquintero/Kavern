@@ -7,11 +7,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Request
+import okhttp3.Response
 import java.io.IOException
 import java.net.ConnectException
 import java.net.NoRouteToHostException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import kotlin.coroutines.resume
 
 /**
  * Remembers that the Kavita server could not be connected to, e.g. a home server while on mobile data.
@@ -36,7 +42,17 @@ object ServerReachability {
     /** Observable form of [isUnreachable] for UI such as the "reading offline" label. */
     val unreachable: StateFlow<Boolean> = unreachableState
 
+    private val verifiedState = MutableStateFlow(false)
+
+    /** True once a call or probe has got a verdict since startup or the last network change. */
+    val verified: StateFlow<Boolean> = verifiedState
+    private val checkingState = MutableStateFlow(false)
+
+    /** True while a probe runs for a connection that has no verdict yet, e.g. for a pulsing icon. */
+    val checking: StateFlow<Boolean> = checkingState
+
     fun markUnreachable() {
+        verifiedState.value = true
         failedAtMillis = clock()
         unreachableState.value = true
         // Let observers know when the cooldown is over, unless another failure has extended it.
@@ -47,12 +63,54 @@ object ServerReachability {
     }
 
     fun markReachable() {
+        verifiedState.value = true
         failedAtMillis = NEVER
         unreachableState.value = false
     }
 
+    /**
+     * Actively checks whether the server answers, so the app notices a lost server (e.g. leaving the home
+     * network) without waiting for the user to trigger a request. Unlike regular calls, every failure to
+     * get a healthy answer counts as unreachable: connect errors, timeouts, TLS errors and 5xx replies
+     * (which is what a proxy in front of an offline server returns).
+     */
+    suspend fun probe(
+        calls: Call.Factory,
+        serverUrl: String,
+    ) {
+        val request = runCatching { Request.Builder().url("${serverUrl.trimEnd('/')}/api/health").build() }.getOrNull() ?: return
+        // Routine re-checks of a verified connection stay silent so the status does not keep flashing.
+        checkingState.value = !verifiedState.value
+        try {
+            val code = calls.newCall(request).awaitStatusCode()
+            if (code != null && code < SERVER_ERROR_MIN_CODE) markReachable() else markUnreachable()
+        } finally {
+            checkingState.value = false
+        }
+    }
+
+    /** The HTTP status, or null when no response arrived. Cancelling the coroutine cancels the call. */
+    private suspend fun Call.awaitStatusCode(): Int? =
+        suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { cancel() }
+            enqueue(
+                object : Callback {
+                    override fun onFailure(
+                        call: Call,
+                        e: IOException,
+                    ) = continuation.resume(null)
+
+                    override fun onResponse(
+                        call: Call,
+                        response: Response,
+                    ) = continuation.resume(response.use { it.code })
+                },
+            )
+        }
+
     /** Forget a previous failure, e.g. because the device switched networks. */
     fun reset() {
+        verifiedState.value = false
         failedAtMillis = NEVER
         unreachableState.value = false
     }
@@ -83,4 +141,5 @@ object ServerReachability {
     }
 
     private const val NEVER = Long.MIN_VALUE
+    private const val SERVER_ERROR_MIN_CODE = 500
 }

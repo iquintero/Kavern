@@ -75,6 +75,7 @@ import coil.compose.LocalImageLoader
 import coil.disk.DiskCache
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.network.NetworkMonitor
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.forKavita
 import com.iquintero.kavern.core.startup.StartupManager
 import com.iquintero.kavern.core.storage.AppConfig
@@ -99,11 +100,13 @@ import com.iquintero.kavern.ui.reader.screen.ReaderScreen
 import com.iquintero.kavern.ui.seriesdetail.SeriesDetailScreenV2
 import com.iquintero.kavern.ui.settings.SettingsScreen
 import com.iquintero.kavern.ui.theme.KavernTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     // Page buttons (and optionally the volume keys) turn pages while a book is open instead of changing the volume.
@@ -222,6 +225,9 @@ private const val SCREEN_FADE_MS = 700
 
 /** Windows at least this wide (tablets, unfolded foldables) get a navigation rail instead of a bar. */
 private const val RAIL_MIN_WIDTH_DP = 600
+private const val SERVER_PROBE_CONNECT_TIMEOUT_SECONDS = 4L
+private const val SERVER_PROBE_TIMEOUT_SECONDS = 6L
+private const val SERVER_PROBE_INTERVAL_MS = 30_000L
 private const val COVER_CACHE_DIR = "image_cache"
 private const val COVER_CACHE_BYTES = 64L * 1024 * 1024
 
@@ -299,6 +305,28 @@ fun KavernApp(
     val config by appPreferences.configFlow.collectAsState(
         initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
     )
+    val networkStatus by NetworkMonitor.getInstance(context, appPreferences).status.collectAsState()
+
+    // The phone can have internet while a home-only server is out of reach, so ask the server directly
+    // whenever the connection changes and then keep checking while the app is open.
+    LaunchedEffect(config.serverUrl, config.caCertificate, networkStatus.isOnlineAllowed, networkStatus.connectionType) {
+        if (config.serverUrl.isBlank() || !networkStatus.isOnlineAllowed) return@LaunchedEffect
+        val calls =
+            runCatching {
+                OkHttpClient
+                    .Builder()
+                    // The connect timeout must be shorter than the call timeout, otherwise the call
+                    // timeout fires first and the failure is not recognised as "cannot connect".
+                    .connectTimeout(SERVER_PROBE_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .callTimeout(SERVER_PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .build()
+                    .forKavita(config)
+            }.getOrNull() ?: return@LaunchedEffect
+        while (true) {
+            ServerReachability.probe(calls, config.serverUrl)
+            delay(SERVER_PROBE_INTERVAL_MS)
+        }
+    }
 
     KavernTheme(darkTheme = darkTheme, dynamicColor = dynamicColor, einkMode = einkMode) {
         if (showNotifDialog.value && !notifPromptShown && !notificationsEnabled) {
