@@ -178,8 +178,6 @@ class CacheManagerImpl(
         val now = System.currentTimeMillis()
         val unique = series.distinctBy { it.id }
         val enriched = enrichThumbnails(unique)
-        dao.upsertSeries(enriched.map { it.toCachedSeriesV2(now) })
-        dao.clearSeriesRefs(listType, listKey)
         val refs =
             enriched.mapIndexed { index, item ->
                 CachedSeriesListRefEntity(
@@ -190,7 +188,7 @@ class CacheManagerImpl(
                     updatedAt = now,
                 )
             }
-        dao.upsertSeriesRefs(refs)
+        dao.replaceSeriesList(listType, listKey, enriched.map { it.toCachedSeriesV2(now) }, refs)
         if (LoggingManager.isDebugEnabled()) {
             LoggingManager.d("CacheV2", "Store series list type=$listType key=$listKey count=${refs.size}")
         }
@@ -251,8 +249,6 @@ class CacheManagerImpl(
         if (!isLibraryV2CacheAllowed(p, listType)) return
         val now = System.currentTimeMillis()
         val unique = collections.distinctBy { it.id }
-        dao.upsertCollections(unique.map { CachedCollectionV2Entity(it.id, it.name, now) })
-        dao.clearCollectionRefs(listType)
         val refs =
             unique.mapIndexed { index, item ->
                 CachedCollectionRefEntity(
@@ -262,7 +258,7 @@ class CacheManagerImpl(
                     updatedAt = now,
                 )
             }
-        dao.upsertCollectionRefs(refs)
+        dao.replaceCollectionList(listType, unique.map { CachedCollectionV2Entity(it.id, it.name, now) }, refs)
         if (LoggingManager.isDebugEnabled()) {
             LoggingManager.d("CacheV2", "Store collections type=$listType count=${refs.size}")
         }
@@ -290,8 +286,6 @@ class CacheManagerImpl(
         if (!isLibraryV2CacheAllowed(p, listType)) return
         val now = System.currentTimeMillis()
         val unique = readingLists.distinctBy { it.id }
-        dao.upsertReadingLists(unique.map { CachedReadingListV2Entity(it.id, it.title, it.itemCount, now) })
-        dao.clearReadingListRefs(listType)
         val refs =
             unique.mapIndexed { index, item ->
                 CachedReadingListRefEntity(
@@ -301,7 +295,7 @@ class CacheManagerImpl(
                     updatedAt = now,
                 )
             }
-        dao.upsertReadingListRefs(refs)
+        dao.replaceReadingLists(listType, unique.map { CachedReadingListV2Entity(it.id, it.title, it.itemCount, now) }, refs)
         if (LoggingManager.isDebugEnabled()) {
             LoggingManager.d("CacheV2", "Store reading lists type=$listType count=${refs.size}")
         }
@@ -335,8 +329,6 @@ class CacheManagerImpl(
                     val id = person.id ?: return@mapNotNull null
                     id to person
                 }.distinctBy { it.first }
-        dao.upsertPeople(unique.map { CachedPersonV2Entity(it.first, it.second.name, now) })
-        dao.clearPersonRefs(listType, page)
         val refs =
             unique.mapIndexed { index, item ->
                 CachedPersonRefEntity(
@@ -347,7 +339,7 @@ class CacheManagerImpl(
                     updatedAt = now,
                 )
             }
-        dao.upsertPersonRefs(refs)
+        dao.replacePersonList(listType, page, unique.map { CachedPersonV2Entity(it.first, it.second.name, now) }, refs)
         if (LoggingManager.isDebugEnabled()) {
             LoggingManager.d("CacheV2", "Store people type=$listType page=$page count=${refs.size}")
         }

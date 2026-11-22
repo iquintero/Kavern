@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.iquintero.kavern.data.local.db.entity.CachedCollectionRefEntity
 import com.iquintero.kavern.data.local.db.entity.CachedCollectionV2Entity
 import com.iquintero.kavern.data.local.db.entity.CachedPersonRefEntity
@@ -178,4 +179,52 @@ interface LibraryV2Dao {
 
     @Query("SELECT COUNT(*) FROM cached_person_refs_v2")
     suspend fun getPersonRefsCount(): Int
+
+    // A list is replaced in one transaction, so a failure half way leaves the previous list in place instead of an
+    // empty or partial one.
+    @Transaction
+    suspend fun replaceSeriesList(
+        listType: String,
+        listKey: String,
+        series: List<CachedSeriesV2Entity>,
+        refs: List<CachedSeriesListRefEntity>,
+    ) {
+        upsertSeries(series)
+        clearSeriesRefs(listType, listKey)
+        upsertSeriesRefs(refs)
+    }
+
+    @Transaction
+    suspend fun replaceCollectionList(
+        listType: String,
+        collections: List<CachedCollectionV2Entity>,
+        refs: List<CachedCollectionRefEntity>,
+    ) {
+        upsertCollections(collections)
+        clearCollectionRefs(listType)
+        upsertCollectionRefs(refs)
+    }
+
+    @Transaction
+    suspend fun replaceReadingLists(
+        listType: String,
+        readingLists: List<CachedReadingListV2Entity>,
+        refs: List<CachedReadingListRefEntity>,
+    ) {
+        upsertReadingLists(readingLists)
+        clearReadingListRefs(listType)
+        upsertReadingListRefs(refs)
+    }
+
+    @Transaction
+    suspend fun replacePersonList(
+        listType: String,
+        page: Int,
+        people: List<CachedPersonV2Entity>,
+        refs: List<CachedPersonRefEntity>,
+    ) {
+        upsertPeople(people)
+        clearPersonRefs(listType, page)
+        upsertPersonRefs(refs)
+    }
 }
