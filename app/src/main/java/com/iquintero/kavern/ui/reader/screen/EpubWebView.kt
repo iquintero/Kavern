@@ -476,6 +476,23 @@ internal fun ReaderWebView(
                     }
                 }
             },
+            onRelease = { webView -> releaseEpubWebView(webView, scrollHandler, scrollRunnable) },
         )
     }
+}
+
+/**
+ * Frees a reader WebView. `AndroidView` only detaches its view when it leaves the screen, so without this the page,
+ * the script bridge and the pending scroll callback would stay alive holding the activity.
+ */
+internal fun releaseEpubWebView(
+    view: WebView,
+    handler: Handler,
+    pendingScroll: Runnable?,
+) {
+    pendingScroll?.let(handler::removeCallbacks)
+    view.stopLoading()
+    view.removeJavascriptInterface(PAGED_BRIDGE_NAME)
+    view.setOnTouchListener(null)
+    view.destroy()
 }
