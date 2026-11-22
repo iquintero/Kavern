@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
+import com.iquintero.kavern.ui.common.ServerConnectionIndicator
+import com.iquintero.kavern.ui.common.rememberServerConnection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -119,7 +121,14 @@ fun DownloadQueueScreen(
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(R.string.download_screen_title), style = MaterialTheme.typography.headlineSmall)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(stringResource(R.string.download_screen_title), style = MaterialTheme.typography.headlineSmall)
+            ServerConnectionIndicator(connection = rememberServerConnection())
+        }
         TabRow(selectedTabIndex = selectedTab.ordinal) {
             Tab(selected = selectedTab == DownloadTabs.TAB_DOWNLOADED, onClick = { selectedTab = DownloadTabs.TAB_DOWNLOADED }) {
                 Text(
