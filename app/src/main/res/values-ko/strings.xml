@@ -4,19 +4,10 @@
     <string name="general_back">뒤로</string>
     <string name="will_be_implemented">이 섹션은 구현 예정입니다.</string>
     <string name="general_error">오류</string>
-    <string name="general_empty_collection">이 컬렉션에는 시리즈가 없습니다.</string>
     <string name="general_want_to_read">읽고 싶어요</string>
-    <string name="library_in_progress">읽는 중</string>
-    <string name="library_empty_in_progress">읽는 중인 시리즈가 없습니다</string>
-    <string name="library_prefetch_running">세부 항목 캐시중…</string>
-    <string name="library_prefetch_done">세부 항목 캐시 완료</string>
-    <string name="library_prefetch_title">오프라인 데이터 캐시중</string>
-    <string name="library_prefetch_progress">%1$d / %2$d 캐시중</string>
     <string name="general_reading_status_completed">완료</string>
     <string name="general_reading_status_in_progress">읽는 중</string>
     <string name="general_reading_status_unread">읽지 않음</string>
-    <string name="general_option_soon">테마 옵션은 곧 제공될 예정입니다</string>
-    <string name="general_nav_option_soon">탐색 옵션은 곧 제공될 예정입니다</string>
     <string name="general_decrease">감소</string>
     <string name="general_increase">증가</string>
     <string name="general_page">페이지</string>
@@ -28,13 +19,9 @@
     <string name="general_today">오늘</string>
     <string name="general_yesterday">어제</string>
     <string name="general_unknown_date">날짜 불명</string>
-    <string name="general_detail">세부</string>
-    <string name="general_url_not_available">유효하지 않은 URL입니다.</string>
     <string name="general_series">시리즈</string>
     <string name="general_unable_to_share">공유할 수 없습니다.</string>
     <string name="general_completed">완료</string>
-    <string name="general_start_reading">읽기 시작</string>
-    <string name="general_continue_reading">계속 읽기</string>
     <string name="general_cancel">취소</string>
     <string name="general_no_server_logged_in">로그인된 서버가 없습니다.</string>
     <string name="general_collections">컬렉션</string>
@@ -44,12 +31,7 @@
     <string name="general_create_and_add">생성 및 추가</string>
     <string name="general_offline">오프라인</string>
     <string name="general_close">닫기</string>
-    <string name="general_author">저자</string>
-    <string name="general_authors">저자</string>
-    <string name="general_publication">출판</string>
-    <string name="general_state">상태</string>
     <string name="general_reading_time">읽기 시간</string>
-    <string name="general_remaining_time">남은 시간</string>
     <string name="general_open_in_browser">브라우저에서 열기</string>
     <string name="general_share">공유</string>
     <string name="general_filter">필터</string>
@@ -102,16 +84,12 @@
     <string name="general_any">모든</string>
     <string name="general_pages">페이지</string>
     <string name="general_words">단어</string>
-    <string name="general_time">시간</string>
     <string name="general_weekly">주간</string>
 
     <!-- Languages -->
     <string name="general_language_system">시스템</string>
     <string name="general_language_label">언어</string>
-    <string name="general_language_en">영어</string>
-    <string name="general_language_cs">체코어</string>
     <string name="general_title">일반</string>
-    <string name="settings_cache_section_title">캐시</string>
     <string name="settings_cache_global_title">캐시 활성화</string>
     <string name="settings_cache_global_subtitle">오프라인 상태에서 캐시 데이터를 사용하고 온라인일 때 새로고침합니다.</string>
     <string name="settings_cache_library_title">오프라인용으로 라이브러리 캐시</string>
@@ -152,8 +130,6 @@
     <string name="settings_cache_stats_title">캐시 통계</string>
     <string name="reader_offline_indicator">오프라인에서 읽기</string>
     <string name="reader_page_not_downloaded">이 페이지는 다운로드되지 않았습니다</string>
-    <string name="series_detail_specials">특별호</string>
-    <string name="series_detail_no_specials">특별호가 없습니다.</string>
 
     <!-- Browse -->
     <string name="browse_filter_match_all">모두 일치</string>
@@ -179,7 +155,6 @@
     <string name="history_no_history">아직 히스토리가 없습니다.</string>
 
     <!-- ibrary Screen -->
-    <string name="library_empty_want_to_read">\'읽고 싶어요\'로 표시된 책이 없습니다.</string>
 
     <!-- Reader screen -->
     <string name="reader_title">리더</string>
@@ -215,31 +190,8 @@
     <string name="reader_theme_gray">그레이</string>
 
     <!-- Series detail -->
-    <string name="series_detail_detail">세부 정보</string>
-    <string name="series_detail_share_series">시리즈 공유</string>
-    <string name="series_detail_chapter_not_available">해당 챕터는 읽을 수 없습니다.</string>
-    <string name="series_detail_start_over_question">처음부터 읽으시겠습니까?</string>
-    <string name="series_detail_reset_and_start_again">읽기 진행상황을 초기화하고 처음부터 시작합니다.</string>
-    <string name="series_detail_reset_progress">진행상황 초기화</string>
-    <string name="series_detail_no_related_items">연관 항목 없음.</string>
-    <string name="series_detail_no_related">연관 항목 없음.</string>
-    <string name="series_detail_mark_prev_q">이전 권을 읽은 것으로 표시하시겠습니까?</string>
-    <string name="series_detail_mark_read_this_and_prev">%1$s 권이 읽은 것으로 표시됩니다. 이전에 읽지 않은 권도 읽은 상태로 표시하시겠습니까?</string>
-    <string name="series_detail_mark_with_prev">이전 권도 표시</string>
-    <string name="series_detail_only_this_vol">이 권만</string>
-    <string name="series_detail_mark_this_and_later">%1$s 권이 읽지 않음으로 표시됩니다. 이후에 읽은 권도 읽지 않음으로 표시하시겠습니까?</string>
-    <string name="series_detail_mark_all">모두 표시</string>
-    <string name="series_detail_mark_this_vol">이 권만</string>
-    <string name="series_detail_prev_unread_mark_read_too_q">이전 권을 읽지 않았습니다. 읽은 것으로 표시하시겠습니까, 또는 이 페이지만 설정하시겠습니까?</string>
-    <string name="series_detail_mark_prev_and_continue">이전 권에 표시하고 계속하기</string>
-    <string name="series_detail_only_this_page">이 페이지만</string>
-    <string name="series_detail_mark_later_vol_unr_q">이후 권을 읽지 않음으로 표시하시겠습니까?</string>
-    <string name="series_detail_mark_unred_vol_and_later_too_q">이후 권은 읽은 것으로 표시되었습니다. 읽지 않음으로 표시하시겠습니까, 또는 이 권만 변경하시겠습니까?</string>
-    <string name="series_detail_scroll_top">맨 위로 스크롤</string>
     <string name="series_detail_no_colls_reload">컬렉션 없음. 새로고침.</string>
     <string name="series_detail_load_colls">컬렉션 불러오기</string>
-    <string name="series_detail_resume_page">재개: 페이지</string>
-    <string name="series_detail_ch_loading_err">챕터를 불러올 수 없습니다(해당 권에 해당하는 책이 없습니다).</string>
 
     <!-- Settings -->
     <string name="settings_title">설정</string>
@@ -265,7 +217,6 @@
     <string name="settings_kavita_http_warning_title">HTTP를 사용하시겠습니까?</string>
     <string name="settings_kavita_http_warning_body">HTTP는 암호화되지 않습니다. 신뢰할 수 있는 로컬 네트워크에서만 사용하십시오. 계속하시겠습니까?</string>
     <string name="settings_kavita_http_warning_confirm">HTTP로 계속</string>
-    <string name="settings_kavita_http_warning_cancel">취소</string>
 
     <!-- About Kavern -->
     <string name="settings_about_version">버전</string>
@@ -273,7 +224,6 @@
     <string name="settings_about_label_whats_new">새로운 소식</string>
     <string name="settings_about_changelog_title">이 버전의 새로운 소식</string>
     <string name="settings_about_changelog_desc">변경사항</string>
-    <string name="settings_about_check_updates">업데이트 확인</string>
     <string name="settings_about_label_community">커뮤니티</string>
     <string name="settings_about_label_contribute">기여</string>
 
@@ -281,12 +231,6 @@
     <string name="settings_about_osl">오픈 소스 라이선스</string>
     <string name="settings_about_osl_3rd">제3자 라이브러리</string>
     <string name="settings_about_license">라이선스</string>
-    <string name="settings_about_update_available">업데이트 가능: %1$s</string>
-    <string name="settings_about_up_to_date">최신 버전입니다</string>
-    <string name="settings_about_update_failed">업데이트를 확인할 수 없습니다</string>
-    <string name="settings_about_update_downloading">업데이트 다운로드 중…</string>
-    <string name="settings_about_update_prompt">새 버전이 출시되었습니다. 지금 다운로드하여 설치하시겠습니까?</string>
-    <string name="settings_about_update_confirm">다운로드</string>
 
     <!-- Others -->
     <string name="settings_about_title">Kavern에 대하여</string>
@@ -298,14 +242,9 @@
 
     <!-- Stats -->
     <string name="stats_failed_stat_load">통계 데이터를 불러오지 못했습니다.</string>
-    <string name="stats_reading_sum">요약 읽기</string>
     <string name="stats_activity_last_30d">활동 (최근 30일)</string>
 
     <!-- Update -->
-    <string name="update_notification_title">업데이트 가능: %1$s</string>
-    <string name="update_notification_text">탭하여 최신 버전을 다운로드합니다.</string>
-    <string name="update_checking_title">업데이트 확인 중…</string>
-    <string name="update_checking_text">새 Kavern 빌드를 찾고 있습니다.</string>
     <string name="notifications_prompt_title">알림 활성화</string>
     <string name="notifications_prompt_body">업데이트 및 다운로드 알림을 받으려면 알림을 허용해 주십시오.</string>
     <string name="notifications_prompt_accept">활성화</string>
@@ -320,16 +259,10 @@
 
     <!-- Series detail actions -->
     <string name="series_download_all">모두 다운로드</string>
-    <string name="series_download_missing">누락된 파일 다운로드</string>
     <string name="series_clear_downloads">다운로드 기록 삭제</string>
-    <string name="series_open_download_queue">다운로드 대기열</string>
 
     <!-- Advanced settings -->
-    <string name="advanced_clear_cache">캐시 삭제</string>
-    <string name="advanced_downloaded_pages">다운로드된 페이지</string>
     <string name="advanced_cache_stats_series">시리즈: %1$d</string>
-    <string name="advanced_cache_stats_tabs">탭 참조: %1$d</string>
-    <string name="advanced_cache_stats_browse">탐색 참조: %1$d</string>
     <string name="advanced_cache_stats_details">세부 항목: %1$d</string>
     <string name="advanced_cache_stats_volumes">권: %1$d</string>
     <string name="advanced_cache_stats_chapters">챕터: %1$d</string>
@@ -347,19 +280,14 @@
     <string name="download_clear_completed">완료된 항목 삭제</string>
     <string name="download_type_volume">권</string>
     <string name="download_item_title">시리즈 %1$s · %2$s</string>
-    <string name="download_item_chapter_pages">챕터 %1$s 페이지 %2$s..%3$s</string>
-    <string name="download_item_state">상태: %1$s</string>
     <string name="download_item_created">생성됨: %1$s</string>
     <string name="download_item_updated">업데이트됨: %1$s</string>
     <string name="download_item_progress">진행중: %1$d/%2$d (%3$d%%)</string>
-    <string name="download_item_bytes">바이트: %1$s / %2$s (%3$d%%)</string>
     <string name="download_item_error">오류: %1$s</string>
     <string name="download_action_pause">일시정지</string>
     <string name="download_action_resume">다시 시작</string>
     <string name="download_action_retry">다시 시도</string>
     <string name="download_action_clear">기록 삭제</string>
-    <string name="download_completed_title">%1$s 시리즈 · %2$s 챕터 · %3$s 페이지</string>
-    <string name="download_completed_status">상태: %1$s</string>
     <string name="download_completed_updated">업데이트됨: %1$s</string>
     <string name="download_completed_size">크기: %1$s</string>
     <string name="download_completed_open">열기</string>
@@ -388,11 +316,8 @@
     <string name="settings_downloads_clear_downloaded_confirm_text">다운로드한 모든 HTML 페이지 및 에셋을 기기 저장소에서 삭제하시겠습니까?</string>
     <string name="settings_downloads_clear_downloaded_toast">다운로드한 페이지 삭제됨</string>
     <string name="settings_downloads_clear">삭제</string>
-    <string name="settings_downloads_cancel">취소</string>
     <string name="settings_downloads_max_concurrent_title">최대 동시 다운로드 수</string>
     <string name="settings_downloads_max_concurrent_subtitle">동시에 실행되는 페이지 다운로드 수를 제한합니다 (1-6).</string>
-    <string name="settings_downloads_selection_placeholder">선택</string>
-    <string name="settings_downloads_delete_after_option">%1$s 읽은 후</string>
 
     <!-- General settings -->
     <string name="settings_general_offline_mode_title">오프라인 모드</string>
@@ -487,13 +412,10 @@
     <string name="settings_browse_thumbnails_off_subtitle">탐색에서 텍스트로만 결과를 표시해 데이터를 절약합니다.</string>
     <string name="library_empty_reading_list">읽기 목록 없음.</string>
     <string name="download_empty_queue">다운로드 대기열 없음.</string>
-    <string name="download_empty_completed">완료된 다운로드 없음.</string>
     <string name="download_empty_downloaded">다운로드한 페이지 없음.</string>
     <string name="update_info_title">중요 업데이트</string>
-    <string name="update_info_body">이번 릴리즈의 최신 변경사항 및 참고사항을 검토하여 주십시오.</string>
     <string name="series_detail_mark_volume_read">이 권을 읽음으로 표시</string>
     <string name="series_detail_mark_volume_unread">이 권을 읽지 않음으로 표시</string>
-    <string name="library_no_access">이 라이브러리에 대한 접근 권한이 없습니다.</string>
     <string name="settings_advanced_section_global_cache">글로벌 캐시</string>
     <string name="settings_advanced_section_library_cache">라이브러리 캐시</string>
     <string name="settings_advanced_section_browse_cache">탐색 캐시</string>
@@ -514,10 +436,8 @@
     <string name="settings_cache_library_details_subtitle">오프라인 사용을 위해 시리즈 세부 정보를 캐시합니다.</string>
     <string name="settings_cache_always_refresh_title">온라인일 때 항상 새로고침</string>
     <string name="settings_cache_always_refresh_subtitle">온라인 상태일 경우, 캐시된 데이터보다 새 데이터를 우선 사용합니다.</string>
-    <string name="settings_cache_stale_hours_label">캐시 만료 (시간)</string>
     <string name="settings_cache_stale_hours_hint">이보다 오래될 경우 캐시가 자동으로 새로고침됩니다.</string>
     <string name="settings_cache_stale_label">(%s) 이후 캐시 만료</string>
-    <string name="settings_cache_units_hours">시간</string>
     <string name="settings_debug_toasts_title">디버그 토스트</string>
     <string name="settings_debug_toasts_subtitle">디버그 캐시 결정을 토스트 알림으로 표시합니다.</string>
     <string name="debug_cache_use">캐시 사용</string>
@@ -537,5 +457,4 @@
     <string name="advanced_cache_stats_series_volume_refs">시리즈 권 참조: %1$d</string>
     <string name="advanced_cache_stats_volume_chapter_refs">권 챕터 참조: %1$d</string>
     <string name="advanced_cache_stats_thumbnails_count">썸네일 (수): %1$d</string>
-    <string name="download_item_v2_title">%1$d 항목 · %2$s 챕터 · %3$s 페이지</string>
 </resources>

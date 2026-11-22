@@ -3,6 +3,7 @@ package com.iquintero.kavern.ui.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.reader.ImageReader
@@ -405,17 +406,17 @@ class ImageReaderViewModel(
             volumeId: Int?,
             anonymous: Boolean = false,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return ImageReaderViewModel(
+            viewModelFactory {
+                // The screens ask for BaseReaderViewModel, so that is the class the factory must answer to.
+                addInitializer(BaseReaderViewModel::class) {
+                    ImageReaderViewModel(
                         chapterId,
                         initialPage,
                         readerRepository,
                         seriesId,
                         volumeId,
                         anonymous,
-                    ) as T
+                    )
                 }
             }
     }

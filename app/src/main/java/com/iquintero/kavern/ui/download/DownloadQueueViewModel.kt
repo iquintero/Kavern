@@ -3,6 +3,8 @@ package com.iquintero.kavern.ui.download
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.downloadv2.DownloadManagerV2
 import com.iquintero.kavern.core.downloadv2.DownloadStorageManager
@@ -244,17 +246,16 @@ object DownloadQueueViewModelFactory {
         preferences: AppPreferences,
         cacheManager: CacheManager,
     ): ViewModelProvider.Factory =
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        viewModelFactory {
+            initializer {
                 val db = KavernDatabase.getInstance(preferences.appContext, preferences.profile)
                 val storage = DownloadStorageManager(preferences.appContext, preferences)
-                return DownloadQueueViewModel(
+                DownloadQueueViewModel(
                     db.downloadV2Dao(),
                     cacheManager,
                     deleteDownload = { itemId -> storage.deleteDownload(db, itemId) },
                     enqueueWorker = { DownloadManagerV2.enqueueWorker(preferences) },
-                ) as T
+                )
             }
         }
 }

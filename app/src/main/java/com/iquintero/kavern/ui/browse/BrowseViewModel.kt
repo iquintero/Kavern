@@ -6,6 +6,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
 import com.iquintero.kavern.core.network.KavitaApiFactory
@@ -603,10 +605,9 @@ class BrowseViewModel(
             appPreferences: AppPreferences,
             cacheManager: CacheManager,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return BrowseViewModel(seriesRepository, appPreferences, cacheManager) as T
+            viewModelFactory {
+                initializer {
+                    BrowseViewModel(seriesRepository, appPreferences, cacheManager)
                 }
             }
     }

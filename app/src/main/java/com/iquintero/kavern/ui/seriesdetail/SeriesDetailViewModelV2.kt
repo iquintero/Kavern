@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.KavitaApiFactory
@@ -555,16 +557,15 @@ class SeriesDetailViewModelV2(
             readerRepository: com.iquintero.kavern.domain.repository.ReaderRepository,
             cacheManager: CacheManager,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return SeriesDetailViewModelV2(
+            viewModelFactory {
+                initializer {
+                    SeriesDetailViewModelV2(
                         seriesId,
                         appPreferences,
                         collectionsRepository,
                         readerRepository,
                         cacheManager,
-                    ) as T
+                    )
                 }
             }
     }

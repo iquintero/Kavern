@@ -89,6 +89,7 @@ import com.iquintero.kavern.core.downloadv2.strategies.PdfDownloadStrategyV2
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.formatBytes
 import com.iquintero.kavern.data.api.dto.MarkVolumeReadDto
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
@@ -1992,18 +1993,6 @@ private fun flattenTree(
         }
     }
     return out
-}
-
-private fun formatBytes(value: Long): String {
-    if (value <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB")
-    var v = value.toDouble()
-    var idx = 0
-    while (v >= 1024 && idx < units.lastIndex) {
-        v /= 1024
-        idx++
-    }
-    return String.format(Locale.getDefault(), "%.1f %s", v, units[idx])
 }
 
 @Composable

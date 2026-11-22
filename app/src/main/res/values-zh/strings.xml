@@ -4,19 +4,10 @@
     <string name="general_back">返回</string>
     <string name="will_be_implemented">将实现此区域内容。</string>
     <string name="general_error">错误</string>
-    <string name="general_empty_collection">此合集中没有系列。</string>
     <string name="general_want_to_read">想看</string>
-    <string name="library_in_progress">连载中</string>
-    <string name="library_empty_in_progress">没有找到连载中的系列</string>
-    <string name="library_prefetch_running">缓存详情中…</string>
-    <string name="library_prefetch_done">详情缓存就绪</string>
-    <string name="library_prefetch_title">缓存离线数据</string>
-    <string name="library_prefetch_progress">缓存 %1$d of %2$d</string>
     <string name="general_reading_status_completed">已读</string>
     <string name="general_reading_status_in_progress">在读</string>
     <string name="general_reading_status_unread">未读</string>
-    <string name="general_option_soon">主题选项即将推出</string>
-    <string name="general_nav_option_soon">导航选项即将推出</string>
     <string name="general_decrease">减少</string>
     <string name="general_increase">增加</string>
     <string name="general_page">页面</string>
@@ -28,13 +19,9 @@
     <string name="general_today">今天</string>
     <string name="general_yesterday">昨天</string>
     <string name="general_unknown_date">未知日期</string>
-    <string name="general_detail">详情</string>
-    <string name="general_url_not_available">URL 不可用。</string>
     <string name="general_series">系列</string>
     <string name="general_unable_to_share">无法分享。</string>
     <string name="general_completed">已完成</string>
-    <string name="general_start_reading">开始阅读</string>
-    <string name="general_continue_reading">继续阅读</string>
     <string name="general_cancel">取消</string>
     <string name="general_no_server_logged_in">没有已登录的服务器。</string>
     <string name="general_collections">合集</string>
@@ -44,12 +31,7 @@
     <string name="general_create_and_add">创建并添加</string>
     <string name="general_offline">离线</string>
     <string name="general_close">关闭</string>
-    <string name="general_author">作者</string>
-    <string name="general_authors">作者</string>
-    <string name="general_publication">出版</string>
-    <string name="general_state">状态</string>
     <string name="general_reading_time">阅读时间</string>
-    <string name="general_remaining_time">剩余时间</string>
     <string name="general_open_in_browser">在浏览器中打开</string>
     <string name="general_share">分享</string>
     <string name="general_filter">过滤</string>
@@ -102,16 +84,12 @@
     <string name="general_any">任意</string>
     <string name="general_pages">页面</string>
     <string name="general_words">词语</string>
-    <string name="general_time">时间</string>
     <string name="general_weekly">每周</string>
 
     <!-- Languages -->
     <string name="general_language_system">系统</string>
     <string name="general_language_label">语言</string>
-    <string name="general_language_en">英语</string>
-    <string name="general_language_cs">Czech</string>
     <string name="general_title">通用</string>
-    <string name="settings_cache_section_title">缓存</string>
     <string name="settings_cache_global_title">启用缓存</string>
     <string name="settings_cache_global_subtitle">离线时使用缓存数据并在在线时更新。</string>
     <string name="settings_cache_library_title">缓存至离线</string>
@@ -152,8 +130,6 @@
     <string name="settings_cache_stats_title">缓存统计数据</string>
     <string name="reader_offline_indicator">离线阅读中</string>
     <string name="reader_page_not_downloaded">未下载此页</string>
-    <string name="series_detail_specials">特别篇</string>
-    <string name="series_detail_no_specials">无特别篇。</string>
 
     <!-- Browse -->
     <string name="browse_filter_match_all">匹配所有</string>
@@ -179,7 +155,6 @@
     <string name="history_no_history">暂无历史。</string>
 
     <!-- ibrary Screen -->
-    <string name="library_empty_want_to_read">你没有标记想读的书</string>
 
     <!-- Reader screen -->
     <string name="reader_title">阅读器</string>
@@ -215,31 +190,8 @@
     <string name="reader_theme_gray">灰色</string>
 
     <!-- Series detail -->
-    <string name="series_detail_detail">详情</string>
-    <string name="series_detail_share_series">分享系列</string>
-    <string name="series_detail_chapter_not_available">本章节不可阅读</string>
-    <string name="series_detail_start_over_question">从头开始？</string>
-    <string name="series_detail_reset_and_start_again">这将重置你的阅读进度并从头开始。</string>
-    <string name="series_detail_reset_progress">重置进度</string>
-    <string name="series_detail_no_related_items">无相关项。</string>
-    <string name="series_detail_no_related">无相关项。</string>
-    <string name="series_detail_mark_prev_q">要标记先前卷为已读吗？</string>
-    <string name="series_detail_mark_read_this_and_prev">卷 %1$s 被标记为已读。要把之前未读的卷也标为已读吗？</string>
-    <string name="series_detail_mark_with_prev">Mark with previous</string>
-    <string name="series_detail_only_this_vol">仅此卷</string>
-    <string name="series_detail_mark_this_and_later">卷 %1$s 被标记为未读。要把之后已读的卷也标为未读吗？</string>
-    <string name="series_detail_mark_all">标记所有</string>
-    <string name="series_detail_mark_this_vol">仅标记此卷</string>
-    <string name="series_detail_prev_unread_mark_read_too_q">Previous volumes are unread. Mark them as read too, or only set this page?</string>
-    <string name="series_detail_mark_prev_and_continue">标记先前卷并继续</string>
-    <string name="series_detail_only_this_page">仅此页</string>
-    <string name="series_detail_mark_later_vol_unr_q">要标记后续卷为未读吗？</string>
-    <string name="series_detail_mark_unred_vol_and_later_too_q">后续卷标记为已读。把它们也标为未读，还是只更新这一卷？</string>
-    <string name="series_detail_scroll_top">回到顶部</string>
     <string name="series_detail_no_colls_reload">无合集。重载。</string>
     <string name="series_detail_load_colls">读取合集</string>
-    <string name="series_detail_resume_page">继续：页</string>
-    <string name="series_detail_ch_loading_err">Chapters cannot be loaded (missing book for this volume).</string>
 
     <!-- Settings -->
     <string name="settings_title">设置</string>
@@ -265,7 +217,6 @@
     <string name="settings_kavita_http_warning_title">使用 HTTP？</string>
     <string name="settings_kavita_http_warning_body">HTTP 未加密。请仅在受信任的本地网络上使用。是否仍要继续？</string>
     <string name="settings_kavita_http_warning_confirm">使用 HTTP 继续</string>
-    <string name="settings_kavita_http_warning_cancel">取消</string>
 
     <!-- About Kavern -->
     <string name="settings_about_version">版本</string>
@@ -273,7 +224,6 @@
     <string name="settings_about_label_whats_new">新增内容</string>
     <string name="settings_about_changelog_title">这个版本的新增内容</string>
     <string name="settings_about_changelog_desc">更新日志</string>
-    <string name="settings_about_check_updates">检查更新</string>
     <string name="settings_about_label_community">社区</string>
     <string name="settings_about_label_contribute">作出贡献</string>
 
@@ -281,12 +231,6 @@
     <string name="settings_about_osl">开源许可证</string>
     <string name="settings_about_osl_3rd">第三方库</string>
     <string name="settings_about_license">许可证</string>
-    <string name="settings_about_update_available">更新可用：%1$s</string>
-    <string name="settings_about_up_to_date">已是最新版</string>
-    <string name="settings_about_update_failed">无法检查更新</string>
-    <string name="settings_about_update_downloading">下载更新中…</string>
-    <string name="settings_about_update_prompt">新版本可用。要下载并安装它吗？</string>
-    <string name="settings_about_update_confirm">下载</string>
 
     <!-- Others -->
     <string name="settings_about_title">关于 Kavern</string>
@@ -298,14 +242,9 @@
 
     <!-- Stats -->
     <string name="stats_failed_stat_load">读取统计数据失败。</string>
-    <string name="stats_reading_sum">Reading summary</string>
     <string name="stats_activity_last_30d">活动（过去30天）</string>
 
     <!-- Update -->
-    <string name="update_notification_title">更新可用：%1$s</string>
-    <string name="update_notification_text">点击下载最新版本。</string>
-    <string name="update_checking_title">检查更新中…</string>
-    <string name="update_checking_text">Looking for a newer Kavern build.</string>
     <string name="notifications_prompt_title">启用通知</string>
     <string name="notifications_prompt_body">Please allow notifications so we can alert you about updates and downloads.</string>
     <string name="notifications_prompt_accept">启用</string>
@@ -320,16 +259,10 @@
 
     <!-- Series detail actions -->
     <string name="series_download_all">下载所有</string>
-    <string name="series_download_missing">下载缺失</string>
     <string name="series_clear_downloads">清除下载</string>
-    <string name="series_open_download_queue">下载队列</string>
 
     <!-- Advanced settings -->
-    <string name="advanced_clear_cache">清除缓存</string>
-    <string name="advanced_downloaded_pages">已下载的页</string>
     <string name="advanced_cache_stats_series">系列：%1$d</string>
-    <string name="advanced_cache_stats_tabs">Tab refs: %1$d</string>
-    <string name="advanced_cache_stats_browse">浏览引用：%1$d</string>
     <string name="advanced_cache_stats_details">详情：%1$d</string>
     <string name="advanced_cache_stats_volumes">卷：%1$d</string>
     <string name="advanced_cache_stats_chapters">章节：%1$d</string>
@@ -347,19 +280,14 @@
     <string name="download_clear_completed">清理完成</string>
     <string name="download_type_volume">卷</string>
     <string name="download_item_title">系列 %1$s · %2$s</string>
-    <string name="download_item_chapter_pages">章节 %1$s 页 %2$s..%3$s</string>
-    <string name="download_item_state">状态：%1$s</string>
     <string name="download_item_created">创建：%1$s</string>
     <string name="download_item_updated">更新：%1$s</string>
     <string name="download_item_progress">进度：%1$d/%2$d (%3$d%%)</string>
-    <string name="download_item_bytes">Bytes: %1$s / %2$s (%3$d%%)</string>
     <string name="download_item_error">错误：%1$s</string>
     <string name="download_action_pause">暂停</string>
     <string name="download_action_resume">继续</string>
     <string name="download_action_retry">重试</string>
     <string name="download_action_clear">清除</string>
-    <string name="download_completed_title">系列 %1$s · 章节 %2$s · 页面 %3$s</string>
-    <string name="download_completed_status">状态：%1$s</string>
     <string name="download_completed_updated">更新：%1$s</string>
     <string name="download_completed_size">大小：%1$s</string>
     <string name="download_completed_open">打开</string>
@@ -388,11 +316,8 @@
     <string name="settings_downloads_clear_downloaded_confirm_text">从设备存储中移除所有已下载的 HTML 页面和资源？</string>
     <string name="settings_downloads_clear_downloaded_toast">已清除下载页</string>
     <string name="settings_downloads_clear">清除</string>
-    <string name="settings_downloads_cancel">取消</string>
     <string name="settings_downloads_max_concurrent_title">最大并发下载数</string>
     <string name="settings_downloads_max_concurrent_subtitle">限制同时运行的页面下载数量（1-6）。</string>
-    <string name="settings_downloads_selection_placeholder">选择</string>
-    <string name="settings_downloads_delete_after_option">After %1$s read</string>
 
     <!-- General settings -->
     <string name="settings_general_offline_mode_title">离线模式</string>
@@ -487,13 +412,10 @@
     <string name="settings_browse_thumbnails_off_subtitle">浏览页显示纯文本结果以节省数据流量。</string>
     <string name="library_empty_reading_list">找不到阅读列表。</string>
     <string name="download_empty_queue">队列中无下载。</string>
-    <string name="download_empty_completed">没有已完成的下载。</string>
     <string name="download_empty_downloaded">没有已下载的页。</string>
     <string name="update_info_title">重要升级</string>
-    <string name="update_info_body">Please review the latest changes and notes for this release.</string>
     <string name="series_detail_mark_volume_read">标记卷为已读</string>
     <string name="series_detail_mark_volume_unread">标记卷为未读</string>
-    <string name="library_no_access">您无权访问此库。</string>
     <string name="settings_advanced_section_global_cache">全局缓存</string>
     <string name="settings_advanced_section_library_cache">库缓存</string>
     <string name="settings_advanced_section_browse_cache">浏览缓存</string>
@@ -514,10 +436,8 @@
     <string name="settings_cache_library_details_subtitle">缓存系列详情数据共离线使用。</string>
     <string name="settings_cache_always_refresh_title">在线时总是刷新</string>
     <string name="settings_cache_always_refresh_subtitle">在线时，偏好新数据而非缓存数据。</string>
-    <string name="settings_cache_stale_hours_label">（小时）后缓存过期</string>
     <string name="settings_cache_stale_hours_hint">若超过此时间，缓存自动刷新。</string>
     <string name="settings_cache_stale_label">（%s）后缓存过期</string>
-    <string name="settings_cache_units_hours">小时</string>
     <string name="settings_debug_toasts_title">Debug toasts</string>
     <string name="settings_debug_toasts_subtitle">Show debug cache decisions as toasts.</string>
     <string name="debug_cache_use">使用缓存数据</string>
@@ -537,5 +457,4 @@
     <string name="advanced_cache_stats_series_volume_refs">系列卷引用：%1$d</string>
     <string name="advanced_cache_stats_volume_chapter_refs">Volume chapter refs: %1$d</string>
     <string name="advanced_cache_stats_thumbnails_count">缩略图（数量）：%1$d</string>
-    <string name="download_item_v2_title">Item %1$d · Chapter %2$s · Page %3$s</string>
 </resources>

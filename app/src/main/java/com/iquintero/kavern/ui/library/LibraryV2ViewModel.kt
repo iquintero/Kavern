@@ -5,6 +5,8 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
@@ -527,9 +529,8 @@ class LibraryV2ViewModel(
             cacheManager: CacheManager,
             appPreferences: AppPreferences,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            viewModelFactory {
+                initializer {
                     LibraryV2ViewModel(
                         libraryRepository,
                         seriesRepository,
@@ -538,7 +539,8 @@ class LibraryV2ViewModel(
                         personRepository,
                         cacheManager,
                         appPreferences,
-                    ) as T
+                    )
+                }
             }
     }
 }

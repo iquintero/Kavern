@@ -126,42 +126,7 @@ object DownloadQueueRunner {
             )
         if (claimed == 0) return
 
-        val strategy =
-            when (job.strategy) {
-                EpubDownloadStrategyV2.FORMAT_EPUB ->
-                    EpubDownloadStrategyV2(
-                        appContext = context,
-                        downloadDao = dao,
-                        appPreferences = appPreferences,
-                    )
-                DownloadApiStrategyV2.FORMAT_DOWNLOAD ->
-                    DownloadApiStrategyV2(
-                        appContext = context,
-                        downloadDao = dao,
-                        appPreferences = appPreferences,
-                    )
-                PdfDownloadStrategyV2.FORMAT_PDF ->
-                    PdfDownloadStrategyV2(
-                        appContext = context,
-                        downloadDao = dao,
-                        appPreferences = appPreferences,
-                    )
-                ChapterImageArchiveDownloadStrategyV2.FORMAT_IMAGE ->
-                    ChapterImageArchiveDownloadStrategyV2(
-                        appContext = context,
-                        downloadDao = dao,
-                        appPreferences = appPreferences,
-                        key = ChapterImageArchiveDownloadStrategyV2.FORMAT_IMAGE,
-                    )
-                ChapterImageArchiveDownloadStrategyV2.FORMAT_ARCHIVE ->
-                    ChapterImageArchiveDownloadStrategyV2(
-                        appContext = context,
-                        downloadDao = dao,
-                        appPreferences = appPreferences,
-                        key = ChapterImageArchiveDownloadStrategyV2.FORMAT_ARCHIVE,
-                    )
-                else -> null
-            }
+        val strategy = createStrategy(job.strategy, context, dao, appPreferences)
         if (LoggingManager.isDebugEnabled()) {
             LoggingManager.d(
                 "DownloadQueueRunner",
@@ -192,5 +157,26 @@ object DownloadQueueRunner {
             )
         }
         if (retryEnabled && strategy != null) dao.retryFailedJob(job.id, maxRetries)
+    }
+}
+
+/** The download strategy that handles [format], or null when none does. */
+private fun createStrategy(
+    format: String?,
+    context: Context,
+    dao: DownloadV2Dao,
+    appPreferences: AppPreferences,
+): DownloadStrategyV2? {
+    fun imageArchive(key: String) = ChapterImageArchiveDownloadStrategyV2(appContext = context, downloadDao = dao, appPreferences = appPreferences, key = key)
+    return when (format) {
+        EpubDownloadStrategyV2.FORMAT_EPUB ->
+            EpubDownloadStrategyV2(appContext = context, downloadDao = dao, appPreferences = appPreferences)
+        DownloadApiStrategyV2.FORMAT_DOWNLOAD ->
+            DownloadApiStrategyV2(appContext = context, downloadDao = dao, appPreferences = appPreferences)
+        PdfDownloadStrategyV2.FORMAT_PDF ->
+            PdfDownloadStrategyV2(appContext = context, downloadDao = dao, appPreferences = appPreferences)
+        ChapterImageArchiveDownloadStrategyV2.FORMAT_IMAGE -> imageArchive(ChapterImageArchiveDownloadStrategyV2.FORMAT_IMAGE)
+        ChapterImageArchiveDownloadStrategyV2.FORMAT_ARCHIVE -> imageArchive(ChapterImageArchiveDownloadStrategyV2.FORMAT_ARCHIVE)
+        else -> null
     }
 }

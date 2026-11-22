@@ -2,6 +2,7 @@ package com.iquintero.kavern.ui.reader.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.domain.reader.PdfReader
 import com.iquintero.kavern.domain.repository.ReaderRepository
 import kotlinx.coroutines.flow.update
@@ -45,17 +46,17 @@ class PdfReaderViewModel(
             volumeId: Int?,
             anonymous: Boolean = false,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return PdfReaderViewModel(
+            viewModelFactory {
+                // The screens ask for BaseReaderViewModel, so that is the class the factory must answer to.
+                addInitializer(BaseReaderViewModel::class) {
+                    PdfReaderViewModel(
                         chapterId,
                         initialPage,
                         readerRepository,
                         seriesId,
                         volumeId,
                         anonymous,
-                    ) as T
+                    )
                 }
             }
     }

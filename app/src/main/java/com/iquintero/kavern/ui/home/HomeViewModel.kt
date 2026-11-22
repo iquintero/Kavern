@@ -3,6 +3,8 @@ package com.iquintero.kavern.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
 import com.iquintero.kavern.core.logging.LoggingManager
@@ -134,9 +136,10 @@ class HomeViewModel(
             cacheManager: CacheManager,
             appPreferences: AppPreferences,
         ): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T = HomeViewModel(seriesRepository, cacheManager, appPreferences) as T
+            viewModelFactory {
+                initializer {
+                    HomeViewModel(seriesRepository, cacheManager, appPreferences)
+                }
             }
     }
 }

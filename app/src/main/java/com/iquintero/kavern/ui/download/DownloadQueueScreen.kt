@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.util.formatBytes
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
@@ -54,18 +55,6 @@ import java.util.Locale
 private val dateFormatter by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
 private fun formatDate(ts: Long): String = if (ts > 0) dateFormatter.format(Date(ts)) else "—"
-
-private fun formatBytes(value: Long): String {
-    if (value <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB")
-    var v = value.toDouble()
-    var idx = 0
-    while (v >= 1024 && idx < units.lastIndex) {
-        v /= 1024
-        idx++
-    }
-    return String.format(Locale.getDefault(), "%.1f %s", v, units[idx])
-}
 
 private fun downloadedItemSort(item: DownloadedItemV2Entity): Int {
     val epubPageNumMatch = Regex("-(?<page>[0-9]+).html$").find(item.localPath ?: "")
