@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./.github/assets/inkita-logo.png" alt="Kavern logo" title="Kavern logo" width="80"/>
+<img src="./.github/assets/kavern-logo.png" alt="Kavern logo" title="Kavern logo" width="80"/>
 
 # Kavern
 

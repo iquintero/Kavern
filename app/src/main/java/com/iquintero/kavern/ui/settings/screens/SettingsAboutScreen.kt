@@ -88,7 +88,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back))
             }
             Icon(
-                painter = painterResource(id = R.drawable.kavern_launcher_foreground),
+                painter = painterResource(id = R.drawable.kavern_logo),
                 contentDescription = "Kavern logo",
                 modifier = Modifier.size(32.dp),
                 tint = Color.Unspecified,

@@ -10,6 +10,7 @@ All notable changes to this project will be documented here.
 - Home is now a single grid of your series sorted by last read.
 - Reading progress bars on series covers in the library.
 - E-ink mode (Settings > Reader > General) that turns off page-turn and screen animations.
+- A new lantern app icon, also used in the README and the About screen.
 - "Volume keys turn pages" reader setting. Page buttons on e-readers always turn pages.
 - Word lookup (Define) in the EPUB reader.
 - Optional page-by-page EPUB reading (Reader settings, Navigation tab, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the left or right edge of the screen or swiping, like an e-reader. Off by default; scrolling is unchanged.
