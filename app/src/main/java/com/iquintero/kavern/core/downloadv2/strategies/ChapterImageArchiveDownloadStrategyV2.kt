@@ -47,6 +47,9 @@ class ChapterImageArchiveDownloadStrategyV2(
             }
             return existing.jobId
         }
+        downloadDao
+            .findUnfinishedJobId(key, DownloadJobV2Entity.TYPE_CHAPTER, chapterId, request.volumeId, request.seriesId)
+            ?.let { return it }
         val now = System.currentTimeMillis()
         val job =
             DownloadJobV2Entity(

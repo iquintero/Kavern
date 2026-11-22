@@ -196,6 +196,28 @@ interface DownloadV2Dao {
         seriesId: Int?,
     ): Boolean
 
+    /** The id of a pending or running job that is already doing exactly this download, if there is one. */
+    @Query(
+        """
+        SELECT id FROM download_jobs_v2
+        WHERE status IN ('pending', 'running')
+          AND strategy IS :strategy
+          AND type = :type
+          AND chapterId IS :chapterId
+          AND volumeId IS :volumeId
+          AND seriesId IS :seriesId
+        ORDER BY id
+        LIMIT 1
+        """,
+    )
+    suspend fun findUnfinishedJobId(
+        strategy: String,
+        type: String,
+        chapterId: Int?,
+        volumeId: Int?,
+        seriesId: Int?,
+    ): Long?
+
     @Query(
         """
         SELECT * FROM download_items_v2

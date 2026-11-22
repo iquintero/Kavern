@@ -48,6 +48,9 @@ class PdfDownloadStrategyV2(
             }
             return existing.jobId ?: -1L
         }
+        downloadDao
+            .findUnfinishedJobId(key, DownloadJobV2Entity.TYPE_CHAPTER, chapterId, request.volumeId, request.seriesId)
+            ?.let { return it }
 
         val now = System.currentTimeMillis()
         val job =

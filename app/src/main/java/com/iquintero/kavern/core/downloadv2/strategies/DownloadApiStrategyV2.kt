@@ -51,6 +51,8 @@ class DownloadApiStrategyV2(
             }
             return existing.jobId
         }
+        // A second request for a download that is already queued or running must not start another copy.
+        downloadDao.findUnfinishedJobId(key, request.type, chapterId, volumeId, seriesId)?.let { return it }
         val job =
             DownloadJobV2Entity(
                 type = request.type,
