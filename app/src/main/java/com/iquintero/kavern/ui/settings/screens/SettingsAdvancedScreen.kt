@@ -43,6 +43,7 @@ import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.downloadv2.DownloadStorageManager
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.repository.CollectionsRepositoryImpl
 import com.iquintero.kavern.domain.model.Collection
@@ -194,9 +195,9 @@ fun SettingsAdvancedScreen(
         appPreferences.disableBrowseThumbnailsFlow.collectLatest { disableBrowseThumbnails = it }
     }
     LaunchedEffect(collectionsRepo) {
-        collectionOptions = runCatching { appPreferences.loadCachedCollections() }.getOrDefault(emptyList())
+        collectionOptions = runCatchingCancellable { appPreferences.loadCachedCollections() }.getOrDefault(emptyList())
         if (appPreferences.offlineModeFlow.first()) return@LaunchedEffect
-        runCatching { collectionsRepo.getCollections() }
+        runCatchingCancellable { collectionsRepo.getCollections() }
             .onSuccess { fresh ->
                 collectionOptions = fresh
                 appPreferences.saveCollectionsCache(fresh)

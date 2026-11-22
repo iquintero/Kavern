@@ -37,6 +37,7 @@ All notable changes to this project will be documented here.
 - Restore EPUB links to footnotes and other anchors on the current page.
 - Make Reader settings scrollable and restore font selection ([#69](https://github.com/dom-53/Inkita/issues/69)).
 - Paged EPUB reading no longer skips text between pages or lets a finger drag the page, and code blocks wrap instead of running off the screen.
+- A request cancelled by leaving a screen is no longer shown as an error on the Reader, Library, Browse, Series and History screens.
 
 ## v0.3.2-beta.1
 

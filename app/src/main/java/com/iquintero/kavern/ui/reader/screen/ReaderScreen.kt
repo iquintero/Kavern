@@ -109,6 +109,7 @@ import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.ImageReaderMode
 import com.iquintero.kavern.core.storage.ReaderPrefs
 import com.iquintero.kavern.core.storage.ReaderThemeMode
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.domain.model.ReaderTocItem
 import com.iquintero.kavern.domain.repository.ReaderRepository
@@ -229,7 +230,7 @@ internal fun BaseReaderScreen(
                 withFrameNanos { }
                 // Record where the reader is before the bars come back: that resizes the page, and the paged-mode
                 // script then re-flows the text and can land on an earlier page.
-                runCatching { readerViewModel.saveCurrentProgress() }
+                runCatchingCancellable { readerViewModel.saveCurrentProgress() }
                 val latestState = readerViewModel.state.value
                 val barsWereHidden =
                     ViewCompat.getRootWindowInsets(hostView)?.isVisible(WindowInsetsCompat.Type.statusBars()) == false

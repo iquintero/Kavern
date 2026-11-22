@@ -9,6 +9,7 @@ import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.KavitaProfile
 import com.iquintero.kavern.core.sync.ProgressSyncWorker
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.KavitaApi
 import com.iquintero.kavern.data.api.dto.BookChapterItemDto
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
@@ -198,7 +199,7 @@ class ReaderRepositoryImpl(
             }
 
         val remote =
-            runCatching {
+            runCatchingCancellable {
                 val resp = api.getReaderProgress(chapterId)
                 if (resp.isSuccessful) resp.body()?.toDomain() else null
             }.getOrNull()
@@ -206,13 +207,13 @@ class ReaderRepositoryImpl(
         val latest =
             when {
                 remote == null -> {
-                    local?.let { runCatching { api.setReaderProgress(it.toDto()) } }
+                    local?.let { runCatchingCancellable { api.setReaderProgress(it.toDto()) } }
                     local
                 }
                 local == null -> remote
                 local.lastModifiedUtcMillis > remote.lastModifiedUtcMillis -> {
                     // push local to server
-                    runCatching { api.setReaderProgress(local.toDto()) }
+                    runCatchingCancellable { api.setReaderProgress(local.toDto()) }
                     local
                 }
                 else -> remote
@@ -265,7 +266,7 @@ class ReaderRepositoryImpl(
         seriesId: Int,
         chapterId: Int,
     ): ReaderTimeLeft? =
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             val resp = api.getTimeLeftForChapter(seriesId, chapterId)
             if (resp.isSuccessful) resp.body()?.toDomain() else null
@@ -404,11 +405,11 @@ class ReaderRepositoryImpl(
         volumeId: Int,
         currentChapterId: Int,
     ): ReaderChapterNav? {
-        return runCatching {
+        return runCatchingCancellable {
             val api = apiOrThrow()
             val resp = api.getNextChapter(seriesId, volumeId, currentChapterId)
-            if (!resp.isSuccessful) return@runCatching null
-            val id = resp.body() ?: return@runCatching null
+            if (!resp.isSuccessful) return@runCatchingCancellable null
+            val id = resp.body() ?: return@runCatchingCancellable null
             ReaderChapterNav(seriesId = seriesId, volumeId = volumeId, chapterId = id)
         }.getOrNull()
     }
@@ -418,21 +419,21 @@ class ReaderRepositoryImpl(
         volumeId: Int,
         currentChapterId: Int,
     ): ReaderChapterNav? {
-        return runCatching {
+        return runCatchingCancellable {
             val api = apiOrThrow()
             val resp = api.getPreviousChapter(seriesId, volumeId, currentChapterId)
-            if (!resp.isSuccessful) return@runCatching null
-            val id = resp.body() ?: return@runCatching null
+            if (!resp.isSuccessful) return@runCatchingCancellable null
+            val id = resp.body() ?: return@runCatchingCancellable null
             ReaderChapterNav(seriesId = seriesId, volumeId = volumeId, chapterId = id)
         }.getOrNull()
     }
 
     override suspend fun getContinuePoint(seriesId: Int): ReaderChapterNav? =
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             val resp = api.getContinuePoint(seriesId)
-            if (!resp.isSuccessful) return@runCatching null
-            val chapter = resp.body() ?: return@runCatching null
+            if (!resp.isSuccessful) return@runCatchingCancellable null
+            val chapter = resp.body() ?: return@runCatchingCancellable null
             ReaderChapterNav(
                 seriesId = seriesId,
                 volumeId = chapter.volumeId,
@@ -442,12 +443,12 @@ class ReaderRepositoryImpl(
         }.getOrNull()
 
     override suspend fun getBookInfo(chapterId: Int): ReaderBookInfo? =
-        runCatching {
-            if (!isOnlineAllowed()) return@runCatching getOfflineBookInfo(chapterId)
+        runCatchingCancellable {
+            if (!isOnlineAllowed()) return@runCatchingCancellable getOfflineBookInfo(chapterId)
             val api = apiOrThrow()
             val resp = api.getBookInfo(chapterId)
-            if (!resp.isSuccessful) return@runCatching null
-            val info = resp.body()?.toDomain() ?: return@runCatching null
+            if (!resp.isSuccessful) return@runCatchingCancellable null
+            val info = resp.body()?.toDomain() ?: return@runCatchingCancellable null
             if (!info.pageTitle.isNullOrBlank()) {
                 info
             } else {
@@ -507,7 +508,7 @@ class ReaderRepositoryImpl(
     ): String? {
         val volume =
             info.volumeId?.let { volumeId ->
-                runCatching { api.getVolumeById(volumeId) }
+                runCatchingCancellable { api.getVolumeById(volumeId) }
                     .getOrNull()
                     ?.takeIf { it.isSuccessful }
                     ?.body()
@@ -516,7 +517,7 @@ class ReaderRepositoryImpl(
 
         val detail =
             info.seriesId?.let { seriesId ->
-                runCatching { api.getSeriesDetail(seriesId) }
+                runCatchingCancellable { api.getSeriesDetail(seriesId) }
                     .getOrNull()
                     ?.takeIf { it.isSuccessful }
                     ?.body()
@@ -542,46 +543,46 @@ class ReaderRepositoryImpl(
     }
 
     override suspend fun markSeriesRead(seriesId: Int) {
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             api.markSeriesRead(
                 com.iquintero.kavern.data.api.dto
                     .MarkSeriesDto(seriesId),
             )
         }
-        runCatching { handleDeleteAfterRead(seriesId = seriesId, volumeIds = null) }
+        runCatchingCancellable { handleDeleteAfterRead(seriesId = seriesId, volumeIds = null) }
     }
 
     override suspend fun markSeriesUnread(seriesId: Int) {
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             api.markSeriesUnread(
                 com.iquintero.kavern.data.api.dto
                     .MarkSeriesDto(seriesId),
             )
         }
-        runCatching { clearDeleteAfterHistory(seriesId) }
+        runCatchingCancellable { clearDeleteAfterHistory(seriesId) }
     }
 
     override suspend fun markVolumeRead(
         seriesId: Int,
         volumeIds: List<Int>,
     ) {
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             api.markMultipleRead(
                 com.iquintero.kavern.data.api.dto
                     .MarkMultipleDto(seriesId, volumeIds = volumeIds),
             )
         }
-        runCatching { handleDeleteAfterRead(seriesId = seriesId, volumeIds = volumeIds) }
+        runCatchingCancellable { handleDeleteAfterRead(seriesId = seriesId, volumeIds = volumeIds) }
     }
 
     override suspend fun markVolumeUnread(
         seriesId: Int,
         volumeIds: List<Int>,
     ) {
-        runCatching {
+        runCatchingCancellable {
             val api = apiOrThrow()
             api.markMultipleUnread(
                 com.iquintero.kavern.data.api.dto
@@ -601,7 +602,7 @@ class ReaderRepositoryImpl(
             if (!appPreferences.isActiveSession()) return true
             val local = localEntity.toDomain()
             val remote =
-                runCatching {
+                runCatchingCancellable {
                     val resp = api.getReaderProgress(local.chapterId)
                     if (resp.isSuccessful) resp.body()?.toDomain() else null
                 }.getOrNull()
@@ -626,7 +627,7 @@ class ReaderRepositoryImpl(
             }
             val continuePointConfirmed =
                 if (remoteAlreadyMatchesLocal && local.seriesId != null) {
-                    val continueResponse = runCatching { api.getContinuePoint(local.seriesId) }.getOrNull()
+                    val continueResponse = runCatchingCancellable { api.getContinuePoint(local.seriesId) }.getOrNull()
                     val continuePoint = continueResponse?.takeIf { it.isSuccessful }?.body()
                     val samePosition =
                         continuePoint?.id == local.chapterId &&
@@ -635,7 +636,7 @@ class ReaderRepositoryImpl(
                         true
                     } else {
                         val pageCount =
-                            runCatching { api.getBookInfo(local.chapterId) }
+                            runCatchingCancellable { api.getBookInfo(local.chapterId) }
                                 .getOrNull()
                                 ?.takeIf { it.isSuccessful }
                                 ?.body()
@@ -665,7 +666,7 @@ class ReaderRepositoryImpl(
     }
 
     override suspend fun getLatestLocalProgress(seriesId: Int): ReaderProgress? {
-        val locals = runCatching { readerDao.getAllLocalProgress() }.getOrDefault(emptyList())
+        val locals = runCatchingCancellable { readerDao.getAllLocalProgress() }.getOrDefault(emptyList())
         val latest =
             locals
                 .filter { it.seriesId == seriesId }
@@ -675,7 +676,7 @@ class ReaderRepositoryImpl(
 
     override suspend fun getLatestLocalProgressForChapters(chapterIds: Set<Int>): ReaderProgress? {
         if (chapterIds.isEmpty()) return null
-        val locals = runCatching { readerDao.getAllLocalProgress() }.getOrDefault(emptyList())
+        val locals = runCatchingCancellable { readerDao.getAllLocalProgress() }.getOrDefault(emptyList())
         val latest =
             locals
                 .filter { it.chapterId in chapterIds }
@@ -915,13 +916,13 @@ class ReaderRepositoryImpl(
     private suspend fun deleteDownloadedItems(items: List<DownloadedItemV2Entity>) {
         if (items.isEmpty()) return
         items.forEach { item ->
-            runCatching {
-                val path = item.localPath ?: return@runCatching
+            runCatchingCancellable {
+                val path = item.localPath ?: return@runCatchingCancellable
                 downloadStorageManager.delete(path)
             }
         }
         items.forEach { item ->
-            runCatching { downloadV2Dao?.deleteItemById(item.id) }
+            runCatchingCancellable { downloadV2Dao?.deleteItemById(item.id) }
         }
     }
 

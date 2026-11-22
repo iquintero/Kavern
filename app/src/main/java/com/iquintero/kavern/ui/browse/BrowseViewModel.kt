@@ -12,6 +12,7 @@ import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.notification.AppNotificationManager
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.CollectionDto
 import com.iquintero.kavern.data.api.dto.DecodeFilterRequest
 import com.iquintero.kavern.data.api.dto.FilterDefinitionDto
@@ -193,7 +194,7 @@ class BrowseViewModel(
             var cachedPage: List<Series> = emptyList()
             if (cacheEnabled) {
                 cachedPage =
-                    runCatching {
+                    runCatchingCancellable {
                         cacheManager.getCachedLibraryV2SeriesList(
                             listType = LibraryV2CacheKeys.BROWSE,
                             listKey = queryKey,
@@ -230,7 +231,7 @@ class BrowseViewModel(
             }
 
             val page =
-                runCatching {
+                runCatchingCancellable {
                     fetchPageProgressive(
                         page = 1,
                         pageSize = appPreferences.browsePageSizeFlow.first(),
@@ -264,7 +265,7 @@ class BrowseViewModel(
             }
             updateDownloadStates(lastDownloadedItems)
             if (cacheEnabled) {
-                runCatching { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
+                runCatchingCancellable { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
             }
         }
     }
@@ -280,7 +281,7 @@ class BrowseViewModel(
                 val cacheEnabled = browseCacheAllowed()
                 val queryKey = currentQueryKey(page = nextPageNumber)
                 val nextPage =
-                    runCatching {
+                    runCatchingCancellable {
                         val pageSize = appPreferences.browsePageSizeFlow.first()
                         val base = _state.value.series
                         val baseIds = base.map { it.id }.toHashSet()
@@ -314,7 +315,7 @@ class BrowseViewModel(
                 }
                 updateDownloadStates(lastDownloadedItems)
                 if (cacheEnabled) {
-                    runCatching { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
+                    runCatchingCancellable { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
                 }
             } finally {
                 pagingInFlight.set(false)
@@ -499,7 +500,7 @@ class BrowseViewModel(
             if (!cfg.isConfigured) return@launch
             _state.update { it.copy(isMetadataLoading = true, metadataError = null) }
             val api = KavitaApiFactory.createAuthenticated(cfg)
-            runCatching {
+            runCatchingCancellable {
                 val languages = api.getLanguagesMeta().body().orEmpty()
                 val collections = api.getOwnedCollections(true).body().orEmpty()
                 val libraries = api.getLibrariesFilter().body().orEmpty()
@@ -527,10 +528,10 @@ class BrowseViewModel(
     }
 
     suspend fun decodeSmartFilter(filterId: Int?): FilterV2Dto? {
-        val cfg = runCatching { appPreferences.configFlow.first() }.getOrNull() ?: return null
+        val cfg = runCatchingCancellable { appPreferences.configFlow.first() }.getOrNull() ?: return null
         if (!cfg.isConfigured || filterId == null) return null
         val def = _state.value.smartFilters.find { it.id == filterId } ?: return null
-        return runCatching {
+        return runCatchingCancellable {
             val api = KavitaApiFactory.createAuthenticated(cfg)
             api.decodeFilter(DecodeFilterRequest(def.filter)).body()
         }.getOrNull()

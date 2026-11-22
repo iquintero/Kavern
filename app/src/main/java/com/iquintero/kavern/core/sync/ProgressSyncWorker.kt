@@ -11,6 +11,7 @@ import com.iquintero.kavern.core.di.KavernServices
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.KavitaProfile
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.repository.ReaderRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -34,7 +35,7 @@ class ProgressSyncWorker(
         }
         val services = KavernServices.get(applicationContext, AppPreferences(applicationContext, session))
         val repo: ReaderRepository = services.readerRepository
-        return runCatching {
+        return runCatchingCancellable {
             if (repo.syncLocalProgress()) Result.success() else Result.retry()
         }.getOrElse { e ->
             if (e is CancellationException) throw e

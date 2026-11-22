@@ -17,6 +17,7 @@ import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.notification.AppNotificationManager
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.sync.ProgressSyncWorker
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.repository.AuthRepositoryImpl
 import com.iquintero.kavern.data.repository.CollectionsRepositoryImpl
@@ -74,7 +75,7 @@ object StartupManager {
         val preferences = AppPreferences(appContext)
         LoggingManager.init(appContext)
         // Migrate legacy API key storage into encrypted prefs.
-        runCatching { kotlinx.coroutines.runBlocking { preferences.migrateSensitiveIfNeeded() } }
+        runCatchingCancellable { kotlinx.coroutines.runBlocking { preferences.migrateSensitiveIfNeeded() } }
         AppNotificationManager.init(appContext)
         val networkMonitor = NetworkMonitor.getInstance(appContext, preferences)
         val isDebuggable = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0

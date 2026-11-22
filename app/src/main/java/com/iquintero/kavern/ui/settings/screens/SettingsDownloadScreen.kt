@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.core.downloadv2.DownloadStorageManager
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
@@ -386,7 +387,7 @@ fun SettingsDownloadScreen(
                         migrationInProgress = true
                         scope.launch {
                             val result =
-                                runCatching {
+                                runCatchingCancellable {
                                     downloadStorageManager.migrateDownloadLocation(database, target)
                                 }
                             migrationInProgress = false

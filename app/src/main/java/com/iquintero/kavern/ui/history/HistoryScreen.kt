@@ -48,6 +48,7 @@ import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.ReadHistoryEventDto
 import com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
@@ -61,10 +62,6 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
-import kotlin.coroutines.cancellation.CancellationException
-
-/** `runCatching` also catches coroutine cancellation, which must propagate instead of surfacing as an error. */
-private fun <T> Result<T>.rethrowCancellation(): Result<T> = also { result -> (result.exceptionOrNull() as? CancellationException)?.let { throw it } }
 
 @Composable
 fun HistoryScreen(
@@ -96,22 +93,21 @@ fun HistoryScreen(
         val api = KavitaApiFactory.createAuthenticated(config)
         // Kavita 0.8.9 replaced the history route; older servers still use the original one.
         val libraryIds =
-            runCatching {
+            runCatchingCancellable {
                 api
                     .getLibrariesFilter()
                     .body()
                     .orEmpty()
                     .map { it.id }
-            }.rethrowCancellation()
-                .getOrDefault(emptyList())
+            }.getOrDefault(emptyList())
         val sessionsResponse =
-            runCatching {
+            runCatchingCancellable {
                 api.getReadingHistorySessions(
                     pageSize = HISTORY_PAGE_SIZE,
                     timeZoneId = ZoneId.systemDefault().id,
                     libraries = libraryIds,
                 )
-            }.rethrowCancellation()
+            }
         val sessionsBody = sessionsResponse.getOrNull()
         when {
             sessionsBody?.isSuccessful == true -> sessions.value = sessionsBody.body().orEmpty()
@@ -126,11 +122,10 @@ fun HistoryScreen(
                     if (config.userId > 0) {
                         config.userId
                     } else {
-                        val acc = runCatching { api.getAccount() }.rethrowCancellation().getOrNull()
+                        val acc = runCatchingCancellable { api.getAccount() }.getOrNull()
                         acc?.body()?.id ?: 0
                     }
-                runCatching { api.getReadingHistory(userId = userIdToUse) }
-                    .rethrowCancellation()
+                runCatchingCancellable { api.getReadingHistory(userId = userIdToUse) }
                     .onSuccess { resp ->
                         if (resp.isSuccessful) {
                             history.value = resp.body().orEmpty()

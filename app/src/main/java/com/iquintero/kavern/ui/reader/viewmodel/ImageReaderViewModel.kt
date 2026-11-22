@@ -3,6 +3,7 @@ package com.iquintero.kavern.ui.reader.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.reader.ImageReader
 import com.iquintero.kavern.domain.repository.ReaderRepository
@@ -178,12 +179,12 @@ class ImageReaderViewModel(
             val volumeId = chapter.volumeId ?: this@ImageReaderViewModel.volumeId
             val nextNav =
                 if (seriesId != null && volumeId != null) {
-                    runCatching { reader.getNextChapter(seriesId, volumeId, chapterId) }.getOrNull()
+                    runCatchingCancellable { reader.getNextChapter(seriesId, volumeId, chapterId) }.getOrNull()
                 } else {
                     null
                 }
             val nextChapterId = nextNav?.chapterId
-            val nextInfo = nextChapterId?.let { runCatching { reader.getBookInfo(it) }.getOrNull() }
+            val nextInfo = nextChapterId?.let { runCatchingCancellable { reader.getBookInfo(it) }.getOrNull() }
             val nextPageCount = nextInfo?.pages ?: 0
             if (nextChapterId == null || nextInfo == null || nextPageCount <= 0) {
                 _state.update { current ->
@@ -274,13 +275,13 @@ class ImageReaderViewModel(
             val nextIndex = pageIndex + 1
             val previousUrl =
                 if (previousIndex >= 0) {
-                    runCatching { reader.loadPage(targetChapterId, previousIndex).imageUrl }.getOrNull()
+                    runCatchingCancellable { reader.loadPage(targetChapterId, previousIndex).imageUrl }.getOrNull()
                 } else {
                     null
                 }
             val nextUrl =
                 if (pageCount <= 0 || nextIndex < pageCount) {
-                    runCatching { reader.loadPage(targetChapterId, nextIndex).imageUrl }.getOrNull()
+                    runCatchingCancellable { reader.loadPage(targetChapterId, nextIndex).imageUrl }.getOrNull()
                 } else {
                     null
                 }
@@ -340,7 +341,7 @@ class ImageReaderViewModel(
     ) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { reader.loadPage(targetChapterId, pageIndex) }
+            runCatchingCancellable { reader.loadPage(targetChapterId, pageIndex) }
                 .onSuccess { result ->
                     val url = result.imageUrl
                     _state.update { state ->

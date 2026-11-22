@@ -2,6 +2,7 @@ package com.iquintero.kavern.ui.reader.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.model.ReaderChapterNav
@@ -77,8 +78,8 @@ abstract class BaseReaderViewModel(
     fun loadInitial() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, timeLeft = null) }
-            val progressRequest = async { runCatching { reader.getProgress(chapterId) }.getOrNull() }
-            val infoRequest = async { runCatching { reader.getBookInfo(chapterId) }.getOrNull() }
+            val progressRequest = async { runCatchingCancellable { reader.getProgress(chapterId) }.getOrNull() }
+            val infoRequest = async { runCatchingCancellable { reader.getBookInfo(chapterId) }.getOrNull() }
             val savedProgress: ReaderProgress?
             val info: ReaderBookInfo?
             if (reader.format == Format.Epub) {
@@ -88,10 +89,10 @@ abstract class BaseReaderViewModel(
                 val remaining = { (deadline - System.currentTimeMillis()).coerceAtLeast(0L) }
                 savedProgress =
                     withTimeoutOrNull(remaining()) { progressRequest.await() }
-                        ?: runCatching { reader.getLocalProgress(chapterId) }.getOrNull()
+                        ?: runCatchingCancellable { reader.getLocalProgress(chapterId) }.getOrNull()
                 info =
                     withTimeoutOrNull(remaining()) { infoRequest.await() }
-                        ?: runCatching { reader.getCachedBookInfo(chapterId) }.getOrNull()
+                        ?: runCatchingCancellable { reader.getCachedBookInfo(chapterId) }.getOrNull()
                 launch {
                     // Whatever the server answers later still refines the page count and title.
                     infoRequest.await()?.let { late ->
@@ -126,7 +127,7 @@ abstract class BaseReaderViewModel(
     private fun loadToc() {
         if (reader.format != Format.Epub) return
         viewModelScope.launch {
-            val toc = runCatching { reader.getToc(chapterId) }.getOrDefault(emptyList())
+            val toc = runCatchingCancellable { reader.getToc(chapterId) }.getOrDefault(emptyList())
             _state.update { it.copy(toc = toc) }
         }
     }
@@ -139,7 +140,7 @@ abstract class BaseReaderViewModel(
         if (reader.format != Format.Epub || index < 0) return
         if (prefetched.containsKey(index) || !prefetching.add(index)) return
         viewModelScope.launch {
-            val result = runCatching { reader.loadPage(chapterId, index) }.getOrNull()
+            val result = runCatchingCancellable { reader.loadPage(chapterId, index) }.getOrNull()
             prefetching.remove(index)
             if (result != null) {
                 prefetched.keys.retainAll { kotlin.math.abs(it - index) <= 1 }
@@ -174,14 +175,14 @@ abstract class BaseReaderViewModel(
         viewModelScope.launch {
             val previous = _state.value
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { prefetched.remove(index) ?: reader.loadPage(chapterId, index) }
+            runCatchingCancellable { prefetched.remove(index) ?: reader.loadPage(chapterId, index) }
                 .onSuccess { result ->
                     applyLoadResult(result, index)
                     // A new page must not inherit the previous page's scroll position.
                     _state.update { it.copy(bookScrollId = scrollId, openAtEnd = openAtEnd) }
                     updateProgress(index)
                     if (_state.value.bookInfo?.pages == null) {
-                        val info = runCatching { reader.getBookInfo(chapterId) }.getOrNull()
+                        val info = runCatchingCancellable { reader.getBookInfo(chapterId) }.getOrNull()
                         if (info != null) {
                             _state.update { st -> st.copy(bookInfo = info, pageCount = info.pages ?: st.pageCount) }
                         }
@@ -223,7 +224,7 @@ abstract class BaseReaderViewModel(
                     libraryId = info?.libraryId,
                 )
             val totalPages = totalPagesOverride ?: info?.pages
-            runCatching { reader.setProgress(progress, totalPages = totalPages) }
+            runCatchingCancellable { reader.setProgress(progress, totalPages = totalPages) }
             _state.update { it.copy(bookScrollId = bookScrollId ?: it.bookScrollId) }
             loadTimeLeft()
         }
@@ -241,7 +242,7 @@ abstract class BaseReaderViewModel(
     private fun loadInitialContent(pageIndex: Int) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            runCatching { reader.loadInitial(chapterId, pageIndex) }
+            runCatchingCancellable { reader.loadInitial(chapterId, pageIndex) }
                 .onSuccess { result ->
                     applyLoadResult(result, pageIndex)
                     if (reader.format != Format.Pdf) {
@@ -259,10 +260,10 @@ abstract class BaseReaderViewModel(
         val sid = info?.seriesId ?: seriesId ?: return null
         val vid = info?.volumeId ?: volumeId ?: return null
         val currentChapter = _state.value.activeChapterId ?: chapterId
-        val nextNav = runCatching { reader.getNextChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
+        val nextNav = runCatchingCancellable { reader.getNextChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
         val nextId = nextNav.chapterId ?: return null
         // fetch fresh book info for next chapter to capture correct volume
-        val nextInfo = runCatching { reader.getBookInfo(nextId) }.getOrNull()
+        val nextInfo = runCatchingCancellable { reader.getBookInfo(nextId) }.getOrNull()
         if (nextInfo != null) {
             val pages = nextInfo.pages ?: 0
             _state.update { it.copy(bookInfo = nextInfo, pageCount = pages, pageIndex = 0, content = null) }
@@ -280,9 +281,9 @@ abstract class BaseReaderViewModel(
         val sid = info?.seriesId ?: seriesId ?: return null
         val vid = info?.volumeId ?: volumeId ?: return null
         val currentChapter = _state.value.activeChapterId ?: chapterId
-        val prevNav = runCatching { reader.getPreviousChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
+        val prevNav = runCatchingCancellable { reader.getPreviousChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
         val prevId = prevNav.chapterId ?: return null
-        val prevInfo = runCatching { reader.getBookInfo(prevId) }.getOrNull()
+        val prevInfo = runCatchingCancellable { reader.getBookInfo(prevId) }.getOrNull()
         if (prevInfo != null) {
             val pages = prevInfo.pages ?: 0
             _state.update { it.copy(bookInfo = prevInfo, pageCount = pages, pageIndex = 0, content = null) }
@@ -334,11 +335,11 @@ abstract class BaseReaderViewModel(
         updateProgress(lastIndex, totalPagesOverride = total.takeIf { it > 0 })
     }
 
-    suspend fun getBookInfoFor(chapterId: Int): ReaderBookInfo? = runCatching { reader.getBookInfo(chapterId) }.getOrNull()
+    suspend fun getBookInfoFor(chapterId: Int): ReaderBookInfo? = runCatchingCancellable { reader.getBookInfo(chapterId) }.getOrNull()
 
     open suspend fun isPageDownloaded(pageIndex: Int): Boolean {
         val currentChapterId = _state.value.activeChapterId ?: chapterId
-        return runCatching { reader.isPageDownloaded(currentChapterId, pageIndex) }.getOrDefault(false)
+        return runCatchingCancellable { reader.isPageDownloaded(currentChapterId, pageIndex) }.getOrDefault(false)
     }
 
     protected open fun onPageLoaded(pageIndex: Int) = Unit

@@ -37,6 +37,7 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.DateTimePagesReadOnADayCountDto
 import com.iquintero.kavern.data.api.dto.Int32StatCountDto
 import com.iquintero.kavern.data.api.dto.UserReadStatisticsDto
@@ -69,7 +70,7 @@ fun SettingsStatsScreen(
         isLoading.value = true
         error.value = null
         val api = KavitaApiFactory.createAuthenticated(config)
-        runCatching {
+        runCatchingCancellable {
             val uid =
                 if (config.userId > 0) {
                     config.userId

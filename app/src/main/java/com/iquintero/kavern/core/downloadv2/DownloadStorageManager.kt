@@ -8,6 +8,7 @@ import androidx.room.withTransaction
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.KavitaProfile
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
@@ -131,7 +132,7 @@ class DownloadStorageManager internal constructor(
 
     suspend fun readText(localPath: String): String? =
         withContext(Dispatchers.IO) {
-            runCatching {
+            runCatchingCancellable {
                 openInputStream(localPath)?.bufferedReader()?.use { it.readText() }
             }.getOrNull()
         }
@@ -322,7 +323,7 @@ class DownloadStorageManager internal constructor(
                             if (locationSaved) runCatching { saveDownloadLocation(currentRootUri) }.onFailure(e::addSuppressed)
                             throw e
                         }
-                        runCatching {
+                        runCatchingCancellable {
                             database.withTransaction {
                                 if (!dao.hasUnfinishedJobs()) {
                                     val referencedPaths = dao.getStoredPaths().toHashSet()

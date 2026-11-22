@@ -9,6 +9,7 @@ import com.iquintero.kavern.core.network.NetworkLoggingInterceptor
 import com.iquintero.kavern.core.network.forKavita
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.AnnotationDto
 import com.iquintero.kavern.data.api.dto.AppUserCollectionDto
 import com.iquintero.kavern.data.api.dto.BookmarkDto
@@ -667,7 +668,7 @@ class CacheManagerImpl(
     /** Remove all cached thumbnails from disk. */
     private fun clearThumbnailsInternal() {
         thumbnailsDir?.listFiles()?.forEach { file ->
-            runCatching { file.delete() }
+            runCatchingCancellable { file.delete() }
         }
         LoggingManager.d("CacheManager", "Cleared thumbnails")
     }
@@ -827,9 +828,9 @@ class CacheManagerImpl(
                 if (file.exists()) {
                     if (file.length() > 0) {
                         BitmapFactory.decodeFile(file.absolutePath)?.let { result = file.absolutePath }
-                        if (result == null) runCatching { file.delete() }
+                        if (result == null) runCatchingCancellable { file.delete() }
                     } else {
-                        runCatching { file.delete() }
+                        runCatchingCancellable { file.delete() }
                     }
                 }
 
@@ -855,7 +856,7 @@ class CacheManagerImpl(
                                     if (scaled != bitmap) scaled.recycle()
                                     result = file.absolutePath
                                 } else {
-                                    runCatching { file.delete() }
+                                    runCatchingCancellable { file.delete() }
                                 }
                             }
                         }

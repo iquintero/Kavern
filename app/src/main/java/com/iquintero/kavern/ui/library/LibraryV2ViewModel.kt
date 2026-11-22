@@ -11,6 +11,7 @@ import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
 import com.iquintero.kavern.domain.model.Collection
@@ -133,7 +134,7 @@ class LibraryV2ViewModel(
     private fun loadLibraries() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val result = runCatching { libraryRepository.getLibraries() }
+            val result = runCatchingCancellable { libraryRepository.getLibraries() }
             _state.update {
                 it.copy(
                     libraries = result.getOrDefault(emptyList()),
@@ -193,7 +194,7 @@ class LibraryV2ViewModel(
                     }
                 maybeShowDebugToast(message)
             }
-            val result = runCatching { collectionsRepository.getCollectionsAll(ownedOnly = false) }
+            val result = runCatchingCancellable { collectionsRepository.getCollectionsAll(ownedOnly = false) }
             _state.update {
                 it.copy(
                     collections = result.getOrDefault(emptyList()),
@@ -258,7 +259,7 @@ class LibraryV2ViewModel(
                     }
                 maybeShowDebugToast(message)
             }
-            val result = runCatching { readingListRepository.getReadingLists(includePromoted = true, sortByLastModified = false) }
+            val result = runCatchingCancellable { readingListRepository.getReadingLists(includePromoted = true, sortByLastModified = false) }
             _state.update {
                 it.copy(
                     readingLists = result.getOrDefault(emptyList()),
@@ -333,7 +334,7 @@ class LibraryV2ViewModel(
                     }
                 maybeShowDebugToast(message)
             }
-            val result = runCatching { personRepository.getBrowsePeople(pageNumber = 1, pageSize = 50) }
+            val result = runCatchingCancellable { personRepository.getBrowsePeople(pageNumber = 1, pageSize = 50) }
             val pageItems = result.getOrDefault(emptyList())
             _state.update {
                 it.copy(
@@ -360,7 +361,7 @@ class LibraryV2ViewModel(
         viewModelScope.launch {
             val nextPage = current.peoplePage + 1
             _state.update { it.copy(isPeopleLoadingMore = true) }
-            val result = runCatching { personRepository.getBrowsePeople(pageNumber = nextPage, pageSize = 50) }
+            val result = runCatchingCancellable { personRepository.getBrowsePeople(pageNumber = nextPage, pageSize = 50) }
             val pageItems = result.getOrDefault(emptyList())
             _state.update {
                 it.copy(
@@ -431,7 +432,7 @@ class LibraryV2ViewModel(
                     }
                 maybeShowDebugToast(message)
             }
-            val result = runCatching { seriesRepository.getSeriesForCollection(collectionId, 1, 50) }
+            val result = runCatchingCancellable { seriesRepository.getSeriesForCollection(collectionId, 1, 50) }
             _state.update {
                 it.copy(
                     collectionSeries = result.getOrDefault(emptyList()),

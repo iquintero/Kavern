@@ -9,6 +9,7 @@ import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.ChapterDto
 import com.iquintero.kavern.data.api.dto.MarkSeriesDto
 import com.iquintero.kavern.data.api.dto.ReaderProgressDto
@@ -56,7 +57,7 @@ class SeriesDetailViewModelV2(
                 return@launch
             }
             _state.update { it.copy(isLoadingCollections = true, collectionError = null) }
-            val result = runCatching { collectionsRepository.getCollections() }
+            val result = runCatchingCancellable { collectionsRepository.getCollections() }
             result
                 .onSuccess { list -> _state.update { it.copy(collections = list) } }
                 .onFailure { e -> _state.update { it.copy(collectionError = e.message ?: "Failed to load collections.") } }
@@ -76,7 +77,7 @@ class SeriesDetailViewModelV2(
             }
             val api = KavitaApiFactory.createAuthenticated(cfg)
             val result =
-                runCatching {
+                runCatchingCancellable {
                     if (add) {
                         api.addSeriesToCollection(
                             com.iquintero.kavern.data.api.dto.CollectionTagBulkAddDto(
@@ -104,7 +105,7 @@ class SeriesDetailViewModelV2(
                 .onSuccess { resp ->
                     if (resp.isSuccessful) {
                         refreshCollectionsForSeries()
-                        runCatching { collectionsRepository.getCollections() }
+                        runCatchingCancellable { collectionsRepository.getCollections() }
                             .onSuccess { list -> _state.update { it.copy(collections = list) } }
                     } else {
                         _state.update { it.copy(collectionError = "HTTP ${resp.code()} ${resp.message()}") }
@@ -125,7 +126,7 @@ class SeriesDetailViewModelV2(
             }
             val api = KavitaApiFactory.createAuthenticated(cfg)
             val response =
-                runCatching {
+                runCatchingCancellable {
                     api.addSeriesToCollection(
                         com.iquintero.kavern.data.api.dto.CollectionTagBulkAddDto(
                             collectionTagId = 0,
@@ -140,7 +141,7 @@ class SeriesDetailViewModelV2(
                         _state.update { it.copy(collectionError = "HTTP ${resp.code()} ${resp.message()}") }
                         return@onSuccess
                     }
-                    runCatching { collectionsRepository.getCollections() }
+                    runCatchingCancellable { collectionsRepository.getCollections() }
                         .onSuccess { list -> _state.update { it.copy(collections = list) } }
                     refreshCollectionsForSeries()
                 }.onFailure { e ->
@@ -157,7 +158,7 @@ class SeriesDetailViewModelV2(
                 return@launch
             }
             val api = KavitaApiFactory.createAuthenticated(cfg)
-            runCatching {
+            runCatchingCancellable {
                 api.getCollectionsForSeries(seriesId)
             }.onSuccess { resp ->
                 if (resp.isSuccessful) {
