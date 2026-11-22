@@ -24,7 +24,7 @@ import com.iquintero.kavern.domain.repository.PersonRepository
 import com.iquintero.kavern.domain.repository.ReadingListRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.ui.common.DownloadState
-import com.iquintero.kavern.ui.common.DownloadStateResolver
+import com.iquintero.kavern.ui.common.resolveSeriesDownloadStates
 import com.iquintero.kavern.ui.seriesdetail.KavernDetailV2
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -782,86 +782,10 @@ class LibraryV2ViewModel(
     }
 
     private suspend fun updateDownloadStates(items: List<DownloadedItemV2Entity>) {
-        val seriesInfoById = buildSeriesInfoMap(_state.value)
-        if (seriesInfoById.isEmpty()) {
-            _state.update { it.copy(downloadStates = emptyMap()) }
-            return
-        }
-        val cacheIds =
-            seriesInfoById.values
-                .filter { info ->
-                    info.format == null ||
-                        info.format == Format.Pdf ||
-                        (info.pages ?: 0) <= 0
-                }.map { it.id }
-                .distinct()
-                .sorted()
-        val cachedDetails =
-            withContext(Dispatchers.IO) {
-                val result = mutableMapOf<Int, KavernDetailV2>()
-                cacheIds.forEach { id ->
-                    cacheManager.getCachedSeriesDetailV2(id)?.let { result[id] = it }
-                }
-                result
-            }
-        val states =
-            buildSeriesDownloadStates(
-                seriesInfoById = seriesInfoById,
-                downloadedItems = items,
-                cachedDetails = cachedDetails,
-            )
+        val state = _state.value
+        val shown = state.homeSeries + state.wantToRead + state.collectionSeries + state.librarySeries
+        val states = resolveSeriesDownloadStates(shown, items, cacheManager)
         _state.update { it.copy(downloadStates = states) }
-    }
-
-    private data class SeriesDownloadInfo(
-        val id: Int,
-        val format: Format?,
-        val pages: Int?,
-    )
-
-    private fun buildSeriesInfoMap(state: LibraryV2UiState): Map<Int, SeriesDownloadInfo> {
-        val map = mutableMapOf<Int, SeriesDownloadInfo>()
-
-        fun add(
-            id: Int,
-            format: Format?,
-            pages: Int?,
-        ) {
-            val current = map[id]
-            val resolvedFormat = format ?: current?.format
-            val resolvedPages = pages ?: current?.pages
-            map[id] = SeriesDownloadInfo(id, resolvedFormat, resolvedPages)
-        }
-        state.homeSeries.forEach { add(it.id, it.format, it.pages) }
-        state.wantToRead.forEach { add(it.id, it.format, it.pages) }
-        state.collectionSeries.forEach { add(it.id, it.format, it.pages) }
-        state.librarySeries.forEach { add(it.id, it.format, it.pages) }
-        return map
-    }
-
-    private fun buildSeriesDownloadStates(
-        seriesInfoById: Map<Int, SeriesDownloadInfo>,
-        downloadedItems: List<DownloadedItemV2Entity>,
-        cachedDetails: Map<Int, KavernDetailV2>,
-    ): Map<Int, DownloadState> {
-        val itemsBySeries =
-            downloadedItems
-                .filter { it.seriesId != null }
-                .groupBy { it.seriesId!! }
-        val result = mutableMapOf<Int, DownloadState>()
-        seriesInfoById.forEach { (id, info) ->
-            val items = itemsBySeries[id].orEmpty()
-            val detail = cachedDetails[id]
-            val format = info.format ?: Format.fromId(detail?.series?.format)
-            result[id] =
-                DownloadStateResolver.resolveSeriesState(
-                    format = format,
-                    pagesHint = info.pages,
-                    detail = detail?.detail,
-                    items = items,
-                )
-        }
-        return result
     }
 
     companion object {

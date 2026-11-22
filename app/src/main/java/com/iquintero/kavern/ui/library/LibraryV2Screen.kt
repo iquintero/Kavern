@@ -87,8 +87,12 @@ import com.iquintero.kavern.domain.repository.LibraryRepository
 import com.iquintero.kavern.domain.repository.PersonRepository
 import com.iquintero.kavern.domain.repository.ReadingListRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
+import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
+import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
+import com.iquintero.kavern.ui.common.CoverProgressBar
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateBadge
+import com.iquintero.kavern.ui.common.SeriesCoverCard
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.collectionCoverUrl
 import com.iquintero.kavern.ui.common.personCoverUrl
@@ -451,35 +455,6 @@ private fun DrawerItem(
     }
 }
 
-/** Smallest width of a cover cell; the grid fits as many columns as the window allows. */
-private val COVER_MIN_WIDTH = 110.dp
-private const val UNAVAILABLE_ALPHA = 0.4f
-private val UNAVAILABLE_BADGE_SIZE = 40.dp
-private val UNAVAILABLE_BADGE_PADDING = 8.dp
-
-/** Book covers are close to 2:3. */
-private const val COVER_ASPECT_RATIO = 2f / 3f
-
-/** A thin bar along the bottom of a cover for books that are started but not finished. */
-@Composable
-private fun CoverProgressBar(
-    progress: Float?,
-    modifier: Modifier = Modifier,
-) {
-    if (progress == null || progress <= 0f || progress >= 1f) return
-    LinearProgressIndicator(
-        progress = { progress },
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .clip(MaterialTheme.shapes.medium.copy(topStart = CornerSize(0.dp), topEnd = CornerSize(0.dp))),
-        trackColor = Color.Black.copy(alpha = 0.45f),
-        gapSize = 0.dp,
-        drawStopIndicator = {},
-    )
-}
-
 @Composable
 private fun WantToReadGrid(
     items: List<com.iquintero.kavern.domain.model.Series>,
@@ -531,7 +506,7 @@ private fun WantToReadGrid(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     gridItems(items, key = { it.id }) { series ->
-                        WantToReadCard(
+                        SeriesCoverCard(
                             series = series,
                             config = config,
                             downloadState = downloadStates[series.id] ?: DownloadState.None,
@@ -542,81 +517,6 @@ private fun WantToReadGrid(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun WantToReadCard(
-    series: com.iquintero.kavern.domain.model.Series,
-    config: AppConfig,
-    downloadState: DownloadState,
-    showDownloadBadges: Boolean,
-    onOpenSeries: (Int) -> Unit,
-) {
-    val imageUrl = seriesCoverUrl(config, series.id)
-    // Without the server only downloaded series can be opened, so fade out the rest.
-    val unavailable = rememberServerConnection().isUnavailable && downloadState == DownloadState.None
-    val coverAlpha = if (unavailable) UNAVAILABLE_ALPHA else 1f
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(enabled = !unavailable) { onOpenSeries(series.id) },
-    ) {
-        Box {
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(imageUrl)
-                        .crossfade(true)
-                        .build(),
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(COVER_ASPECT_RATIO)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .alpha(coverAlpha),
-                contentScale = ContentScale.Crop,
-            )
-            if (unavailable) {
-                // A solid badge stays readable on e-ink screens where the fade alone is subtle.
-                Icon(
-                    imageVector = Icons.Filled.CloudOff,
-                    contentDescription = stringResource(R.string.server_status_unreachable),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .size(UNAVAILABLE_BADGE_SIZE)
-                            .background(MaterialTheme.colorScheme.surface, CircleShape)
-                            .padding(UNAVAILABLE_BADGE_PADDING),
-                )
-            }
-            CoverProgressBar(
-                progress = seriesProgress(series.pagesRead, series.pages),
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
-            if (showDownloadBadges) {
-                DownloadStateBadge(
-                    state = downloadState,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(end = 6.dp, bottom = 10.dp),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = series.name.ifBlank { "Series ${series.id}" },
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.alpha(coverAlpha),
-        )
     }
 }
 
@@ -1087,7 +987,7 @@ private fun LibrarySeriesGrid(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         gridItems(items, key = { it.id }) { series ->
-                            WantToReadCard(
+                            SeriesCoverCard(
                                 series = series,
                                 config = config,
                                 downloadState = downloadStates[series.id] ?: DownloadState.None,
