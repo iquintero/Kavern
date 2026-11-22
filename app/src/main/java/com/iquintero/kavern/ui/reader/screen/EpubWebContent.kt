@@ -14,6 +14,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.Jsoup
 import org.jsoup.nodes.DataNode
+import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import java.io.File
 import java.io.IOException
@@ -66,6 +67,7 @@ internal class EpubWebContent(
             select("script, iframe, frame, frameset, object, embed, base, meta[http-equiv], template, portal").remove()
             select("link").filterNot { it.attr("rel").equals("stylesheet", ignoreCase = true) }.forEach { it.remove() }
             getAllElements().forEach(::prepareElement)
+            wrapInBookContent(this)
             server?.let { head().prependElement("base").attr("href", "$READER_ORIGIN${it.encodedPath}") }
         }
 
@@ -84,6 +86,7 @@ internal class EpubWebContent(
     }
 
     private fun prepareElement(element: Element) {
+        rewriteStyleElement(element, ::resourceUrl)
         element
             .attributes()
             .asList()
@@ -162,6 +165,60 @@ internal class EpubWebContent(
             null
         }
     }
+}
+
+private val CSS_URL = Regex("""url\(\s*(["']?)([^"')]+)\1\s*\)""", RegexOption.IGNORE_CASE)
+
+/**
+ * Replaces each `url(...)` in [css] with what [map] returns for it. A url that [map] rejects (null) is left as it is,
+ * which the content policy then blocks.
+ */
+internal fun rewriteCssUrls(
+    css: String,
+    map: (String) -> String?,
+): String =
+    CSS_URL.replace(css) { match ->
+        val quote = match.groupValues[1]
+        val mapped = map(match.groupValues[2].trim())
+        if (mapped == null) match.value else "url($quote$mapped$quote)"
+    }
+
+/**
+ * Kavita scopes every rule of a book's own CSS to `.book-content`, the element its web reader wraps pages in. Without
+ * that wrapper none of those rules (heading and code fonts, figure and quote styling) would apply.
+ */
+internal fun rewriteStyleElement(
+    element: Element,
+    map: (String) -> String?,
+) {
+    if (element.normalName() != "style") return
+    // Fonts and background images named in the book's own CSS must go through the same checked route as <img>.
+    val css = element.data()
+    val rewritten = rewriteCssUrls(css, map)
+    if (rewritten != css) element.empty().appendChild(DataNode(rewritten))
+}
+
+/**
+ * Keeps the reader's own layout settings in charge once a book's CSS applies: the book's page width, margins and
+ * background are dropped, and plain paragraphs follow the chosen text alignment.
+ */
+internal fun bookContentLayoutCss(textAlignCss: String): String =
+    """
+    .book-content {
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+    .book-content p:not([class]) { text-align: $textAlignCss !important; }
+    """.trimIndent()
+
+internal fun wrapInBookContent(document: Document) {
+    val body = document.body()
+    val wrapper = Element("div").addClass("book-content")
+    body.childNodes().toList().forEach { wrapper.appendChild(it) }
+    body.appendChild(wrapper)
 }
 
 internal fun HttpUrl.withoutApiKey(): HttpUrl =

@@ -1668,6 +1668,7 @@ internal fun ReaderWebView(
         }
         a { text-decoration: none; color: inherit; pointer-events: none; }
         h1, h2, h3, h4, h5, h6 { text-decoration: none; }
+        ${bookContentLayoutCss(textAlignCss)}
         $pagedMediaCss
         body, .book-content {
             font-size: ${fontSize}px !important;
