@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -65,6 +66,7 @@ fun HomeScreen(
     cacheManager: CacheManager,
     appPreferences: AppPreferences,
     onOpenSeries: (Int) -> Unit,
+    onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel: HomeViewModel =
@@ -86,6 +88,9 @@ fun HomeScreen(
                     connection = rememberServerConnection(),
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )
+                IconButton(onClick = onOpenHistory) {
+                    Icon(Icons.Filled.History, contentDescription = stringResource(R.string.nav_history))
+                }
                 IconButton(onClick = viewModel::refresh) {
                     Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.home_refresh))
                 }

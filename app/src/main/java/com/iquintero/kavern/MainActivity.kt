@@ -516,6 +516,7 @@ fun KavernApp(
                                 cacheManager = cacheManager,
                                 appPreferences = appPreferences,
                                 onOpenSeries = { seriesId -> navController.navigate("series/$seriesId") },
+                                onOpenHistory = { navController.navigate(MainScreen.History.route) },
                                 onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
                             )
                         }
@@ -580,6 +581,7 @@ fun KavernApp(
                         composable(MainScreen.History.route) {
                             HistoryScreen(
                                 appPreferences = appPreferences,
+                                onBack = { navController.popBackStack() },
                             )
                         }
                         composable(MainScreen.Downloads.route) {

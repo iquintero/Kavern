@@ -24,7 +24,7 @@ sealed class MainScreen(
 
     companion object {
         /** Top-level destinations shown in the navigation bar or rail (three to five, per Material). */
-        val items = listOf(Home, LibraryV2, History, Downloads)
+        val items = listOf(Home, LibraryV2, Downloads)
 
         /** Settings is opened from the Home and Library top bars, not from the navigation bar. */
         const val SETTINGS_ROUTE = "settings"

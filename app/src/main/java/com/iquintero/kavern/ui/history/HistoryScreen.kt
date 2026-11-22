@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +17,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,6 +50,8 @@ import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.data.api.dto.ReadHistoryEventDto
 import com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto
+import com.iquintero.kavern.ui.common.ServerConnectionIndicator
+import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 import java.time.Instant
 import java.time.LocalDate
@@ -59,7 +67,10 @@ import kotlin.coroutines.cancellation.CancellationException
 private fun <T> Result<T>.rethrowCancellation(): Result<T> = also { result -> (result.exceptionOrNull() as? CancellationException)?.let { throw it } }
 
 @Composable
-fun HistoryScreen(appPreferences: AppPreferences) {
+fun HistoryScreen(
+    appPreferences: AppPreferences,
+    onBack: () -> Unit,
+) {
     val config by appPreferences.configFlow.collectAsState(
         initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
     )
@@ -169,64 +180,82 @@ fun HistoryScreen(appPreferences: AppPreferences) {
             .filterIsInstance<LocalDate>()
             .sortedDescending() + groupedByDate.keys.filter { it == null }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        when {
-            isLoading.value -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(stringResource(R.string.nav_history)) },
+            // The app Scaffold already pads for the status bar.
+            windowInsets = WindowInsets(0),
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back))
                 }
-            }
-            error.value != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(error.value ?: "", color = MaterialTheme.colorScheme.error)
+            },
+            actions = {
+                ServerConnectionIndicator(
+                    connection = rememberServerConnection(),
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            },
+        )
+        Surface(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        ) {
+            when {
+                isLoading.value -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (groupedByDate.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(stringResource(R.string.history_no_history))
+                error.value != null -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(error.value ?: "", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        if (groupedByDate.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(stringResource(R.string.history_no_history))
+                                }
                             }
-                        }
-                    } else {
-                        sortedKeys.forEach { dateKey ->
-                            val itemsForDay = groupedByDate[dateKey].orEmpty()
-                            val dayKey = dateKey?.toEpochDay()?.toString() ?: "unknown"
-                            item(key = "header-$dateKey") {
-                                Text(
-                                    text = dayLabel(dateKey, context),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.padding(vertical = 4.dp),
-                                )
-                            }
-                            // A series can have several sessions in one day, so the position keeps keys unique.
-                            itemsIndexed(
-                                itemsForDay,
-                                key = { index, item ->
-                                    val seriesKey = item.seriesId?.toString() ?: item.seriesName.hashCode().toString()
-                                    "row-$dayKey-$seriesKey-$index"
-                                },
-                            ) { _, item ->
-                                HistoryRow(
-                                    item = item,
-                                    config = config,
-                                )
+                        } else {
+                            sortedKeys.forEach { dateKey ->
+                                val itemsForDay = groupedByDate[dateKey].orEmpty()
+                                val dayKey = dateKey?.toEpochDay()?.toString() ?: "unknown"
+                                item(key = "header-$dateKey") {
+                                    Text(
+                                        text = dayLabel(dateKey, context),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                    )
+                                }
+                                // A series can have several sessions in one day, so the position keeps keys unique.
+                                itemsIndexed(
+                                    itemsForDay,
+                                    key = { index, item ->
+                                        val seriesKey = item.seriesId?.toString() ?: item.seriesName.hashCode().toString()
+                                        "row-$dayKey-$seriesKey-$index"
+                                    },
+                                ) { _, item ->
+                                    HistoryRow(
+                                        item = item,
+                                        config = config,
+                                    )
+                                }
                             }
                         }
                     }

@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -77,9 +78,8 @@ private fun downloadedItemSort(item: DownloadedItemV2Entity): Int {
 }
 
 enum class DownloadTabs {
-    TAB_QUEUE,
-    TAB_COMPLETED,
     TAB_DOWNLOADED,
+    TAB_QUEUE,
 }
 
 @Composable
@@ -95,7 +95,8 @@ fun DownloadQueueScreen(
             .groupBy { it.seriesId ?: 0 }
             .map { Pair(it.key, it.value.sortedBy { item -> downloadedItemSort(item) }) }
     val lookup by viewModel.lookup.collectAsState()
-    var selectedTab by remember { mutableStateOf(DownloadTabs.TAB_QUEUE) }
+    var selectedTab by remember { mutableStateOf(DownloadTabs.TAB_DOWNLOADED) }
+    var showFinished by remember { mutableStateOf(false) }
 
     val queueStates =
         listOf(
@@ -107,14 +108,9 @@ fun DownloadQueueScreen(
         )
     val completedStates = listOf(DownloadJobV2Entity.STATUS_COMPLETED)
     val queueCount = tasks.count { it.status in queueStates }
-    val completedCount = tasks.count { it.status in completedStates }
     val downloadedCount = downloaded.size
-    val visibleTasks =
-        when (selectedTab) {
-            DownloadTabs.TAB_QUEUE -> tasks.filter { it.status in queueStates }
-            DownloadTabs.TAB_COMPLETED -> tasks.filter { it.status in completedStates }
-            else -> emptyList()
-        }
+    val queuedTasks = tasks.filter { it.status in queueStates }
+    val finishedTasks = tasks.filter { it.status in completedStates }
 
     Column(
         modifier =
@@ -125,21 +121,15 @@ fun DownloadQueueScreen(
     ) {
         Text(stringResource(R.string.download_screen_title), style = MaterialTheme.typography.headlineSmall)
         TabRow(selectedTabIndex = selectedTab.ordinal) {
-            Tab(selected = selectedTab == DownloadTabs.TAB_QUEUE, onClick = { selectedTab = DownloadTabs.TAB_QUEUE }) {
-                Text(
-                    "${stringResource(R.string.general_queue)} ($queueCount)",
-                    modifier = Modifier.padding(12.dp),
-                )
-            }
-            Tab(selected = selectedTab == DownloadTabs.TAB_COMPLETED, onClick = { selectedTab = DownloadTabs.TAB_COMPLETED }) {
-                Text(
-                    "${stringResource(R.string.general_completed)} ($completedCount)",
-                    modifier = Modifier.padding(12.dp),
-                )
-            }
             Tab(selected = selectedTab == DownloadTabs.TAB_DOWNLOADED, onClick = { selectedTab = DownloadTabs.TAB_DOWNLOADED }) {
                 Text(
                     "${stringResource(R.string.general_downloaded)} ($downloadedCount)",
+                    modifier = Modifier.padding(12.dp),
+                )
+            }
+            Tab(selected = selectedTab == DownloadTabs.TAB_QUEUE, onClick = { selectedTab = DownloadTabs.TAB_QUEUE }) {
+                Text(
+                    "${stringResource(R.string.general_queue)} ($queueCount)",
                     modifier = Modifier.padding(12.dp),
                 )
             }
@@ -166,32 +156,19 @@ fun DownloadQueueScreen(
                     }
                 }
             }
-            else -> {
-                if (selectedTab == DownloadTabs.TAB_COMPLETED) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        Button(onClick = { viewModel.clearCompleted() }) {
-                            Text(stringResource(R.string.download_clear_completed))
-                        }
-                    }
-                }
-                if (visibleTasks.isEmpty()) {
-                    val label =
-                        if (selectedTab == DownloadTabs.TAB_QUEUE) {
-                            stringResource(R.string.download_empty_queue)
-                        } else {
-                            stringResource(R.string.download_empty_completed)
-                        }
-                    EmptyState(text = label)
+            DownloadTabs.TAB_QUEUE -> {
+                if (queuedTasks.isEmpty() && finishedTasks.isEmpty()) {
+                    EmptyState(text = stringResource(R.string.download_empty_queue))
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(0.dp, 4.dp),
                     ) {
-                        items(visibleTasks, key = { it.id }) { task ->
+                        if (queuedTasks.isEmpty()) {
+                            item(key = "empty-queue") { EmptyState(text = stringResource(R.string.download_empty_queue)) }
+                        }
+                        items(queuedTasks, key = { it.id }) { task ->
                             TaskRow(
                                 task = task,
                                 lookup = lookup,
@@ -201,6 +178,36 @@ fun DownloadQueueScreen(
                                 onRetry = { viewModel.retryTask(task.id) },
                                 onClear = { viewModel.deleteTask(task.id) },
                             )
+                        }
+                        if (finishedTasks.isNotEmpty()) {
+                            item(key = "finished-header") {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable { showFinished = !showFinished },
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Text(
+                                        "${stringResource(R.string.general_completed)} (${finishedTasks.size})",
+                                        style = MaterialTheme.typography.titleSmall,
+                                    )
+                                    TextButton(onClick = { viewModel.clearCompleted() }) {
+                                        Text(stringResource(R.string.download_clear_completed))
+                                    }
+                                }
+                            }
+                            if (showFinished) {
+                                items(finishedTasks, key = { it.id }) { task ->
+                                    TaskRow(
+                                        task = task,
+                                        lookup = lookup,
+                                        onCancel = { viewModel.cancelTask(task.id) },
+                                        onPause = { viewModel.pauseTask(task.id) },
+                                        onResume = { viewModel.resumeTask(task.id) },
+                                        onRetry = { viewModel.retryTask(task.id) },
+                                        onClear = { viewModel.deleteTask(task.id) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
