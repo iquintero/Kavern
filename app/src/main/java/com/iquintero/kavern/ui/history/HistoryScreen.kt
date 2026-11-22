@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -52,6 +53,10 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
+
+/** `runCatching` also catches coroutine cancellation, which must propagate instead of surfacing as an error. */
+private fun <T> Result<T>.rethrowCancellation(): Result<T> = also { result -> (result.exceptionOrNull() as? CancellationException)?.let { throw it } }
 
 @Composable
 fun HistoryScreen(appPreferences: AppPreferences) {
@@ -79,10 +84,23 @@ fun HistoryScreen(appPreferences: AppPreferences) {
         error.value = null
         val api = KavitaApiFactory.createAuthenticated(config)
         // Kavita 0.8.9 replaced the history route; older servers still use the original one.
+        val libraryIds =
+            runCatching {
+                api
+                    .getLibrariesFilter()
+                    .body()
+                    .orEmpty()
+                    .map { it.id }
+            }.rethrowCancellation()
+                .getOrDefault(emptyList())
         val sessionsResponse =
             runCatching {
-                api.getReadingHistorySessions(pageSize = HISTORY_PAGE_SIZE, timeZoneId = ZoneId.systemDefault().id)
-            }
+                api.getReadingHistorySessions(
+                    pageSize = HISTORY_PAGE_SIZE,
+                    timeZoneId = ZoneId.systemDefault().id,
+                    libraries = libraryIds,
+                )
+            }.rethrowCancellation()
         val sessionsBody = sessionsResponse.getOrNull()
         when {
             sessionsBody?.isSuccessful == true -> sessions.value = sessionsBody.body().orEmpty()
@@ -97,10 +115,11 @@ fun HistoryScreen(appPreferences: AppPreferences) {
                     if (config.userId > 0) {
                         config.userId
                     } else {
-                        val acc = runCatching { api.getAccount() }.getOrNull()
+                        val acc = runCatching { api.getAccount() }.rethrowCancellation().getOrNull()
                         acc?.body()?.id ?: 0
                     }
                 runCatching { api.getReadingHistory(userId = userIdToUse) }
+                    .rethrowCancellation()
                     .onSuccess { resp ->
                         if (resp.isSuccessful) {
                             history.value = resp.body().orEmpty()
@@ -196,13 +215,14 @@ fun HistoryScreen(appPreferences: AppPreferences) {
                                     modifier = Modifier.padding(vertical = 4.dp),
                                 )
                             }
-                            items(
+                            // A series can have several sessions in one day, so the position keeps keys unique.
+                            itemsIndexed(
                                 itemsForDay,
-                                key = { item ->
+                                key = { index, item ->
                                     val seriesKey = item.seriesId?.toString() ?: item.seriesName.hashCode().toString()
-                                    "row-$dayKey-$seriesKey"
+                                    "row-$dayKey-$seriesKey-$index"
                                 },
-                            ) { item ->
+                            ) { _, item ->
                                 HistoryRow(
                                     item = item,
                                     config = config,

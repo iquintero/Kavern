@@ -290,6 +290,8 @@ interface KavitaApi {
         @Query("PageNumber") pageNumber: Int = 1,
         @Query("PageSize") pageSize: Int = 100,
         @Query("TimeZoneId") timeZoneId: String? = null,
+        // The server only matches activity in the libraries listed here, so an empty list returns nothing.
+        @Query("Libraries") libraries: List<Int> = emptyList(),
     ): Response<List<com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto>>
 
     @GET("api/Stats/user/reading-history")
