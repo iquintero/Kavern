@@ -87,7 +87,6 @@ import com.iquintero.kavern.domain.repository.AuthRepository
 import com.iquintero.kavern.domain.repository.CollectionsRepository
 import com.iquintero.kavern.domain.repository.LibraryRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
-import com.iquintero.kavern.ui.browse.BrowseScreen
 import com.iquintero.kavern.ui.download.DownloadQueueScreen
 import com.iquintero.kavern.ui.download.DownloadQueueViewModel
 import com.iquintero.kavern.ui.download.DownloadQueueViewModelFactory
@@ -521,7 +520,9 @@ fun KavernApp(
                             )
                         }
                         composable(
-                            route = "${MainScreen.LibraryV2.route}?collectionId={collectionId}&collectionName={collectionName}",
+                            route =
+                                "${MainScreen.LibraryV2.route}?collectionId={collectionId}&collectionName={collectionName}" +
+                                    "&genreId={genreId}&tagId={tagId}&genreName={genreName}&tagName={tagName}",
                             arguments =
                                 listOf(
                                     navArgument("collectionId") {
@@ -532,35 +533,6 @@ fun KavernApp(
                                         type = NavType.StringType
                                         defaultValue = ""
                                     },
-                                ),
-                        ) {
-                            val collectionIdArg = it.arguments?.getInt("collectionId")?.takeIf { id -> id >= 0 }
-                            val collectionNameArg = it.arguments?.getString("collectionName")?.takeIf { name -> name.isNotBlank() }
-                            LibraryV2Screen(
-                                libraryRepository = libraryRepository,
-                                seriesRepository = seriesRepository,
-                                collectionsRepository = collectionsRepository,
-                                readingListRepository = readingListRepository,
-                                personRepository = personRepository,
-                                cacheManager = cacheManager,
-                                appPreferences = appPreferences,
-                                onOpenSeries = { seriesId ->
-                                    navController.navigate("series/$seriesId")
-                                },
-                                onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
-                                initialCollectionId = collectionIdArg,
-                                initialCollectionName = collectionNameArg,
-                            )
-                        }
-                        composable(MainScreen.History.route) {
-                            HistoryScreen(
-                                appPreferences = appPreferences,
-                            )
-                        }
-                        composable(
-                            route = "${MainScreen.Browse.route}?genreId={genreId}&tagId={tagId}&genreName={genreName}&tagName={tagName}",
-                            arguments =
-                                listOf(
                                     navArgument("genreId") {
                                         type = NavType.IntType
                                         defaultValue = -1
@@ -578,22 +550,36 @@ fun KavernApp(
                                         defaultValue = ""
                                     },
                                 ),
-                        ) { entry ->
-                            val genreIdArg = entry.arguments?.getInt("genreId")?.takeIf { it >= 0 }
-                            val tagIdArg = entry.arguments?.getInt("tagId")?.takeIf { it >= 0 }
-                            val genreNameArg = entry.arguments?.getString("genreName")?.takeIf { it.isNotBlank() }
-                            val tagNameArg = entry.arguments?.getString("tagName")?.takeIf { it.isNotBlank() }
-                            BrowseScreen(
+                        ) {
+                            val collectionIdArg = it.arguments?.getInt("collectionId")?.takeIf { id -> id >= 0 }
+                            val collectionNameArg = it.arguments?.getString("collectionName")?.takeIf { name -> name.isNotBlank() }
+                            val genreIdArg = it.arguments?.getInt("genreId")?.takeIf { id -> id >= 0 }
+                            val tagIdArg = it.arguments?.getInt("tagId")?.takeIf { id -> id >= 0 }
+                            val genreNameArg = it.arguments?.getString("genreName")?.takeIf { name -> name.isNotBlank() }
+                            val tagNameArg = it.arguments?.getString("tagName")?.takeIf { name -> name.isNotBlank() }
+                            LibraryV2Screen(
+                                libraryRepository = libraryRepository,
                                 seriesRepository = seriesRepository,
-                                appPreferences = appPreferences,
+                                collectionsRepository = collectionsRepository,
+                                readingListRepository = readingListRepository,
+                                personRepository = personRepository,
                                 cacheManager = cacheManager,
+                                appPreferences = appPreferences,
                                 onOpenSeries = { seriesId ->
                                     navController.navigate("series/$seriesId")
                                 },
+                                onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
+                                initialCollectionId = collectionIdArg,
+                                initialCollectionName = collectionNameArg,
                                 initialGenreId = genreIdArg,
                                 initialGenreName = genreNameArg,
                                 initialTagId = tagIdArg,
                                 initialTagName = tagNameArg,
+                            )
+                        }
+                        composable(MainScreen.History.route) {
+                            HistoryScreen(
+                                appPreferences = appPreferences,
                             )
                         }
                         composable(MainScreen.Downloads.route) {
@@ -649,11 +635,11 @@ fun KavernApp(
                                 },
                                 onOpenBrowseGenre = { id, name ->
                                     val encoded = Uri.encode(name)
-                                    navController.navigate("${MainScreen.Browse.route}?genreId=$id&genreName=$encoded")
+                                    navController.navigate("${MainScreen.LibraryV2.route}?genreId=$id&genreName=$encoded")
                                 },
                                 onOpenBrowseTag = { id, name ->
                                     val encoded = Uri.encode(name)
-                                    navController.navigate("${MainScreen.Browse.route}?tagId=$id&tagName=$encoded")
+                                    navController.navigate("${MainScreen.LibraryV2.route}?tagId=$id&tagName=$encoded")
                                 },
                                 onOpenCollection = { id, name ->
                                     val encoded = Uri.encode(name)

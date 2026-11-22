@@ -620,4 +620,9 @@
     <string name="home_want_to_read">Want to read</string>
     <string name="home_recently_added">Recently added</string>
     <string name="home_empty">Nothing to show yet. Start a book or add one to Want to Read.</string>
+    <string name="library_section_series">Series</string>
+    <string name="library_section_collections">Collections</string>
+    <string name="library_section_reading_lists">Reading lists</string>
+    <string name="library_section_people">People</string>
+    <string name="library_all_libraries">All</string>
 </resources>

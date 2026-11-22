@@ -52,31 +52,19 @@ class LibraryV2ViewModel(
     private val downloadDao =
         KavernDatabase.getInstance(appPreferences.appContext, appPreferences.profile).downloadV2Dao()
     private var lastDownloadedItems: List<DownloadedItemV2Entity> = emptyList()
-    private var homeLoadJob: Job? = null
 
     init {
         loadLibraries()
-        loadHome()
         observeDownloadStates()
     }
 
     fun selectSection(section: LibraryV2Section) {
-        if (section == LibraryV2Section.Home) {
-            goHome()
-            return
-        }
         _state.update { it.copy(selectedSection = section) }
-        if (section == LibraryV2Section.WantToRead) {
-            ensureWantToRead()
-        }
-        if (section == LibraryV2Section.Collections) {
-            ensureCollections()
-        }
-        if (section == LibraryV2Section.ReadingList) {
-            ensureReadingLists()
-        }
-        if (section == LibraryV2Section.BrowsePeople) {
-            ensurePeople()
+        when (section) {
+            LibraryV2Section.Collections -> ensureCollections()
+            LibraryV2Section.ReadingLists -> ensureReadingLists()
+            LibraryV2Section.People -> ensurePeople()
+            LibraryV2Section.Series -> Unit
         }
     }
 
@@ -100,72 +88,15 @@ class LibraryV2ViewModel(
         }
     }
 
+    /** Steps out of an opened collection; false when there is nothing to go back to. */
     fun handleBack(): Boolean {
         val current = _state.value
-        return when {
-            current.selectedSection == LibraryV2Section.Collections && current.selectedCollectionId != null -> {
-                selectCollection(null)
-                true
-            }
-
-            current.selectedSection != LibraryV2Section.Home -> {
-                goHome()
-                true
-            }
-
-            else -> false
+        return if (current.selectedSection == LibraryV2Section.Collections && current.selectedCollectionId != null) {
+            selectCollection(null)
+            true
+        } else {
+            false
         }
-    }
-
-    fun goHome() {
-        _state.update {
-            clearLibrarySelection(clearCollectionSelection(it.copy(selectedSection = LibraryV2Section.Home)))
-        }
-        loadHome()
-    }
-
-    fun selectLibrary(library: Library) {
-        _state.update {
-            it.copy(
-                selectedSection = LibraryV2Section.LibrarySeries,
-                selectedLibraryId = library.id,
-                selectedLibraryName = library.name,
-                librarySeries = emptyList(),
-                librarySeriesError = null,
-                librarySeriesPage = 1,
-                canLoadMoreLibrarySeries = true,
-                libraryAccessDenied = false,
-            )
-        }
-        viewModelScope.launch {
-            val accessResult = runCatching { libraryRepository.hasLibraryAccess(library.id) }
-            val hasAccess = accessResult.getOrDefault(false)
-            if (!hasAccess) {
-                _state.update {
-                    it.copy(
-                        libraryAccessDenied = true,
-                        isLibrarySeriesLoading = false,
-                        librarySeriesError = if (accessResult.isFailure) accessResult.exceptionOrNull()?.message else null,
-                    )
-                }
-                return@launch
-            }
-            loadLibrarySeries(pageNumber = 1, reset = true)
-        }
-    }
-
-    fun loadMoreLibrarySeries() {
-        val current = _state.value
-        if (
-            current.isLibrarySeriesLoading ||
-            current.isLibrarySeriesLoadingMore ||
-            !current.canLoadMoreLibrarySeries ||
-            current.selectedLibraryId == null
-        ) {
-            return
-        }
-        val nextPage = current.librarySeriesPage + 1
-        loadLibrarySeries(pageNumber = nextPage, reset = false)
     }
 
     fun selectCollection(collection: Collection?) {
@@ -210,147 +141,6 @@ class LibraryV2ViewModel(
                     error = result.exceptionOrNull()?.message,
                 )
             }
-        }
-    }
-
-    fun retryHome() = loadHome(forceRefresh = true)
-
-    private fun loadHome(forceRefresh: Boolean = false) {
-        if (homeLoadJob?.isActive == true) return
-        homeLoadJob =
-            viewModelScope.launch {
-                _state.update { it.copy(isHomeLoading = true, homeLoadFailed = false) }
-                if (_state.value.homeSeries.isEmpty()) {
-                    val cached = cacheManager.getCachedLibraryV2SeriesList(LibraryV2CacheKeys.HOME_LAST_READ, "")
-                    if (cached.isNotEmpty()) {
-                        _state.update { it.copy(homeSeries = cached) }
-                        updateDownloadStates(lastDownloadedItems)
-                    }
-                }
-                val isOnline = NetworkUtils.isOnline(appPreferences.appContext)
-                logCacheDecision("home", "online=$isOnline refresh=$forceRefresh cached=${_state.value.homeSeries.size}")
-                if (!isOnline) {
-                    _state.update { it.copy(isHomeLoading = false, homeLoadFailed = it.homeSeries.isEmpty()) }
-                    return@launch
-                }
-                val fresh = fetchHomePage(1)
-                if (fresh == null) {
-                    _state.update { it.copy(isHomeLoading = false, homeLoadFailed = it.homeSeries.isEmpty()) }
-                    return@launch
-                }
-                cacheManager.cacheLibraryV2SeriesList(LibraryV2CacheKeys.HOME_LAST_READ, "", fresh)
-                _state.update {
-                    it.copy(
-                        homeSeries = fresh,
-                        isHomeLoading = false,
-                        homeSeriesPage = 1,
-                        canLoadMoreHomeSeries = fresh.size == HOME_PAGE_SIZE,
-                    )
-                }
-                updateDownloadStates(lastDownloadedItems)
-            }
-    }
-
-    fun loadMoreHome() {
-        val current = _state.value
-        if (current.isHomeLoading || current.isHomeLoadingMore || !current.canLoadMoreHomeSeries || current.homeSeries.isEmpty()) return
-        viewModelScope.launch {
-            _state.update { it.copy(isHomeLoadingMore = true) }
-            val nextPage = current.homeSeriesPage + 1
-            val page = fetchHomePage(nextPage)
-            _state.update {
-                it.copy(
-                    homeSeries = if (page == null) it.homeSeries else it.homeSeries + page,
-                    isHomeLoadingMore = false,
-                    homeSeriesPage = if (page.isNullOrEmpty()) it.homeSeriesPage else nextPage,
-                    canLoadMoreHomeSeries = page != null && page.size == HOME_PAGE_SIZE,
-                )
-            }
-            updateDownloadStates(lastDownloadedItems)
-        }
-    }
-
-    /** One page of every series, most recently read first; null when it could not be loaded. */
-    private suspend fun fetchHomePage(pageNumber: Int): List<Series>? =
-        try {
-            seriesRepository.getAllSeries(KavitaSortField.LastRead, ascending = false, pageNumber, HOME_PAGE_SIZE)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            LoggingManager.w("LibraryHome", "Could not load page $pageNumber (${e.javaClass.simpleName})")
-            null
-        }
-
-    private fun ensureWantToRead() {
-        val current = _state.value
-        if (current.isWantToReadLoading) return
-        viewModelScope.launch {
-            _state.update { it.copy(isWantToReadLoading = true, wantToReadError = null) }
-            val alwaysRefresh = appPreferences.cacheAlwaysRefreshFlow.first()
-            val staleMinutes = appPreferences.cacheStaleMinutesFlow.first()
-            val isOnline = NetworkUtils.isOnline(appPreferences.appContext)
-            val cached =
-                cacheManager.getCachedLibraryV2SeriesList(
-                    LibraryV2CacheKeys.WANT_TO_READ,
-                    "",
-                )
-            val cachedUpdatedAt =
-                cacheManager.getLibraryV2SeriesListUpdatedAt(
-                    LibraryV2CacheKeys.WANT_TO_READ,
-                    "",
-                )
-            val hasStateData = current.wantToRead.isNotEmpty()
-            val isStale =
-                cachedUpdatedAt == null ||
-                    (System.currentTimeMillis() - cachedUpdatedAt) > staleMinutes * 60L * 1000L
-            val hasAnyData = cached.isNotEmpty() || hasStateData
-            logCacheDecision(
-                "want",
-                "online=$isOnline cache=${cached.size} hasState=$hasStateData stale=$isStale refresh=$alwaysRefresh",
-            )
-            if (hasAnyData) {
-                if (cached.isNotEmpty() && !hasStateData) {
-                    _state.update { it.copy(wantToRead = cached, isWantToReadLoading = true, wantToReadError = null) }
-                }
-                if (!isOnline || (!alwaysRefresh && !isStale)) {
-                    logCacheDecision("want", "using cached data only")
-                    maybeShowDebugToast(R.string.debug_cache_use)
-                    _state.update { it.copy(isWantToReadLoading = false) }
-                    updateDownloadStates(lastDownloadedItems)
-                    return@launch
-                }
-                val message =
-                    if (alwaysRefresh) {
-                        R.string.debug_cache_force_online
-                    } else {
-                        R.string.debug_cache_stale_reload
-                    }
-                maybeShowDebugToast(message)
-            } else {
-                logCacheDecision("want", if (isOnline) "cache miss; fetch fresh" else "cache miss; offline")
-                val message =
-                    if (isOnline) {
-                        R.string.debug_cache_use_fresh
-                    } else {
-                        R.string.debug_cache_no_cache
-                    }
-                maybeShowDebugToast(message)
-            }
-            val result = runCatching { seriesRepository.getWantToReadSeries(1, 50) }
-            _state.update {
-                it.copy(
-                    wantToRead = result.getOrDefault(emptyList()),
-                    isWantToReadLoading = false,
-                    wantToReadError = result.exceptionOrNull()?.message,
-                )
-            }
-            updateDownloadStates(lastDownloadedItems)
-            cacheManager.cacheLibraryV2SeriesList(
-                LibraryV2CacheKeys.WANT_TO_READ,
-                "",
-                result.getOrDefault(emptyList()),
-            )
-            logCacheDecision("want", "cached list stored size=${result.getOrDefault(emptyList()).size}")
         }
     }
 
@@ -564,68 +354,6 @@ class LibraryV2ViewModel(
         }
     }
 
-    private fun loadLibrarySeries(
-        pageNumber: Int,
-        reset: Boolean,
-    ) {
-        val libraryId = _state.value.selectedLibraryId ?: return
-        viewModelScope.launch {
-            if (reset) {
-                _state.update { it.copy(isLibrarySeriesLoading = true, librarySeriesError = null) }
-                val message =
-                    if (NetworkUtils.isOnline(appPreferences.appContext)) {
-                        R.string.debug_cache_use_fresh
-                    } else {
-                        R.string.debug_cache_no_cache
-                    }
-                maybeShowDebugToast(message)
-            } else {
-                _state.update { it.copy(isLibrarySeriesLoadingMore = true) }
-            }
-            val result = runCatching { seriesRepository.getSeriesForLibrary(libraryId, pageNumber, 25) }
-            val pageItems = result.getOrDefault(emptyList())
-            _state.update {
-                val merged =
-                    if (reset) {
-                        pageItems
-                    } else {
-                        it.librarySeries + pageItems
-                    }
-                it.copy(
-                    librarySeries = merged,
-                    isLibrarySeriesLoading = false,
-                    isLibrarySeriesLoadingMore = false,
-                    librarySeriesError = result.exceptionOrNull()?.message,
-                    librarySeriesPage = if (pageItems.isNotEmpty()) pageNumber else it.librarySeriesPage,
-                    canLoadMoreLibrarySeries = pageItems.size == 25,
-                )
-            }
-            updateDownloadStates(lastDownloadedItems)
-        }
-    }
-
-    private fun clearCollectionSelection(state: LibraryV2UiState): LibraryV2UiState =
-        state.copy(
-            selectedCollectionId = null,
-            selectedCollectionName = null,
-            collectionSeries = emptyList(),
-            isCollectionSeriesLoading = false,
-            collectionSeriesError = null,
-        )
-
-    private fun clearLibrarySelection(state: LibraryV2UiState): LibraryV2UiState =
-        state.copy(
-            selectedLibraryId = null,
-            selectedLibraryName = null,
-            librarySeries = emptyList(),
-            isLibrarySeriesLoading = false,
-            isLibrarySeriesLoadingMore = false,
-            librarySeriesError = null,
-            librarySeriesPage = 1,
-            canLoadMoreLibrarySeries = true,
-            libraryAccessDenied = false,
-        )
-
     fun loadMorePeople() {
         val current = _state.value
         if (current.isPeopleLoading || current.isPeopleLoadingMore || !current.canLoadMorePeople) return
@@ -783,14 +511,12 @@ class LibraryV2ViewModel(
 
     private suspend fun updateDownloadStates(items: List<DownloadedItemV2Entity>) {
         val state = _state.value
-        val shown = state.homeSeries + state.wantToRead + state.collectionSeries + state.librarySeries
+        val shown = state.collectionSeries
         val states = resolveSeriesDownloadStates(shown, items, cacheManager)
         _state.update { it.copy(downloadStates = states) }
     }
 
     companion object {
-        private const val HOME_PAGE_SIZE = 25
-
         fun provideFactory(
             libraryRepository: LibraryRepository,
             seriesRepository: SeriesRepository,

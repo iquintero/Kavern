@@ -1,5 +1,7 @@
 package com.iquintero.kavern.ui.library
 
+import androidx.annotation.StringRes
+import com.iquintero.kavern.R
 import com.iquintero.kavern.domain.model.Collection
 import com.iquintero.kavern.domain.model.Library
 import com.iquintero.kavern.domain.model.Person
@@ -15,29 +17,19 @@ fun seriesProgress(
     return ((pagesRead ?: 0).toFloat() / total).coerceIn(0f, 1f)
 }
 
-enum class LibraryV2Section {
-    Home,
-    WantToRead,
-    Collections,
-    ReadingList,
-    BrowsePeople,
-    LibrarySeries,
+enum class LibraryV2Section(
+    @StringRes val labelRes: Int,
+) {
+    Series(R.string.library_section_series),
+    Collections(R.string.library_section_collections),
+    ReadingLists(R.string.library_section_reading_lists),
+    People(R.string.library_section_people),
 }
 
 data class LibraryV2UiState(
     val libraries: List<Library> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null,
-    /** Every series, most recently read first. */
-    val homeSeries: List<com.iquintero.kavern.domain.model.Series> = emptyList(),
-    val isHomeLoading: Boolean = true,
-    val isHomeLoadingMore: Boolean = false,
-    val homeLoadFailed: Boolean = false,
-    val homeSeriesPage: Int = 1,
-    val canLoadMoreHomeSeries: Boolean = true,
-    val wantToRead: List<com.iquintero.kavern.domain.model.Series> = emptyList(),
-    val isWantToReadLoading: Boolean = false,
-    val wantToReadError: String? = null,
     val collections: List<Collection> = emptyList(),
     val isCollectionsLoading: Boolean = false,
     val collectionsError: String? = null,
@@ -55,15 +47,6 @@ data class LibraryV2UiState(
     val peoplePage: Int = 1,
     val canLoadMorePeople: Boolean = true,
     val isPeopleLoadingMore: Boolean = false,
-    val selectedLibraryId: Int? = null,
-    val selectedLibraryName: String? = null,
-    val librarySeries: List<com.iquintero.kavern.domain.model.Series> = emptyList(),
-    val isLibrarySeriesLoading: Boolean = false,
-    val isLibrarySeriesLoadingMore: Boolean = false,
-    val librarySeriesError: String? = null,
-    val librarySeriesPage: Int = 1,
-    val canLoadMoreLibrarySeries: Boolean = true,
-    val libraryAccessDenied: Boolean = false,
-    val selectedSection: LibraryV2Section = LibraryV2Section.Home,
+    val selectedSection: LibraryV2Section = LibraryV2Section.Series,
     val downloadStates: Map<Int, DownloadState> = emptyMap(),
 )

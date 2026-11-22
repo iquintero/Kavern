@@ -110,11 +110,11 @@ fun BrowseScreen(
     initialGenreName: String? = null,
     initialTagId: Int? = null,
     initialTagName: String? = null,
-) {
-    val viewModel: BrowseViewModel =
+    viewModel: BrowseViewModel =
         viewModel(
             factory = BrowseViewModel.provideFactory(seriesRepository, appPreferences, cacheManager),
-        )
+        ),
+) {
     val uiState by viewModel.state.collectAsState()
     var presetApplied by remember { mutableStateOf(false) }
 

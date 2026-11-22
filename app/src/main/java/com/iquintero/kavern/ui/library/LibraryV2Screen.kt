@@ -42,12 +42,15 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -82,11 +85,15 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
+import com.iquintero.kavern.domain.model.Library
+import com.iquintero.kavern.domain.model.filter.TriState
 import com.iquintero.kavern.domain.repository.CollectionsRepository
 import com.iquintero.kavern.domain.repository.LibraryRepository
 import com.iquintero.kavern.domain.repository.PersonRepository
 import com.iquintero.kavern.domain.repository.ReadingListRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
+import com.iquintero.kavern.ui.browse.BrowseScreen
+import com.iquintero.kavern.ui.browse.BrowseViewModel
 import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
 import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
 import com.iquintero.kavern.ui.common.CoverProgressBar
@@ -116,6 +123,10 @@ fun LibraryV2Screen(
     onOpenSettings: () -> Unit = {},
     initialCollectionId: Int? = null,
     initialCollectionName: String? = null,
+    initialGenreId: Int? = null,
+    initialGenreName: String? = null,
+    initialTagId: Int? = null,
+    initialTagName: String? = null,
 ) {
     val viewModel: LibraryV2ViewModel =
         viewModel(
@@ -130,7 +141,10 @@ fun LibraryV2Screen(
                     appPreferences,
                 ),
         )
+    val browseViewModel: BrowseViewModel =
+        viewModel(factory = BrowseViewModel.provideFactory(seriesRepository, appPreferences, cacheManager))
     val uiState by viewModel.state.collectAsState()
+    val browseState by browseViewModel.state.collectAsState()
     var presetApplied by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialCollectionId) {
@@ -140,323 +154,142 @@ fun LibraryV2Screen(
             presetApplied = true
         }
     }
-    val context = LocalContext.current
     val config by appPreferences.configFlow.collectAsState(
         initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
     )
     val showDownloadBadges by appPreferences.showDownloadBadgesFlow.collectAsState(initial = true)
     val downloadStates = uiState.downloadStates
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    var drawerWidthPx by remember { mutableIntStateOf(0) }
-    val drawerAlpha by remember(drawerState, drawerWidthPx) {
-        derivedStateOf {
-            val width = drawerWidthPx.toFloat()
-            val offset = drawerState.currentOffset
-            if (width <= 0f || offset.isNaN()) {
-                if (drawerState.isOpen) 1f else 0f
-            } else {
-                ((offset + width) / width).coerceIn(0f, 1f)
-            }
-        }
+    if (uiState.selectedCollectionId != null) {
+        BackHandler { viewModel.handleBack() }
     }
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(0.75f)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .onSizeChanged { drawerWidthPx = it.width }
-                        .alpha(drawerAlpha)
-                        .padding(16.dp)
-                        .verticalScroll(rememberScrollState()),
-            ) {
-                Text(text = "Menu", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(12.dp))
-                DrawerItem(
-                    icon = Icons.Filled.Home,
-                    label = "Home",
-                    selected = uiState.selectedSection == LibraryV2Section.Home,
-                    onClick = {
-                        viewModel.selectSection(LibraryV2Section.Home)
-                        scope.launch { drawerState.close() }
-                    },
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(text = stringResource(R.string.nav_library), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            // The app Scaffold already pads for the status bar.
+            windowInsets = WindowInsets(0),
+            actions = {
+                ServerConnectionIndicator(
+                    connection = rememberServerConnection(),
+                    modifier = Modifier.padding(horizontal = 8.dp),
                 )
-                DrawerItem(
-                    icon = Icons.Filled.BookmarkAdd,
-                    label = "Want To Read",
-                    selected = uiState.selectedSection == LibraryV2Section.WantToRead,
-                    onClick = {
-                        viewModel.selectSection(LibraryV2Section.WantToRead)
-                        scope.launch { drawerState.close() }
-                    },
-                )
-                DrawerItem(
-                    icon = Icons.Filled.CollectionsBookmark,
-                    label = "Collections",
-                    selected = uiState.selectedSection == LibraryV2Section.Collections,
-                    onClick = {
-                        viewModel.selectSection(LibraryV2Section.Collections)
-                        scope.launch { drawerState.close() }
-                    },
-                )
-                DrawerItem(
-                    icon = Icons.AutoMirrored.Filled.MenuBook,
-                    label = "Reading List",
-                    selected = uiState.selectedSection == LibraryV2Section.ReadingList,
-                    onClick = {
-                        viewModel.selectSection(LibraryV2Section.ReadingList)
-                        scope.launch { drawerState.close() }
-                    },
-                )
-                DrawerItem(
-                    icon = Icons.Filled.Bookmarks,
-                    label = "Bookmarks",
-                    onClick = {
-                        android.widget.Toast
-                            .makeText(
-                                context,
-                                "Not implemented yet",
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                    },
-                )
-                DrawerItem(
-                    icon = Icons.AutoMirrored.Filled.LibraryBooks,
-                    label = "All Series",
-                    onClick = {
-                        android.widget.Toast
-                            .makeText(
-                                context,
-                                "Not implemented yet",
-                                android.widget.Toast.LENGTH_SHORT,
-                            ).show()
-                    },
-                )
-                DrawerItem(
-                    icon = Icons.Filled.People,
-                    label = "Browse People",
-                    selected = uiState.selectedSection == LibraryV2Section.BrowsePeople,
-                    onClick = {
-                        viewModel.selectSection(LibraryV2Section.BrowsePeople)
-                        scope.launch { drawerState.close() }
-                    },
-                )
-                HorizontalDivider()
-                when {
-                    uiState.isLoading -> {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
-
-                    uiState.error != null -> {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(text = uiState.error ?: "", style = MaterialTheme.typography.bodyMedium)
-                    }
-
-                    else -> {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        uiState.libraries.forEach { library ->
-                            val label = library.name.ifBlank { "Library ${library.id}" }
-                            DrawerItem(
-                                icon = Icons.Filled.LocalLibrary,
-                                label = label,
-                                selected = uiState.selectedLibraryId == library.id,
-                                onClick = {
-                                    viewModel.selectLibrary(library)
-                                    scope.launch { drawerState.close() }
-                                },
-                            )
-                        }
-                    }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
                 }
-            }
-        },
-    ) {
-        val topTitle =
-            when (uiState.selectedSection) {
-                LibraryV2Section.Home -> "Home"
-                LibraryV2Section.WantToRead -> "Want To Read"
-                LibraryV2Section.Collections -> "Collections"
-                LibraryV2Section.ReadingList -> "Reading List"
-                LibraryV2Section.BrowsePeople -> "Browse People"
-                LibraryV2Section.LibrarySeries -> uiState.selectedLibraryName ?: "Library"
-            }
-        val canHandleBack =
-            uiState.selectedSection != LibraryV2Section.Home || uiState.selectedCollectionId != null
-        if (canHandleBack) {
-            BackHandler { viewModel.handleBack() }
-        }
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            TopAppBar(
-                title = { Text(text = topTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                // The app Scaffold already pads for the status bar.
-                windowInsets = WindowInsets(0),
-                navigationIcon = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.library_open_menu))
-                    }
-                },
-                actions = {
-                    ServerConnectionIndicator(
-                        connection = rememberServerConnection(),
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                    )
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings))
-                    }
-                },
-            )
-            when (uiState.selectedSection) {
-                LibraryV2Section.Home -> {
-                    if (uiState.homeLoadFailed && uiState.homeSeries.isEmpty()) {
-                        Column(
-                            modifier = Modifier.fillMaxSize().padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.library_home_load_failed),
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            TextButton(onClick = viewModel::retryHome) {
-                                Text(stringResource(R.string.download_action_retry))
-                            }
-                        }
-                    } else {
-                        LibrarySeriesGrid(
-                            items = uiState.homeSeries,
-                            isLoading = uiState.isHomeLoading,
-                            isLoadingMore = uiState.isHomeLoadingMore,
-                            error = null,
-                            accessDenied = false,
-                            config = config,
-                            downloadStates = downloadStates,
-                            showDownloadBadges = showDownloadBadges,
-                            onLoadMore = viewModel::loadMoreHome,
-                            onOpenSeries = onOpenSeries,
-                        )
-                    }
-                }
-
-                LibraryV2Section.WantToRead -> {
-                    WantToReadGrid(
-                        items = uiState.wantToRead,
-                        isLoading = uiState.isWantToReadLoading,
-                        error = uiState.wantToReadError,
-                        config = config,
-                        downloadStates = downloadStates,
-                        showDownloadBadges = showDownloadBadges,
-                        onOpenSeries = onOpenSeries,
-                    )
-                }
-
-                LibraryV2Section.Collections -> {
-                    if (uiState.selectedCollectionId != null) {
-                        CollectionSeriesGrid(
-                            title = uiState.selectedCollectionName ?: "Collection",
-                            items = uiState.collectionSeries,
-                            isLoading = uiState.isCollectionSeriesLoading,
-                            error = uiState.collectionSeriesError,
-                            config = config,
-                            downloadStates = downloadStates,
-                            showDownloadBadges = showDownloadBadges,
-                            onBack = { viewModel.selectCollection(null) },
-                            onOpenSeries = onOpenSeries,
-                        )
-                    } else {
-                        CollectionsGrid(
-                            items = uiState.collections,
-                            isLoading = uiState.isCollectionsLoading,
-                            error = uiState.collectionsError,
-                            config = config,
-                            onSelect = { collection -> viewModel.selectCollection(collection) },
-                        )
-                    }
-                }
-                LibraryV2Section.ReadingList -> {
-                    ReadingListGrid(
-                        items = uiState.readingLists,
-                        isLoading = uiState.isReadingListsLoading,
-                        error = uiState.readingListsError,
-                        config = config,
-                    )
-                }
-
-                LibraryV2Section.BrowsePeople -> {
-                    PeopleGrid(
-                        items = uiState.people,
-                        isLoading = uiState.isPeopleLoading,
-                        isLoadingMore = uiState.isPeopleLoadingMore,
-                        error = uiState.peopleError,
-                        config = config,
-                        onLoadMore = { viewModel.loadMorePeople() },
-                    )
-                }
-                LibraryV2Section.LibrarySeries -> {
-                    LibrarySeriesGrid(
-                        items = uiState.librarySeries,
-                        isLoading = uiState.isLibrarySeriesLoading,
-                        isLoadingMore = uiState.isLibrarySeriesLoadingMore,
-                        error = uiState.librarySeriesError,
-                        accessDenied = uiState.libraryAccessDenied,
-                        config = config,
-                        downloadStates = downloadStates,
-                        showDownloadBadges = showDownloadBadges,
-                        onLoadMore = { viewModel.loadMoreLibrarySeries() },
-                        onOpenSeries = onOpenSeries,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DrawerItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    selected: Boolean = false,
-    onClick: (() -> Unit)? = null,
-) {
-    val rowModifier =
-        if (onClick != null) {
-            Modifier
-                .fillMaxWidth()
-                .clickable { onClick() }
-        } else {
-            Modifier.fillMaxWidth()
-        }
-    Row(
-        modifier =
-            rowModifier
-                .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null)
-        Spacer(modifier = Modifier.width(12.dp))
-        val color =
-            if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = color,
+            },
         )
+        PrimaryScrollableTabRow(selectedTabIndex = uiState.selectedSection.ordinal, edgePadding = 0.dp) {
+            LibraryV2Section.entries.forEach { section ->
+                Tab(
+                    selected = uiState.selectedSection == section,
+                    onClick = { viewModel.selectSection(section) },
+                    text = { Text(stringResource(section.labelRes)) },
+                )
+            }
+        }
+        when (uiState.selectedSection) {
+            LibraryV2Section.Series -> {
+                LibraryPicker(
+                    libraries = uiState.libraries,
+                    selectedLibraryId =
+                        browseState.appliedFilter.libraries.entries
+                            .firstOrNull { it.value == TriState.Include }
+                            ?.key,
+                    onSelect = { libraryId ->
+                        browseViewModel.updateDraftFilter {
+                            it.copy(libraries = if (libraryId == null) emptyMap() else mapOf(libraryId to TriState.Include))
+                        }
+                        browseViewModel.applyFilterAndReload()
+                    },
+                )
+                BrowseScreen(
+                    seriesRepository = seriesRepository,
+                    appPreferences = appPreferences,
+                    cacheManager = cacheManager,
+                    onOpenSeries = onOpenSeries,
+                    initialGenreId = initialGenreId,
+                    initialGenreName = initialGenreName,
+                    initialTagId = initialTagId,
+                    initialTagName = initialTagName,
+                    viewModel = browseViewModel,
+                )
+            }
+
+            LibraryV2Section.Collections -> {
+                if (uiState.selectedCollectionId != null) {
+                    CollectionSeriesGrid(
+                        title = uiState.selectedCollectionName ?: "Collection",
+                        items = uiState.collectionSeries,
+                        isLoading = uiState.isCollectionSeriesLoading,
+                        error = uiState.collectionSeriesError,
+                        config = config,
+                        downloadStates = downloadStates,
+                        showDownloadBadges = showDownloadBadges,
+                        onBack = { viewModel.selectCollection(null) },
+                        onOpenSeries = onOpenSeries,
+                    )
+                } else {
+                    CollectionsGrid(
+                        items = uiState.collections,
+                        isLoading = uiState.isCollectionsLoading,
+                        error = uiState.collectionsError,
+                        config = config,
+                        onSelect = { collection -> viewModel.selectCollection(collection) },
+                    )
+                }
+            }
+
+            LibraryV2Section.ReadingLists ->
+                ReadingListGrid(
+                    items = uiState.readingLists,
+                    isLoading = uiState.isReadingListsLoading,
+                    error = uiState.readingListsError,
+                    config = config,
+                )
+
+            LibraryV2Section.People ->
+                PeopleGrid(
+                    items = uiState.people,
+                    isLoading = uiState.isPeopleLoading,
+                    isLoadingMore = uiState.isPeopleLoadingMore,
+                    error = uiState.peopleError,
+                    config = config,
+                    onLoadMore = { viewModel.loadMorePeople() },
+                )
+        }
+    }
+}
+
+/** Narrows the series grid to one library. Hidden when there is nothing to choose between. */
+@Composable
+private fun LibraryPicker(
+    libraries: List<Library>,
+    selectedLibraryId: Int?,
+    onSelect: (Int?) -> Unit,
+) {
+    if (libraries.size < 2) return
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item(key = "all") {
+            FilterChip(
+                selected = selectedLibraryId == null,
+                onClick = { onSelect(null) },
+                label = { Text(stringResource(R.string.library_all_libraries)) },
+            )
+        }
+        rowItems(libraries, key = { it.id }) { library ->
+            FilterChip(
+                selected = selectedLibraryId == library.id,
+                onClick = { onSelect(library.id) },
+                label = { Text(library.name.ifBlank { "Library ${library.id}" }) },
+            )
+        }
     }
 }
 
 @Composable
-private fun WantToReadGrid(
+private fun SeriesCoverGrid(
     items: List<com.iquintero.kavern.domain.model.Series>,
     isLoading: Boolean,
     error: String?,
@@ -650,7 +483,7 @@ private fun CollectionSeriesGrid(
                 modifier = Modifier.clickable { onBack() },
             )
         }
-        WantToReadGrid(
+        SeriesCoverGrid(
             items = items,
             isLoading = isLoading,
             error = error,
@@ -903,115 +736,6 @@ private fun PersonCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun LibrarySeriesGrid(
-    items: List<com.iquintero.kavern.domain.model.Series>,
-    isLoading: Boolean,
-    isLoadingMore: Boolean,
-    error: String?,
-    accessDenied: Boolean,
-    config: AppConfig,
-    downloadStates: Map<Int, DownloadState>,
-    showDownloadBadges: Boolean,
-    onLoadMore: () -> Unit,
-    onOpenSeries: (Int) -> Unit,
-) {
-    val gridState = rememberLazyGridState()
-    LaunchedEffect(gridState) {
-        snapshotFlow {
-            val info = gridState.layoutInfo
-            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val total = info.totalItemsCount
-            lastVisible to total
-        }.collect { (lastVisible, total) ->
-            if (total > 0 && lastVisible >= total - 6) {
-                onLoadMore()
-            }
-        }
-    }
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            when {
-                accessDenied -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.library_no_access),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-
-                isLoading && items.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                error != null && items.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(text = error, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-
-                items.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.general_empty_collection),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-
-                else -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
-                        modifier = Modifier.fillMaxSize(),
-                        state = gridState,
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        gridItems(items, key = { it.id }) { series ->
-                            SeriesCoverCard(
-                                series = series,
-                                config = config,
-                                downloadState = downloadStates[series.id] ?: DownloadState.None,
-                                showDownloadBadges = showDownloadBadges,
-                                onOpenSeries = onOpenSeries,
-                            )
-                        }
-                        if (isLoadingMore) {
-                            item(span = { GridItemSpan(maxLineSpan) }) {
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 12.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
