@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Kavern</string>
+    <string name="nav_home">Home</string>
     <string name="nav_library">Library</string>
     <string name="nav_history">History</string>
     <string name="nav_browse">Browse</string>
@@ -611,4 +612,12 @@
     <string name="server_status_offline_mode">Offline mode</string>
     <string name="server_status_no_network">No connection</string>
     <string name="server_status_unreachable">Server unreachable</string>
+    <string name="home_refresh">Refresh</string>
+    <string name="home_continue_reading">Continue reading</string>
+    <string name="home_resume">Resume</string>
+    <string name="home_percent_read">%1$d%% read</string>
+    <string name="home_in_progress">In progress</string>
+    <string name="home_want_to_read">Want to read</string>
+    <string name="home_recently_added">Recently added</string>
+    <string name="home_empty">Nothing to show yet. Start a book or add one to Want to Read.</string>
 </resources>

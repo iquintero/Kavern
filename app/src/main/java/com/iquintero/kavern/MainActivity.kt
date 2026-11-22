@@ -92,6 +92,7 @@ import com.iquintero.kavern.ui.download.DownloadQueueScreen
 import com.iquintero.kavern.ui.download.DownloadQueueViewModel
 import com.iquintero.kavern.ui.download.DownloadQueueViewModelFactory
 import com.iquintero.kavern.ui.history.HistoryScreen
+import com.iquintero.kavern.ui.home.HomeScreen
 import com.iquintero.kavern.ui.library.LibraryV2Screen
 import com.iquintero.kavern.ui.navigation.MainScreen
 import com.iquintero.kavern.ui.reader.model.ReaderReturn
@@ -502,7 +503,7 @@ fun KavernApp(
                     }
                     NavHost(
                         navController = navController,
-                        startDestination = MainScreen.LibraryV2.route,
+                        startDestination = MainScreen.Home.route,
                         modifier = Modifier.weight(1f),
                         // Navigation's own cross-fade, switched off for e-ink displays.
                         enterTransition = { if (einkMode) EnterTransition.None else fadeIn(tween(SCREEN_FADE_MS)) },
@@ -510,6 +511,15 @@ fun KavernApp(
                         popEnterTransition = { if (einkMode) EnterTransition.None else fadeIn(tween(SCREEN_FADE_MS)) },
                         popExitTransition = { if (einkMode) ExitTransition.None else fadeOut(tween(SCREEN_FADE_MS)) },
                     ) {
+                        composable(MainScreen.Home.route) {
+                            HomeScreen(
+                                seriesRepository = seriesRepository,
+                                cacheManager = cacheManager,
+                                appPreferences = appPreferences,
+                                onOpenSeries = { seriesId -> navController.navigate("series/$seriesId") },
+                                onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
+                            )
+                        }
                         composable(
                             route = "${MainScreen.LibraryV2.route}?collectionId={collectionId}&collectionName={collectionName}",
                             arguments =
