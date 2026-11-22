@@ -12,13 +12,10 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep line numbers so release crash traces can be read (and retraced with the build's mapping file).
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
 # Tink (via androidx.security) references annotations that are not on the classpath.
 -dontwarn com.google.errorprone.annotations.**
 

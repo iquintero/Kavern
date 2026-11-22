@@ -40,6 +40,10 @@ All notable changes to this project will be documented here.
 - Paged EPUB reading no longer skips text between pages or lets a finger drag the page, and code blocks wrap instead of running off the screen.
 - A request cancelled by leaving a screen is no longer shown as an error on the Reader, Library, Browse, Series and History screens.
 
+### Changed
+
+- Android Auto Backup is turned off, so the server URL and settings are no longer copied to Google backups (credentials could not be restored from one anyway).
+
 ## v0.3.2-beta.1
 
 If you're updating from v0.3.2-beta or older, use your browser to download the APK from [GitHub Releases](https://github.com/dom-53/Inkita/releases). Then open the downloaded file to install it.
