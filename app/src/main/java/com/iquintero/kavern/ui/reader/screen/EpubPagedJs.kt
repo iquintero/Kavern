@@ -13,6 +13,24 @@ import org.json.JSONObject
 internal const val PAGED_BRIDGE_NAME = "KavernPaged"
 
 /**
+ * Extra CSS for paged mode: code lines wrap instead of being cut off at the screen edge, because paged mode cannot
+ * scroll sideways.
+ */
+internal fun pagedContentCss(paged: Boolean): String =
+    if (paged) {
+        """
+        pre {
+            white-space: pre-wrap !important;
+            overflow-wrap: anywhere !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        """.trimIndent()
+    } else {
+        ""
+    }
+
+/**
  * Installs `window.__ik`. Idempotent; safe to run on every document load.
  *
  * Page numbers are 0-based. The bridge object [PAGED_BRIDGE_NAME] receives `onPage(current, total)`.
@@ -30,7 +48,37 @@ internal val PAGED_RUNTIME_JS =
         var timer = null;
         var busy = false;
 
-        function viewHeight() { return Math.max(1, window.innerHeight); }
+        // The height the reader really shows. The app reports the WebView's own height; the browser's innerHeight is
+        // only a fallback, because it can be larger than the visible area, which would put the page's last lines
+        // out of sight and make every page skip text.
+        var forcedHeight = 0;
+        function viewHeight() { return Math.max(1, forcedHeight || window.innerHeight); }
+        ik.setViewHeight = function(h) {
+            h = Math.round(h);
+            if (h > 0 && h !== forcedHeight) {
+                forcedHeight = h;
+                if (items) schedule();
+            }
+        };
+        ik.diag = function() {
+            return JSON.stringify({
+                inner: window.innerHeight,
+                forced: forcedHeight,
+                client: document.documentElement.clientHeight,
+                visual: window.visualViewport ? window.visualViewport.height : null,
+                dpr: window.devicePixelRatio,
+                count: stops.length,
+                firstStops: stops.slice(0, 4),
+                images: Array.prototype.map.call(document.images, function(img) {
+                    return {
+                        file: (img.getAttribute('src') || '').split('file=').pop().slice(0, 60),
+                        complete: img.complete,
+                        natural: img.naturalWidth + 'x' + img.naturalHeight,
+                        shown: Math.round(img.getBoundingClientRect().width) + 'x' + Math.round(img.getBoundingClientRect().height)
+                    };
+                }).slice(0, 6)
+            });
+        };
         function scrollTop() {
             return window.pageYOffset || document.documentElement.scrollTop || 0;
         }
@@ -357,7 +405,16 @@ internal val PAGED_RUNTIME_JS =
             // The slide animation briefly makes the page wider than the screen; never let that scroll.
             // Touch scrolling is off entirely: pages are turned by script (window.scrollTo still works), and
             // this lets touches reach the WebView so text can be selected.
-            document.documentElement.style.overflow = 'hidden';
+            // Book CSS often gives body a fixed height or its own scrolling ("height: 100%; overflow: auto"). With the
+            // html element no longer scrolling, that body would become a scroll container the finger can drag, and
+            // the page stops would no longer match what is on screen. Make the document the only thing that scrolls.
+            document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+            var fixes = { overflow: 'visible', height: 'auto', 'min-height': '0', 'max-height': 'none' };
+            for (var name in fixes) document.body.style.setProperty(name, fixes[name], 'important');
+            document.documentElement.style.setProperty('height', 'auto', 'important');
+            // Belt and braces: no touch gesture may pan the page, whatever the book's CSS does. Pages are turned by script.
+            document.documentElement.style.setProperty('touch-action', 'none', 'important');
+            document.body.style.setProperty('touch-action', 'none', 'important');
             var imgs = document.images;
             for (var i = 0; i < imgs.length; i++) {
                 if (!imgs[i].complete) imgs[i].addEventListener('load', schedule);

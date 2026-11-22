@@ -7,6 +7,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
+import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.isSameOrigin
 import com.iquintero.kavern.core.storage.AppConfig
 import okhttp3.HttpUrl
@@ -19,6 +20,7 @@ import java.io.IOException
 import java.net.URLConnection
 import java.util.UUID
 
+private const val HTTP_BAD_REQUEST = 400
 private const val READER_ORIGIN = "https://appassets.androidplatform.net"
 private const val FONT_PATH = "/_kavern/fonts/"
 private const val OFFLINE_PATH = "/_kavern/book/"
@@ -181,12 +183,28 @@ internal fun WebView.configureEpubWebView(
     settings.allowFileAccessFromFileURLs = false
     settings.allowUniversalAccessFromFileURLs = false
     settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+    // Blocked requests (content policy, bad URLs) show up here as console errors; keep them for the log export.
+    webChromeClient =
+        object : android.webkit.WebChromeClient() {
+            override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
+                val level = message.messageLevel()
+                if (level == android.webkit.ConsoleMessage.MessageLevel.ERROR || level == android.webkit.ConsoleMessage.MessageLevel.WARNING) {
+                    LoggingManager.w("EpubWebView", "console ${level.name}: ${message.message().take(300)}")
+                }
+                return true
+            }
+        }
     webViewClient =
         object : WebViewClient() {
             override fun shouldInterceptRequest(
                 view: WebView?,
                 request: WebResourceRequest,
-            ): WebResourceResponse = content().intercept(request)
+            ): WebResourceResponse =
+                content().intercept(request).also {
+                    if (it.statusCode >= HTTP_BAD_REQUEST) {
+                        LoggingManager.w("EpubWebView", "Blocked or failed ${request.url.path} (${it.statusCode})")
+                    }
+                }
 
             override fun shouldOverrideUrlLoading(
                 view: WebView?,

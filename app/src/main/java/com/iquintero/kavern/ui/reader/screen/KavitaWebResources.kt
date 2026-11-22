@@ -1,6 +1,7 @@
 package com.iquintero.kavern.ui.reader.screen
 
 import android.webkit.WebResourceResponse
+import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.forKavita
 import com.iquintero.kavern.core.network.isSameOrigin
 import com.iquintero.kavern.core.storage.AppConfig
@@ -31,15 +32,18 @@ internal class KavitaWebResources(
             val response = calls.newCall(request.build()).execute()
             val body = response.body
             if (!response.isSuccessful || body == null) {
+                LoggingManager.w("BookResources", "Could not load ${clean.encodedPath}: HTTP ${response.code}")
                 response.close()
                 null
             } else {
                 val type = body.contentType()
                 WebResourceResponse(type?.let { "${it.type}/${it.subtype}" }, type?.charset()?.name(), body.byteStream())
             }
-        } catch (_: IOException) {
+        } catch (e: IOException) {
+            LoggingManager.w("BookResources", "Could not load ${clean.encodedPath}: ${e.javaClass.simpleName}")
             null
-        } catch (_: GeneralSecurityException) {
+        } catch (e: GeneralSecurityException) {
+            LoggingManager.w("BookResources", "Could not load ${clean.encodedPath}: ${e.javaClass.simpleName}")
             null
         }
     }

@@ -100,6 +100,7 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.network.ServerReachability
@@ -1559,6 +1560,25 @@ private const val PAGED_DRAG_COMMIT = 0.25f
 private const val PAGED_LEAVE_MS = 120L
 private const val PAGED_LOAD_TIMEOUT_MS = 3000L
 private const val PAGED_ENTER_FALLBACK_MS = 3000L
+
+/** Tells the paged script how tall the WebView really is, and logs what the browser thinks, to compare the two. */
+private fun reportPagedHeight(
+    view: WebView,
+    density: Float,
+) {
+    if (view.height <= 0) return
+    val height = view.height / density
+    view.evaluateJavascript("(window.__ik && window.__ik.setViewHeight($height));", null)
+    val log = { label: String ->
+        view.evaluateJavascript("(window.__ik ? window.__ik.diag() : null);") {
+            LoggingManager.d("PagedReader", "$label webView=${view.width}x${view.height}px density=$density heightCss=$height js=$it")
+        }
+    }
+    log("start")
+    view.postDelayed({ log("after 3s") }, PAGED_DIAG_DELAY_MS)
+}
+
+private const val PAGED_DIAG_DELAY_MS = 3000L
 private const val PAGED_ANCHOR_JS = "(window.__ik ? window.__ik.anchorToken() : null);"
 
 @Suppress("LongParameterList")
@@ -1634,6 +1654,7 @@ internal fun ReaderWebView(
         }
         a { color: $textColor !important; }
         """.trimIndent()
+    val pagedMediaCss = pagedContentCss(paged)
     val cssBlock =
         """
         $fontFaceCss
@@ -1647,6 +1668,7 @@ internal fun ReaderWebView(
         }
         a { text-decoration: none; color: inherit; pointer-events: none; }
         h1, h2, h3, h4, h5, h6 { text-decoration: none; }
+        $pagedMediaCss
         body, .book-content {
             font-size: ${fontSize}px !important;
             line-height: $lineHeight !important;
@@ -1829,6 +1851,7 @@ internal fun ReaderWebView(
                             // The view was hidden while loading so the new page can slide in without a flash.
                             val enter = currentEnter
                             view.evaluateJavascript(pagedStartJs(currentScrollId, currentOpenAtEnd, enter, currentAnimatePages)) { view.alpha = 1f }
+                            reportPagedHeight(view, density)
                             consumeEnter()
                             consumeScrollId()
                             consumeOpenAtEnd()
@@ -1879,6 +1902,9 @@ internal fun ReaderWebView(
                         // Always let the WebView see the touches so text can be selected. Paged mode's page is not
                         // scrollable by touch (see ik.start), so it will not move under the finger.
                         false
+                    }
+                    addOnLayoutChangeListener { view, _, top, _, bottom, _, oldTop, _, oldBottom ->
+                        if (currentPaged && bottom - top != oldBottom - oldTop) reportPagedHeight(view as WebView, density)
                     }
                     setOnScrollChangeListener { _, _, _, _, _ ->
                         scrollRunnable?.let { scrollHandler.removeCallbacks(it) }

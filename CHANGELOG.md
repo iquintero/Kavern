@@ -36,6 +36,7 @@ All notable changes to this project will be documented here.
 - Restrict EPUB WebView access to book resources and block scripts embedded in books. Previously downloaded books can still be read offline.
 - Restore EPUB links to footnotes and other anchors on the current page.
 - Make Reader settings scrollable and restore font selection ([#69](https://github.com/dom-53/Inkita/issues/69)).
+- Paged EPUB reading no longer skips text between pages or lets a finger drag the page, and code blocks wrap instead of running off the screen.
 
 ## v0.3.2-beta.1
 
