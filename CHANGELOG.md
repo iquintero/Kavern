@@ -47,6 +47,7 @@ All notable changes to this project will be documented here.
 
 ### Changed
 
+- Light mode is easier on the eyes: the page background is a soft grey instead of near-white, cards and sheets stay brighter so they stand out from it, and dividers and outlines are a little stronger. Text colors are unchanged. Dark mode and the e-ink theme are untouched.
 - The series page is redesigned: a larger cover, title and author with short chips for status, publication, year, time to read and length (placeholders such as "Release year: 0" and "Last read: 1 Jan 0001" are no longer shown), a prominent Continue or Start reading button, and Want to read, Collections, Open in browser and Share as labelled tiles. The Books, Chapters and Specials tabs match the Library's chips.
 - Home is redesigned: the Continue reading card sits in its own container with a progress bar and a play button, the shelves are spaced more evenly, and loading and empty states match the Library's.
 - Library > Series searches as you type, shortly after you stop typing, instead of waiting for the Enter key. The current results stay on screen while the new ones load, and results from an earlier search can no longer appear after a newer one.

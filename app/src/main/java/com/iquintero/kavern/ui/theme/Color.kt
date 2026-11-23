@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 
 /** Kavern's own palette, seeded from the launcher green. Used when dynamic color is off or unavailable. */
 internal val KavernLightColors: ColorScheme =
@@ -168,4 +169,32 @@ internal val EinkDarkColors: ColorScheme =
         surfaceContainer = Color.Black,
         surfaceContainerHigh = Color(0xFF131313),
         surfaceContainerHighest = Color(0xFF262626),
+    )
+
+/** How far the dividers and outlines move toward the stronger outline color. */
+private const val OUTLINE_STRENGTHEN = 0.35f
+
+/** How far the darkest surface moves toward black, so it still stands out from the page. */
+private const val DIM_DEEPEN = 0.08f
+
+/**
+ * Makes a light scheme easier on the eyes. Material's light surfaces are almost white, and the containers
+ * above them are only a few percent darker, so a screen of cards looks like one white sheet.
+ *
+ * The page takes the middle container tone and the cards keep the original bright surface, so cards are
+ * lighter than the page behind them. Every container steps one level down to make room, and the outlines
+ * get a little stronger. Text colors are unchanged, so text contrast stays as high as before.
+ */
+internal fun ColorScheme.softenedForLight(): ColorScheme =
+    copy(
+        background = surfaceContainer,
+        surface = surfaceContainer,
+        surfaceBright = surface,
+        surfaceContainerLowest = surfaceContainerLowest,
+        surfaceContainerLow = surface,
+        surfaceContainer = surfaceContainerHigh,
+        surfaceContainerHigh = surfaceContainerHighest,
+        surfaceContainerHighest = surfaceDim,
+        surfaceDim = lerp(surfaceDim, Color.Black, DIM_DEEPEN),
+        outlineVariant = lerp(outlineVariant, outline, OUTLINE_STRENGTHEN),
     )
