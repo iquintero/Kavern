@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Opening Kavern again from the launcher icon returns to the screen you left instead of starting a second copy of the app on Home. This could happen when an earlier copy had been started some other way, for example by an installer or a development tool.
 - Library > Series no longer loses its search box, filter button and library chips when a search or filter matches nothing, or when loading fails; they stay on screen so you can change or clear it. A failed load now shows a Retry button.
 - Comics (CBZ, CBR and image-folder series) are now listed in Library > Series, including under the Comics library chip. Browse only listed EPUB and PDF series before.
 - Background work (progress sync, downloads, prefetch) failed to start in release builds; WorkManager's input merger is now kept by R8.
