@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -23,6 +24,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Processes queued Download V2 jobs with concurrency limits and retry logic.
@@ -77,6 +79,7 @@ object DownloadQueueRunner {
             )
         }
         val semaphore = Semaphore(maxConcurrent)
+        var failedRounds = 0
         // Runs are serialized, so any RUNNING rows here belong to an interrupted run.
         dao.recoverInterruptedJobs()
         while (true) {
@@ -92,23 +95,38 @@ object DownloadQueueRunner {
             if (LoggingManager.isDebugEnabled()) {
                 LoggingManager.d("DownloadQueueRunner", "Processing pending=${pending.size}")
             }
+            val requeued = AtomicInteger(0)
             coroutineScope {
                 pending.forEach { job ->
                     launch {
                         semaphore.withPermit {
                             if (activeSession.first() == session) {
-                                runJob(context, job, dao, appPreferences, retryEnabled, maxRetries)
+                                if (runJob(context, job, dao, appPreferences, retryEnabled, maxRetries)) {
+                                    requeued.incrementAndGet()
+                                }
                             }
                         }
                     }
                 }
             }
             if (activeSession.first() != session) return
+            // Jobs that failed and were queued for another attempt must not be retried back to back.
+            if (requeued.get() > 0) {
+                failedRounds++
+                val wait = retryBackoffMillis(failedRounds)
+                if (LoggingManager.isDebugEnabled()) {
+                    LoggingManager.d("DownloadQueueRunner", "Retrying ${requeued.get()} job(s) in ${wait}ms")
+                }
+                delay(wait)
+            } else {
+                failedRounds = 0
+            }
         }
     }
 
     /**
      * Execute a single job using its strategy and apply retry rules if needed.
+     * Returns true when the job failed and was put back in the queue for another attempt.
      */
     private suspend fun runJob(
         context: Context,
@@ -117,14 +135,14 @@ object DownloadQueueRunner {
         appPreferences: AppPreferences,
         retryEnabled: Boolean,
         maxRetries: Int,
-    ) {
+    ): Boolean {
         val claimed =
             dao.transitionJob(
                 job.id,
                 listOf(DownloadJobV2Entity.STATUS_PENDING),
                 DownloadJobV2Entity.STATUS_RUNNING,
             )
-        if (claimed == 0) return
+        if (claimed == 0) return false
 
         val strategy = createStrategy(job.strategy, context, dao, appPreferences)
         if (LoggingManager.isDebugEnabled()) {
@@ -146,7 +164,7 @@ object DownloadQueueRunner {
             } catch (e: Exception) {
                 e.message ?: "Download failed"
             }
-        val updated = dao.getJob(job.id) ?: return
+        val updated = dao.getJob(job.id) ?: return false
         if (updated.status == DownloadJobV2Entity.STATUS_RUNNING) {
             dao.updateRunningJob(
                 updated.copy(
@@ -156,8 +174,18 @@ object DownloadQueueRunner {
                 ),
             )
         }
-        if (retryEnabled && strategy != null) dao.retryFailedJob(job.id, maxRetries)
+        return retryEnabled && strategy != null && dao.retryFailedJob(job.id, maxRetries) > 0
     }
+}
+
+private const val RETRY_BASE_DELAY_MS = 2_000L
+private const val RETRY_MAX_DELAY_MS = 60_000L
+
+/** Wait before the next attempt after [failedRounds] consecutive rounds with failures: 2s, 4s, 8s … capped at 60s. */
+internal fun retryBackoffMillis(failedRounds: Int): Long {
+    if (failedRounds <= 0) return 0L
+    val shift = (failedRounds - 1).coerceAtMost(10)
+    return (RETRY_BASE_DELAY_MS shl shift).coerceAtMost(RETRY_MAX_DELAY_MS)
 }
 
 /** The download strategy that handles [format], or null when none does. */
