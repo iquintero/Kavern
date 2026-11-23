@@ -395,7 +395,6 @@
     <string name="volume_detail_continue_label">계속 읽기 %1$s 페이지 %2$d</string>
     <string name="settings_browse_thumbnails_off_title">썸네일 탐색 비활성화</string>
     <string name="settings_browse_thumbnails_off_subtitle">탐색에서 텍스트로만 결과를 표시해 데이터를 절약합니다.</string>
-    <string name="library_empty_reading_list">읽기 목록 없음.</string>
     <string name="update_info_title">중요 업데이트</string>
     <string name="series_detail_mark_volume_read">이 권을 읽음으로 표시</string>
     <string name="series_detail_mark_volume_unread">이 권을 읽지 않음으로 표시</string>

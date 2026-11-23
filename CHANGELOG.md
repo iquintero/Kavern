@@ -44,6 +44,7 @@ All notable changes to this project will be documented here.
 
 ### Changed
 
+- The Library page is redesigned: a rounded search field with a filter button that shows how many filters are on (replacing the floating button), tidier cover tiles with a progress bar on started books, round portraits for people, shimmering placeholders while a tab loads, and clear empty and offline states with a Retry button. The filter sheet opens with Sort and Status showing, and sections with selections show a count.
 - The Downloads page is redesigned: one row per book with its cover, size and age instead of every chapter, a short "In progress" section with pause, cancel and retry on top, a confirmation before removing, and a chapter list on request for series with several chapters downloaded. Tapping a book opens its series page.
 - Android Auto Backup is turned off, so the server URL and settings are no longer copied to Google backups (credentials could not be restored from one anyway).
 - The Series tab (Browse) is now cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.

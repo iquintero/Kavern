@@ -225,7 +225,6 @@
     <!-- History screen -->
     <string name="history_no_history">No history yet.</string>
     <!-- ibrary Screen-->
-    <string name="library_empty_reading_list">No reading lists found.</string>
     <string name="update_info_title">Important update</string>
     <string name="series_detail_mark_volume_read">Mark volume as read</string>
     <string name="series_detail_mark_volume_unread">Mark volume as unread</string>
@@ -554,5 +553,19 @@
     <string name="library_section_collections">Collections</string>
     <string name="library_section_reading_lists">Reading lists</string>
     <string name="library_section_people">People</string>
+    <string name="library_empty_collections">No collections yet.</string>
+    <string name="library_empty_reading_lists">No reading lists yet.</string>
+    <string name="library_empty_people">No people found.</string>
+    <string name="library_empty_collection_series">This collection has no series.</string>
+    <string name="library_collection_fallback">Collection</string>
+    <string name="library_reading_list_fallback">Reading list</string>
+    <string name="library_person_fallback">Unknown</string>
+    <string name="library_fallback_name">Library %1$d</string>
+    <string name="library_back_description">Back to collections</string>
+    <string name="library_coming_soon">Not available yet.</string>
+    <plurals name="library_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="library_all_libraries">All</string>
 </resources>

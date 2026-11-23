@@ -4,18 +4,12 @@ import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,36 +18,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
@@ -62,16 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
@@ -93,8 +79,17 @@ import com.iquintero.kavern.domain.usecase.ReadStatusFilter
 import com.iquintero.kavern.domain.usecase.SpecialFilter
 import com.iquintero.kavern.ui.browse.utils.AgeRatings
 import com.iquintero.kavern.ui.browse.utils.PublicationState
+import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
+import com.iquintero.kavern.ui.common.CoverProgressBar
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateBadge
+import com.iquintero.kavern.ui.common.ShimmerBox
+import com.iquintero.kavern.ui.common.ShimmerBoxAnimated
+import com.iquintero.kavern.ui.common.rememberShimmerProgress
+import com.iquintero.kavern.ui.library.LibraryGridPadding
+import com.iquintero.kavern.ui.library.SearchAndFilterBar
+import com.iquintero.kavern.ui.library.activeFilterCount
+import com.iquintero.kavern.ui.library.seriesProgress
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.File
@@ -110,6 +105,7 @@ fun BrowseScreen(
     initialGenreName: String? = null,
     initialTagId: Int? = null,
     initialTagName: String? = null,
+    libraryChips: @Composable () -> Unit = {},
     viewModel: BrowseViewModel =
         viewModel(
             factory = BrowseViewModel.provideFactory(seriesRepository, appPreferences, cacheManager),
@@ -219,44 +215,22 @@ fun BrowseScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     AnimatedVisibility(visible = !hideSearch) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            OutlinedTextField(
-                                value = uiState.searchInput,
-                                onValueChange = { viewModel.updateSearch(it) },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text(stringResource(R.string.general_search)) },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                trailingIcon = {
-                                    if (uiState.searchInput.text.isNotBlank()) {
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.updateSearch(TextFieldValue(""))
-                                                viewModel.applySearchAndReload()
-                                            },
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Close,
-                                                contentDescription = stringResource(R.string.general_clear),
-                                            )
-                                        }
-                                    }
+                        Column {
+                            SearchAndFilterBar(
+                                query = uiState.searchInput,
+                                onQueryChange = { viewModel.updateSearch(it) },
+                                onSearch = {
+                                    viewModel.applySearchAndReload()
+                                    focusManager.clearFocus()
                                 },
-                                keyboardActions =
-                                    KeyboardActions(
-                                        onSearch = {
-                                            viewModel.applySearchAndReload()
-                                            focusManager.clearFocus()
-                                        },
-                                    ),
+                                onClear = {
+                                    viewModel.updateSearch(TextFieldValue(""))
+                                    viewModel.applySearchAndReload()
+                                },
+                                filterCount = activeFilterCount(uiState.appliedFilter),
+                                onOpenFilters = { showFilterSheet = true },
                             )
+                            libraryChips()
                         }
                     }
 
@@ -282,17 +256,6 @@ fun BrowseScreen(
                     }
                 }
 
-                FloatingActionButton(
-                    onClick = { showFilterSheet = true },
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.general_filter))
-                }
-
                 if (showFilterSheet) {
                     var minFocused by remember { mutableStateOf(false) }
                     var maxFocused by remember { mutableStateOf(false) }
@@ -309,8 +272,8 @@ fun BrowseScreen(
                             },
                         )
                     var combinationExpanded by remember { mutableStateOf(false) }
-                    var sortExpanded by remember { mutableStateOf(false) }
-                    var statusExpanded by remember { mutableStateOf(false) }
+                    var sortExpanded by remember { mutableStateOf(true) }
+                    var statusExpanded by remember { mutableStateOf(true) }
                     var yearExpanded by remember { mutableStateOf(false) }
                     var genresExpanded by remember { mutableStateOf(false) }
                     var tagsExpanded by remember { mutableStateOf(false) }
@@ -368,7 +331,18 @@ fun BrowseScreen(
                                     }
                                 }
 
-                                SectionHeader(stringResource(R.string.browse_filter_sort_by), sortExpanded) { sortExpanded = !sortExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.browse_filter_sort_by),
+                                    sortExpanded,
+                                    count =
+                                        if (uiState.draftFilter.sortField != KavitaSortField.SortName ||
+                                            uiState.draftFilter.sortDesc
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                ) { sortExpanded = !sortExpanded }
                                 if (sortExpanded) {
                                     val sortOptions =
                                         listOf(
@@ -398,7 +372,18 @@ fun BrowseScreen(
                                     }
                                 }
 
-                                SectionHeader(stringResource(R.string.browse_filter_status), statusExpanded) { statusExpanded = !statusExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.browse_filter_status),
+                                    statusExpanded,
+                                    count =
+                                        if (uiState.draftFilter.statusFilter !=
+                                            ReadStatusFilter.Any
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                ) { statusExpanded = !statusExpanded }
                                 if (statusExpanded) {
                                     FlowRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -411,7 +396,18 @@ fun BrowseScreen(
                                     }
                                 }
 
-                                SectionHeader(stringResource(R.string.browse_filter_release_year), yearExpanded) { yearExpanded = !yearExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.browse_filter_release_year),
+                                    yearExpanded,
+                                    count =
+                                        if (uiState.draftFilter.minYear.isNotBlank() ||
+                                            uiState.draftFilter.maxYear.isNotBlank()
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                ) { yearExpanded = !yearExpanded }
                                 if (yearExpanded) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         OutlinedTextField(
@@ -442,39 +438,55 @@ fun BrowseScreen(
                                 }
 
                                 val genreItems = uiState.genresRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
-                                SectionHeader(stringResource(R.string.general_genres), genresExpanded) { genresExpanded = !genresExpanded }
+                                SectionHeader(stringResource(R.string.general_genres), genresExpanded, count = uiState.draftFilter.genres.size) { genresExpanded = !genresExpanded }
                                 if (genresExpanded) {
                                     TriStateRow(genreItems, uiState.draftFilter.genres) { id, st ->
                                         viewModel.setTriStateGenre(id, st)
                                     }
                                 }
                                 val tagItems = uiState.tagsRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
-                                SectionHeader(stringResource(R.string.general_tags), tagsExpanded) { tagsExpanded = !tagsExpanded }
+                                SectionHeader(stringResource(R.string.general_tags), tagsExpanded, count = uiState.draftFilter.tags.size) { tagsExpanded = !tagsExpanded }
                                 if (tagsExpanded) {
                                     TriStateRow(tagItems, uiState.draftFilter.tags) { id, st ->
                                         viewModel.setTriStateTag(id, st)
                                     }
                                 }
                                 val languageItems = uiState.languagesRemote.map { (it.isoCode) to (it.title ?: it.isoCode) }
-                                SectionHeader(stringResource(R.string.general_languages), languagesExpanded) { languagesExpanded = !languagesExpanded }
+                                SectionHeader(stringResource(R.string.general_languages), languagesExpanded, count = uiState.draftFilter.languages.size) {
+                                    languagesExpanded =
+                                        !languagesExpanded
+                                }
                                 if (languagesExpanded) {
                                     TriStateRowString(languageItems, uiState.draftFilter.languages) { code, st ->
                                         viewModel.setTriStateLanguage(code, st)
                                     }
                                 }
-                                SectionHeader(stringResource(R.string.browse_filter_age_rating), ageExpanded) { ageExpanded = !ageExpanded }
+                                SectionHeader(stringResource(R.string.browse_filter_age_rating), ageExpanded, count = uiState.draftFilter.ageRatings.size) {
+                                    ageExpanded =
+                                        !ageExpanded
+                                }
                                 if (ageExpanded) {
                                     TriStateRow(ageRatingsList, uiState.draftFilter.ageRatings) { id, st ->
                                         viewModel.setTriStateAge(id, st)
                                     }
                                 }
-                                SectionHeader(stringResource(R.string.general_publication_status), publicationExpanded) { publicationExpanded = !publicationExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.general_publication_status),
+                                    publicationExpanded,
+                                    count = uiState.draftFilter.publication.count { it.value },
+                                ) {
+                                    publicationExpanded =
+                                        !publicationExpanded
+                                }
                                 if (publicationExpanded) {
                                     MultiToggleRow(publicationItems, uiState.draftFilter.publication) { id, checked ->
                                         viewModel.setPublication(id, checked)
                                     }
                                 }
-                                SectionHeader(stringResource(R.string.general_collections), collectionsExpanded) { collectionsExpanded = !collectionsExpanded }
+                                SectionHeader(stringResource(R.string.general_collections), collectionsExpanded, count = uiState.draftFilter.collections.size) {
+                                    collectionsExpanded =
+                                        !collectionsExpanded
+                                }
                                 if (collectionsExpanded) {
                                     val collectionItems = uiState.collectionsRemote.map { it.id to (it.title ?: it.id.toString()) }
                                     TriStateRow(collectionItems, uiState.draftFilter.collections) { id, st ->
@@ -482,7 +494,10 @@ fun BrowseScreen(
                                     }
                                 }
 
-                                SectionHeader(stringResource(R.string.general_libraries), librariesExpanded) { librariesExpanded = !librariesExpanded }
+                                SectionHeader(stringResource(R.string.general_libraries), librariesExpanded, count = uiState.draftFilter.libraries.size) {
+                                    librariesExpanded =
+                                        !librariesExpanded
+                                }
                                 if (librariesExpanded) {
                                     val libraryItems = uiState.librariesRemote.map { it.id to (it.name ?: it.id.toString()) }
                                     TriStateRow(libraryItems, uiState.draftFilter.libraries) { id, st ->
@@ -492,7 +507,18 @@ fun BrowseScreen(
 
                                 HorizontalDivider()
                                 Text(stringResource(R.string.browse_filter_filter_no_others))
-                                SectionHeader(stringResource(R.string.browse_filter_special_list), specialExpanded) { specialExpanded = !specialExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.browse_filter_special_list),
+                                    specialExpanded,
+                                    count =
+                                        if (uiState.draftFilter.special !=
+                                            null
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                ) { specialExpanded = !specialExpanded }
                                 if (specialExpanded) {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         specialOptions.forEach { option ->
@@ -517,7 +543,18 @@ fun BrowseScreen(
                                     }
                                 }
 
-                                SectionHeader(stringResource(R.string.browse_filter_smart_filters), smartExpanded) { smartExpanded = !smartExpanded }
+                                SectionHeader(
+                                    stringResource(R.string.browse_filter_smart_filters),
+                                    smartExpanded,
+                                    count =
+                                        if (uiState.draftFilter.smartFilterId !=
+                                            null
+                                        ) {
+                                            1
+                                        } else {
+                                            0
+                                        },
+                                ) { smartExpanded = !smartExpanded }
                                 if (smartExpanded) {
                                     FlowRow(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -594,12 +631,12 @@ private fun PlaceholderSeriesGrid(
 ) {
     val shimmerProgress = rememberShimmerProgress(enabled = true)
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
         modifier = Modifier.fillMaxSize(),
         state = gridState,
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = LibraryGridPadding,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(placeholderCount) {
             PlaceholderSeriesTile(
@@ -624,7 +661,7 @@ private fun PlaceholderSeriesTile(
                     Modifier
                         .fillMaxWidth()
                         .aspectRatio(2f / 3f)
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(MaterialTheme.shapes.medium),
                 progress = shimmerProgress,
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -680,12 +717,12 @@ private fun SeriesGrid(
     val context = LocalContext.current
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
         modifier = Modifier.fillMaxSize(),
         state = gridState,
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = LibraryGridPadding,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(seriesList, key = { it.id }) { series ->
             Column(
@@ -713,8 +750,8 @@ private fun SeriesGrid(
                             Modifier
                                 .fillMaxWidth()
                                 .aspectRatio(2f / 3f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                         contentAlignment = Alignment.Center,
                     ) {
                         SubcomposeAsyncImage(
@@ -739,6 +776,10 @@ private fun SeriesGrid(
                                 else -> SubcomposeAsyncImageContent()
                             }
                         }
+                        CoverProgressBar(
+                            progress = seriesProgress(series.pagesRead, series.pages),
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
                         if (showDownloadBadges) {
                             DownloadStateBadge(
                                 state = downloadStates[series.id] ?: DownloadState.None,
@@ -755,10 +796,11 @@ private fun SeriesGrid(
                     series.name,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
-                readingStatusLabel(context, series.readState)?.let { status ->
+                // Unread is the usual state, so only started and finished series get a label.
+                readingStatusLabel(context, series.readState.takeIf { it != ReadState.Unread })?.let { status ->
                     Text(
                         text = status,
                         style =
@@ -785,61 +827,6 @@ private fun SeriesGrid(
             }
         }
     }
-}
-
-@Composable
-private fun ShimmerBox(
-    modifier: Modifier,
-    progress: Float,
-    height: Dp? = null,
-) {
-    val base = MaterialTheme.colorScheme.surfaceVariant
-    val highlight = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-    val brush =
-        Brush.linearGradient(
-            colors = listOf(base, highlight, base),
-            start = Offset(x = -600f + (1200f * progress), y = 0f),
-            end = Offset(x = 0f + (1200f * progress), y = 300f),
-        )
-    val baseModifier =
-        if (height != null) {
-            modifier.height(height)
-        } else {
-            modifier
-        }
-    Box(
-        modifier = baseModifier.background(brush),
-    )
-}
-
-@Composable
-private fun rememberShimmerProgress(enabled: Boolean): Float {
-    if (!enabled) return 0f
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    return transition
-        .animateFloat(
-            initialValue = -1f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1700),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "shimmer_progress",
-        ).value
-}
-
-@Composable
-private fun ShimmerBoxAnimated(
-    modifier: Modifier,
-    height: Dp? = null,
-) {
-    val progress = rememberShimmerProgress(enabled = true)
-    ShimmerBox(
-        modifier = modifier,
-        progress = progress,
-        height = height,
-    )
 }
 
 private fun seriesCoverUrl(
@@ -910,6 +897,7 @@ private fun StatusChip(
 private fun SectionHeader(
     title: String,
     expanded: Boolean,
+    count: Int = 0,
     onToggle: () -> Unit,
 ) {
     Row(
@@ -925,6 +913,18 @@ private fun SectionHeader(
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
         )
+        // How many values are chosen in this section, so a collapsed header still tells you what is on.
+        if (count > 0) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Icon(
             imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
             contentDescription = null,
