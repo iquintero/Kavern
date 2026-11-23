@@ -70,16 +70,20 @@ object LoggingManager {
         tag: String,
         msg: String,
     ) {
-        if (debugEnabled) Log.d(tag, msg)
-        writeToFile("D", tag, msg)
+        if (!debugEnabled && !fileLoggingEnabled) return
+        val text = scrub(msg)
+        if (debugEnabled) Log.d(tag, text)
+        writeToFile("D", tag, text)
     }
 
     fun i(
         tag: String,
         msg: String,
     ) {
-        if (debugEnabled) Log.i(tag, msg)
-        writeToFile("I", tag, msg)
+        if (!debugEnabled && !fileLoggingEnabled) return
+        val text = scrub(msg)
+        if (debugEnabled) Log.i(tag, text)
+        writeToFile("I", tag, text)
     }
 
     fun w(
@@ -87,10 +91,9 @@ object LoggingManager {
         msg: String,
         tr: Throwable? = null,
     ) {
-        if (debugEnabled || errorsEnabled) {
-            if (tr != null) Log.w(tag, msg, tr) else Log.w(tag, msg)
-        }
-        writeToFile("W", tag, msg, tr)
+        val text = scrubbedMessage(msg, tr)
+        if (debugEnabled || errorsEnabled) Log.w(tag, text)
+        writeToFile("W", tag, text)
     }
 
     fun e(
@@ -98,11 +101,16 @@ object LoggingManager {
         msg: String,
         tr: Throwable? = null,
     ) {
-        if (errorsEnabled) {
-            if (tr != null) Log.e(tag, msg, tr) else Log.e(tag, msg)
-        }
-        writeToFile("E", tag, msg, tr)
+        val text = scrubbedMessage(msg, tr)
+        if (errorsEnabled) Log.e(tag, text)
+        writeToFile("E", tag, text)
     }
+
+    /** Message plus stack trace, scrubbed once so logcat and the log files get the same text. */
+    internal fun scrubbedMessage(
+        msg: String,
+        tr: Throwable?,
+    ): String = if (tr == null) scrub(msg) else scrub(msg + "\n" + tr.stackTraceToString())
 
     fun isDebugEnabled(): Boolean = debugEnabled
 
@@ -133,7 +141,6 @@ object LoggingManager {
         level: String,
         tag: String,
         msg: String,
-        tr: Throwable? = null,
     ) {
         if (!fileLoggingEnabled) return
         val dir = logDir ?: return
@@ -149,10 +156,7 @@ object LoggingManager {
                             .append("/")
                             .append(tag)
                             .append(": ")
-                        append(scrub(msg))
-                        if (tr != null) {
-                            append("\n").append(Log.getStackTraceString(tr))
-                        }
+                        append(msg)
                         append("\n")
                     }
                 FileOutputStream(file, true).bufferedWriter().use { it.write(payload) }
@@ -217,7 +221,7 @@ object LoggingManager {
         toDelete.forEach { runCatching { it.delete() } }
     }
 
-    private fun scrub(input: String): String {
+    internal fun scrub(input: String): String {
         var out = input
         val patterns =
             listOf(
