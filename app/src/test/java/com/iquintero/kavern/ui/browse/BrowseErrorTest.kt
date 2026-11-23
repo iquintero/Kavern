@@ -19,4 +19,11 @@ class BrowseErrorTest {
     fun noErrorNoBanner() {
         assertFalse(showBrowseError(null, hasItems = false))
     }
+
+    @Test
+    fun cacheKeyChangesWhenTheListedFormatsChange() {
+        val key = browseCacheKey("", "filter", 1)
+        assertTrue(key.contains("fmt=3,4,1,0"))
+        assertFalse(key == "s=|f=filter|p=1")
+    }
 }

@@ -32,6 +32,7 @@ import com.iquintero.kavern.domain.model.filter.KavitaSortField
 import com.iquintero.kavern.domain.model.filter.TriState
 import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.domain.usecase.AppliedFilter
+import com.iquintero.kavern.domain.usecase.BROWSE_FORMATS
 import com.iquintero.kavern.domain.usecase.ReadStatusFilter
 import com.iquintero.kavern.domain.usecase.SpecialFilter
 import com.iquintero.kavern.domain.usecase.buildQueries
@@ -375,8 +376,9 @@ class BrowseViewModel(
     private fun currentQueryKey(page: Int): String {
         val filter = _state.value.appliedFilter
         val search = _state.value.appliedSearch
-        // simple stable fingerprint
-        return "s=$search|f=$filter|p=$page"
+        // Simple stable fingerprint. The format list is part of it so lists cached before a format was added
+        // to Browse are not served as if they were complete.
+        return browseCacheKey(search, filter.toString(), page)
     }
 
     private fun observeDownloadStates() {
@@ -613,3 +615,10 @@ class BrowseViewModel(
             }
     }
 }
+
+/** Cache key for one page of Browse results. */
+internal fun browseCacheKey(
+    search: String,
+    filter: String,
+    page: Int,
+): String = "s=$search|f=$filter|fmt=${BROWSE_FORMATS.joinToString(",") { it.id.toString() }}|p=$page"

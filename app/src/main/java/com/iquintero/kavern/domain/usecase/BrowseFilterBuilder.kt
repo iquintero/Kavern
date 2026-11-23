@@ -31,6 +31,13 @@ data class AppliedFilter(
     val decodedSmartFilter: FilterV2Dto? = null,
 )
 
+/**
+ * Every format Browse lists, one query per format. Books and PDFs, plus the archive and image formats
+ * that comics (CBZ, CBR, image folders) are stored as. Leaving any out hides those series everywhere
+ * in Browse, including under a library filter that only contains them.
+ */
+val BROWSE_FORMATS: List<Format> = listOf(Format.Epub, Format.Pdf, Format.Archive, Format.Image)
+
 enum class SpecialFilter { WantToRead }
 
 enum class ReadStatusFilter { Any, Unread, InProgress, Completed }
@@ -41,7 +48,7 @@ fun buildQueries(
     page: Int,
     pageSize: Int,
 ): List<SeriesQuery> {
-    val formats = listOf(Format.Epub, Format.Pdf)
+    val formats = BROWSE_FORMATS
     val publicationTargets =
         appliedFilter.publication
             .filterValues { it }
