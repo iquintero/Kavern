@@ -22,6 +22,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Closing the word definition sheet no longer makes the reader's page jump and re-wrap. The sheet showed the status and navigation bars and the reader then hid them again; the sheet now leaves them hidden, so the page underneath stays exactly as it was.
 - In E-reader mode, selected text in the EPUB reader is drawn as inverse video (page color on text color) instead of the system's tinted highlight, which turned into a dark block on e-ink and hid the selected words.
 - The first hardware page-button press after touching the screen is no longer ignored in the reader. Android can swallow that press's key-down, so it is now counted when the key comes back up.
 - Progress bars are readable on e-ink and other grayscale screens: the Continue reading card, the reader's bottom bar and active downloads now draw an outlined track with a solid dark fill instead of two similar pale grays, and the progress strip on covers is a white fill on a darker track.

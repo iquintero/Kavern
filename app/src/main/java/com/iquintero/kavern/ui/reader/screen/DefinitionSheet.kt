@@ -21,16 +21,21 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.dictionary.DefinitionResult
 import com.iquintero.kavern.core.dictionary.DictionaryEntry
@@ -55,6 +60,7 @@ internal fun DefinitionSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
     ) {
+        KeepSystemBarsHidden()
         Column(
             modifier =
                 Modifier
@@ -161,5 +167,22 @@ private fun openUrl(
 ) {
     runCatching {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
+/**
+ * The reader hides the status and navigation bars. A sheet is its own window, which shows them again, and when it
+ * closes the reader hides them again: the page jumps down and then back while the text re-wraps. Hiding the bars in
+ * the sheet's window too leaves them as they were, so the page underneath never moves.
+ */
+@Composable
+private fun KeepSystemBarsHidden() {
+    val view = LocalView.current
+    SideEffect {
+        val window = (view.parent as? DialogWindowProvider)?.window ?: return@SideEffect
+        WindowInsetsControllerCompat(window, view).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+        }
     }
 }
