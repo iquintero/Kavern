@@ -63,6 +63,8 @@ data class ReaderPrefs(
     val einkMode: Boolean = false,
     /** Volume keys turn pages while reading (page-up/page-down keys always do). */
     val volumeKeysTurnPages: Boolean = false,
+    /** Swaps the volume keys: volume up turns to the next page and volume down to the previous one. */
+    val volumeKeysReversed: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_FONT_FAMILY = "literata"
@@ -108,6 +110,7 @@ class AppPreferences(
         /** Known e-ink readers start with E-reader mode on. */
         private val EINK_DEFAULT = isEinkDevice(Build.MANUFACTURER, Build.BRAND)
         private val KEY_READER_VOLUME_KEYS = booleanPreferencesKey("reader_volume_keys_turn_pages")
+        private val KEY_READER_VOLUME_KEYS_REVERSED = booleanPreferencesKey("reader_volume_keys_reversed")
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
         private val KEY_APP_THEME = stringPreferencesKey("app_theme")
@@ -221,6 +224,7 @@ class AppPreferences(
                 keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                 einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                 volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
+                volumeKeysReversed = prefs[KEY_READER_VOLUME_KEYS_REVERSED] ?: false,
             )
         }
 
@@ -455,6 +459,7 @@ class AppPreferences(
                     keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                     einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                     volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
+                    volumeKeysReversed = prefs[KEY_READER_VOLUME_KEYS_REVERSED] ?: false,
                 )
             val next = current.transform()
             prefs[KEY_FONT_SIZE] = next.fontSize
@@ -471,6 +476,7 @@ class AppPreferences(
             prefs[KEY_READER_KEEP_SCREEN_ON] = next.keepScreenOn
             prefs[KEY_READER_EINK_MODE] = next.einkMode
             prefs[KEY_READER_VOLUME_KEYS] = next.volumeKeysTurnPages
+            prefs[KEY_READER_VOLUME_KEYS_REVERSED] = next.volumeKeysReversed
         }
     }
 

@@ -6,6 +6,7 @@ All notable changes to this project will be documented here.
 
 ### Added
 
+- "Reverse the volume keys" reader setting (Settings > Reader): volume up turns to the next page and volume down to the previous one. The default is unchanged. It applies when "Volume keys turn pages" is on.
 - E-reader mode adds page-by-page scrolling to long lists (Home, Library, Downloads and the series page): two buttons jump one screen up or down instantly, and the hardware page-up and page-down keys do the same.
 - E-reader mode is now a global setting in Settings > Appearance (it was a switch in Reader settings). It turns on by default on e-ink devices such as Boox readers; a choice you already made is kept.
 - Kavern is now a fork of Inkita with its own name, package and application ID, so it installs alongside the original app. The in-app updater and the permission to install other apps were removed.

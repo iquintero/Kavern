@@ -252,6 +252,8 @@
     <string name="reader_font_selection">Select font</string>
     <string name="reader_settings_general_section">General</string>
     <string name="reader_volume_keys">Volume keys turn pages</string>
+    <string name="reader_volume_keys_reversed">Reverse the volume keys</string>
+    <string name="reader_volume_keys_reversed_subtitle">Volume up turns to the next page and volume down to the previous one, instead of the other way round.</string>
     <string name="reader_volume_keys_subtitle">Use the volume buttons, or an e-reader\'s page buttons, to turn pages while reading.</string>
     <string name="reader_keep_screen_on">Keep screen on</string>
     <string name="reader_keep_screen_on_subtitle">Stop the screen from dimming or locking while you read.</string>

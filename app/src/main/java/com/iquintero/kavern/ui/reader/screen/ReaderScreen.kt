@@ -399,6 +399,7 @@ internal fun BaseReaderScreen(
     }
     // Hardware page buttons (and, if enabled, the volume keys) turn pages while the reader is open.
     val volumeKeysTurnPages by rememberUpdatedState(readerPrefs.volumeKeysTurnPages)
+    val volumeKeysReversed by rememberUpdatedState(readerPrefs.volumeKeysReversed)
     val turnPageByKey by rememberUpdatedState<(Boolean) -> Unit> { forward ->
         if (pagedEnabled) {
             pagedTurn(forward)
@@ -410,14 +411,7 @@ internal fun BaseReaderScreen(
     }
     DisposableEffect(Unit) {
         ReaderKeyEvents.onKey = onKey@{ keyCode, isNewPress ->
-            val forward =
-                when (keyCode) {
-                    KeyEvent.KEYCODE_PAGE_DOWN -> true
-                    KeyEvent.KEYCODE_PAGE_UP -> false
-                    KeyEvent.KEYCODE_VOLUME_DOWN -> if (volumeKeysTurnPages) true else return@onKey false
-                    KeyEvent.KEYCODE_VOLUME_UP -> if (volumeKeysTurnPages) false else return@onKey false
-                    else -> return@onKey false
-                }
+            val forward = pageTurnForKey(keyCode, volumeKeysTurnPages, volumeKeysReversed) ?: return@onKey false
             if (isNewPress) turnPageByKey(forward)
             true
         }
