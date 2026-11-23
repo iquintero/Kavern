@@ -24,6 +24,8 @@ internal data class ReaderCssSettings(
     val backgroundColor: String,
     val textColor: String,
     val paged: Boolean,
+    /** Draw selected text as inverse video (text color as the background) instead of the system's tinted highlight. */
+    val solidSelection: Boolean = false,
 )
 
 /** The stylesheet the reader appends to a book page, so the reader's settings win over the book's own CSS. */
@@ -54,6 +56,7 @@ internal fun readerCss(settings: ReaderCssSettings): String {
         h1, h2, h3, h4, h5, h6 { text-decoration: none; }
         ${bookContentLayoutCss(settings.textAlignCss)}
         ${pagedContentCss(settings.paged)}
+        ${selectionCss(settings)}
         body, .book-content {
             font-size: ${settings.fontSize}px !important;
             line-height: ${settings.lineHeight} !important;
@@ -66,3 +69,14 @@ internal fun readerCss(settings: ReaderCssSettings): String {
         }
         """.trimIndent()
 }
+
+/**
+ * On e-ink the system's translucent selection tint turns into a dark gray block that hides the selected words. Inverse
+ * video, the page's own two colors swapped, stays readable on any panel.
+ */
+internal fun selectionCss(settings: ReaderCssSettings): String =
+    if (settings.solidSelection) {
+        "::selection { background: ${settings.textColor} !important; color: ${settings.backgroundColor} !important; }"
+    } else {
+        ""
+    }

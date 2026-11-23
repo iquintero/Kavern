@@ -91,4 +91,11 @@ class EpubReaderStyleTest {
         assertEquals("Time left: 2,8 h", formatTimeLeft("Time left", 2.8f, Locale.GERMANY))
         assertEquals(null, formatTimeLeft("Time left", null))
     }
+
+    @Test
+    fun selectionIsInverseVideoOnlyWhenAsked() {
+        val on = readerCss(settings.copy(solidSelection = true))
+        assertTrue(on, on.contains("::selection { background: #E0E0E0 !important; color: #121212 !important; }"))
+        assertFalse(readerCss(settings).contains("::selection"))
+    }
 }

@@ -128,6 +128,7 @@ import com.iquintero.kavern.ui.reader.viewmodel.BaseReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ImageReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.PdfReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ReaderUiState
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -242,6 +243,7 @@ internal fun ReaderWebView(
                 backgroundColor = bgColor,
                 textColor = textColor,
                 paged = paged,
+                solidSelection = LocalEinkMode.current,
             ),
         )
     val styleJs =
