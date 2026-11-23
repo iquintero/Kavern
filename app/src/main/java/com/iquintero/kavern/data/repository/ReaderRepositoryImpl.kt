@@ -39,11 +39,27 @@ import java.util.zip.ZipFile
 
 private const val HTTP_TOO_MANY_REQUESTS = 429
 
-private enum class ProgressUploadResult {
+internal enum class ProgressUploadResult {
     Sent,
     RetryableFailure,
     Rejected,
 }
+
+/**
+ * Maps a progress upload's HTTP status to what the sync queue should do with the row.
+ * Authentication failures are retryable: the row is valid, the session just needs fixing.
+ * Other 4xx answers will never succeed for this row, so it is dropped rather than retried forever.
+ */
+internal fun classifyProgressStatus(status: Int): ProgressUploadResult =
+    when {
+        status in 200..299 -> ProgressUploadResult.Sent
+        status == HttpURLConnection.HTTP_CLIENT_TIMEOUT ||
+            status == HTTP_TOO_MANY_REQUESTS ||
+            status == HttpURLConnection.HTTP_UNAUTHORIZED ||
+            status == HttpURLConnection.HTTP_FORBIDDEN ||
+            status in 500..599 -> ProgressUploadResult.RetryableFailure
+        else -> ProgressUploadResult.Rejected
+    }
 
 class ReaderRepositoryImpl(
     private val context: Context,
@@ -623,7 +639,14 @@ class ReaderRepositoryImpl(
                     needsRetry = true
                     return@forEach
                 }
-                ProgressUploadResult.Rejected -> return@forEach
+                ProgressUploadResult.Rejected -> {
+                    com.iquintero.kavern.core.logging.LoggingManager.w(
+                        "KavernProgress",
+                        "Dropping progress the server rejected chapter=${local.chapterId} page=${local.page}",
+                    )
+                    readerDao.finishProgressSync(localEntity, replacement = null)
+                    return@forEach
+                }
             }
             val continuePointConfirmed =
                 if (remoteAlreadyMatchesLocal && local.seriesId != null) {
@@ -691,14 +714,7 @@ class ReaderRepositoryImpl(
         try {
             val response = (api ?: apiOrThrow()).setReaderProgress(progress.toDto())
             response.errorBody()?.close()
-            val status = response.code()
-            when {
-                response.isSuccessful -> ProgressUploadResult.Sent
-                status == HttpURLConnection.HTTP_CLIENT_TIMEOUT ||
-                    status == HTTP_TOO_MANY_REQUESTS ||
-                    status in 500..599 -> ProgressUploadResult.RetryableFailure
-                else -> ProgressUploadResult.Rejected
-            }
+            classifyProgressStatus(response.code())
         } catch (e: CancellationException) {
             throw e
         } catch (_: IOException) {

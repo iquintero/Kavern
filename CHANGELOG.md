@@ -46,6 +46,7 @@ All notable changes to this project will be documented here.
 - The Series tab (Browse) is now cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.
 - The Kavita API key is no longer sent to another host if the server redirects a request there.
 - Log messages and stack traces are scrubbed of API keys and server addresses before they reach logcat, not only the log files.
+- Reading progress that the server permanently rejects is dropped instead of being retried forever, while login failures keep the row for a later retry.
 
 ## v0.3.2-beta.1
 
