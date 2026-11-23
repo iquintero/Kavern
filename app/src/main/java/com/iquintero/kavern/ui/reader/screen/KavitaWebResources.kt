@@ -3,6 +3,7 @@ package com.iquintero.kavern.ui.reader.screen
 import android.webkit.WebResourceResponse
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.forKavita
+import com.iquintero.kavern.core.network.guardApiKey
 import com.iquintero.kavern.core.network.isSameOrigin
 import com.iquintero.kavern.core.storage.AppConfig
 import okhttp3.HttpUrl
@@ -52,6 +53,7 @@ internal class KavitaWebResources(
         val client =
             OkHttpClient
                 .Builder()
+                .guardApiKey()
                 .followRedirects(false)
                 .followSslRedirects(false)
                 .build()

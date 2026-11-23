@@ -77,6 +77,7 @@ import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.forKavita
+import com.iquintero.kavern.core.network.guardApiKey
 import com.iquintero.kavern.core.startup.StartupManager
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
@@ -425,6 +426,7 @@ fun KavernApp(
                 val okHttpClient =
                     OkHttpClient
                         .Builder()
+                        .guardApiKey()
                         .dispatcher(dispatcher)
                         .build()
                 ImageLoader

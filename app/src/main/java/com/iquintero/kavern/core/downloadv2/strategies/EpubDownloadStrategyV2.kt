@@ -11,6 +11,7 @@ import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkLoggingInterceptor
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.forKavita
+import com.iquintero.kavern.core.network.guardApiKey
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
@@ -44,6 +45,7 @@ class EpubDownloadStrategyV2(
     private val httpClient =
         OkHttpClient
             .Builder()
+            .guardApiKey()
             .addInterceptor(NetworkLoggingInterceptor)
             .build()
     private val storageManager = DownloadStorageManager(appContext, appPreferences)

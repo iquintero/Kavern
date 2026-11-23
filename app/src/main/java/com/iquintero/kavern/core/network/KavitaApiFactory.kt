@@ -84,6 +84,7 @@ object KavitaApiFactory {
                 .addInterceptor(apiKeyInterceptor)
                 .addInterceptor(NetworkLoggingInterceptor)
                 .followRedirects(followRedirects)
+                .addNetworkInterceptor(CrossHostApiKeyGuard)
                 .callTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)

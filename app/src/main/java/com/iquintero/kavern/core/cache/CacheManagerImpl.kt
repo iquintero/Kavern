@@ -7,6 +7,7 @@ import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkLoggingInterceptor
 import com.iquintero.kavern.core.network.forKavita
+import com.iquintero.kavern.core.network.guardApiKey
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.runCatchingCancellable
@@ -71,6 +72,7 @@ class CacheManagerImpl(
     private val httpClient by lazy {
         OkHttpClient
             .Builder()
+            .guardApiKey()
             .addInterceptor(NetworkLoggingInterceptor)
             .build()
     }

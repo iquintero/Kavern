@@ -44,6 +44,7 @@ All notable changes to this project will be documented here.
 
 - Android Auto Backup is turned off, so the server URL and settings are no longer copied to Google backups (credentials could not be restored from one anyway).
 - The Series tab (Browse) is now cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.
+- The Kavita API key is no longer sent to another host if the server redirects a request there.
 
 ## v0.3.2-beta.1
 
