@@ -242,7 +242,7 @@ internal fun PdfPageViewer(
                     val ratio = imageBitmap!!.width.toFloat() / imageBitmap!!.height.toFloat()
                     Image(
                         bitmap = imageBitmap!!,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.reader_page_description, pageIndex + 1, pageCount),
                         modifier =
                             Modifier
                                 .fillMaxWidth()

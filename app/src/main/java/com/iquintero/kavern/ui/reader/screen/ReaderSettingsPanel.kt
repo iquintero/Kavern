@@ -321,15 +321,15 @@ private fun FontSettings(
             Text(stringResource(R.string.reader_alignment), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             val alignItems =
                 listOf(
-                    TextAlign.Start to Icons.Filled.FormatAlignLeft,
-                    TextAlign.Center to Icons.Filled.FormatAlignCenter,
-                    TextAlign.End to Icons.Filled.FormatAlignRight,
-                    TextAlign.Justify to Icons.Filled.FormatAlignJustify,
+                    Triple(TextAlign.Start, Icons.Filled.FormatAlignLeft, R.string.reader_align_start),
+                    Triple(TextAlign.Center, Icons.Filled.FormatAlignCenter, R.string.reader_align_center),
+                    Triple(TextAlign.End, Icons.Filled.FormatAlignRight, R.string.reader_align_end),
+                    Triple(TextAlign.Justify, Icons.Filled.FormatAlignJustify, R.string.reader_align_justify),
                 )
-            alignItems.forEach { (align, icon) ->
+            alignItems.forEach { (align, icon, label) ->
                 val tint = if (align == textAlign) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 IconButton(onClick = { onTextAlignChange(align) }) {
-                    Icon(icon, contentDescription = "Align $align", tint = tint)
+                    Icon(icon, contentDescription = stringResource(label), tint = tint)
                 }
             }
         }

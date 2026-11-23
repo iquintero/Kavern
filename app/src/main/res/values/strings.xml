@@ -199,6 +199,11 @@
     <string name="settings_cache_stats_button">View cache stats</string>
     <string name="settings_cache_stats_title">Cache statistics</string>
     <string name="reader_offline_indicator">Reading offline</string>
+    <string name="reader_page_description">Page %1$d of %2$d</string>
+    <string name="reader_align_start">Align left</string>
+    <string name="reader_align_center">Align center</string>
+    <string name="reader_align_end">Align right</string>
+    <string name="reader_align_justify">Justify</string>
     <string name="reader_page_not_downloaded">This page is not downloaded</string>
     <string name="reader_image_load_failed">Could not load this page.</string>
     <string name="reader_image_http_error">Kavita could not load this page (HTTP %1$d).</string>

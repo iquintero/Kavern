@@ -89,6 +89,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -256,6 +259,8 @@ internal fun ReaderWebView(
     var scrollRunnable: Runnable? by remember { mutableStateOf(null) }
 
     val density = LocalDensity.current
+    val nextPageLabel = stringResource(R.string.reader_next_page)
+    val previousPageLabel = stringResource(R.string.reader_prev_page)
     val pageBackground = runCatching { Color(android.graphics.Color.parseColor(bgColor)) }.getOrDefault(Color.Transparent)
     Box(
         modifier =
@@ -270,10 +275,24 @@ internal fun ReaderWebView(
                     .fillMaxSize()
                     .then(
                         if (paged) {
-                            Modifier.padding(
-                                top = with(density) { insetTopPx.toDp() },
-                                bottom = with(density) { insetBottomPx.toDp() },
-                            )
+                            // Tap zones and swipes are WebView touch gestures, so give screen readers real actions.
+                            Modifier
+                                .semantics {
+                                    customActions =
+                                        listOf(
+                                            CustomAccessibilityAction(nextPageLabel) {
+                                                currentSwipeNext()
+                                                true
+                                            },
+                                            CustomAccessibilityAction(previousPageLabel) {
+                                                currentSwipePrev()
+                                                true
+                                            },
+                                        )
+                                }.padding(
+                                    top = with(density) { insetTopPx.toDp() },
+                                    bottom = with(density) { insetBottomPx.toDp() },
+                                )
                         } else {
                             Modifier
                         },

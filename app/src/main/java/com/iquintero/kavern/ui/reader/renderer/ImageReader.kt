@@ -327,6 +327,7 @@ object ImageReader : BaseReader {
                     ReaderPageImage(
                         imageUrl = imageUrl,
                         zoom = zoom,
+                        description = stringResource(R.string.reader_page_description, params.uiState.pageIndex + 1, params.uiState.pageCount),
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -456,6 +457,7 @@ private fun WebtoonContent(
                             imageUrl = imageUrl,
                             modifier = Modifier.fillMaxWidth(),
                             isWebtoon = true,
+                            description = stringResource(R.string.reader_page_description, item.pageIndex + 1, item.chapter.pageCount),
                         )
                     }
                 }
@@ -595,12 +597,13 @@ internal fun ReaderPageImage(
     modifier: Modifier = Modifier,
     isWebtoon: Boolean = false,
     zoom: ComicPageZoom? = null,
+    description: String? = null,
 ) {
     var attempts by remember(imageUrl) { mutableIntStateOf(0) }
     key(imageUrl, attempts) {
         SubcomposeAsyncImage(
             model = imageUrl,
-            contentDescription = null,
+            contentDescription = description,
             modifier = modifier,
             contentScale = if (isWebtoon) ContentScale.FillWidth else ContentScale.Fit,
             alignment = if (isWebtoon) Alignment.TopCenter else Alignment.Center,
