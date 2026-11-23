@@ -366,13 +366,6 @@
     <string name="series_detail_remove_chapter_body">移除 %1$s 的下载？</string>
     <string name="series_detail_remove_chapter_confirm">移除</string>
     <string name="download_queued">下载队列中</string>
-    <string name="series_detail_author_label">作者：%1$s</string>
-    <string name="series_detail_publication_label">发行：%1$s</string>
-    <string name="series_detail_release_year_label">发行年份：%1$s</string>
-    <string name="series_detail_avg_time_label">Avg time: %1$s / %2$s</string>
-    <string name="series_detail_status_label">状态：%1$s</string>
-    <string name="series_detail_last_read_label">上次阅读：%1$s</string>
-    <string name="series_detail_last_update_label">上次更新：%1$s</string>
     <string name="series_detail_related_sequels">续作</string>
     <string name="series_detail_related_prequels">前作</string>
     <string name="series_detail_related_spin_offs">衍生</string>

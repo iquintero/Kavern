@@ -366,13 +366,6 @@
     <string name="series_detail_remove_chapter_body">%1$s 다운로드를 제거하시겠습니까?</string>
     <string name="series_detail_remove_chapter_confirm">제거</string>
     <string name="download_queued">대기열 항목 다운로드</string>
-    <string name="series_detail_author_label">저자: %1$s</string>
-    <string name="series_detail_publication_label">출판: %1$s</string>
-    <string name="series_detail_release_year_label">발매 연도: %1$s</string>
-    <string name="series_detail_avg_time_label">평균 시간: %1$s / %2$s</string>
-    <string name="series_detail_status_label">상태: %1$s</string>
-    <string name="series_detail_last_read_label">마지막 열람: %1$s</string>
-    <string name="series_detail_last_update_label">마지막 업데이트: %1$s</string>
     <string name="series_detail_related_sequels">속편</string>
     <string name="series_detail_related_prequels">프리퀄</string>
     <string name="series_detail_related_spin_offs">스핀오프</string>

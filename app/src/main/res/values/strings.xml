@@ -85,6 +85,10 @@
     <string name="general_pages">Pages</string>
     <string name="general_words">Words</string>
     <string name="series_detail_missing_library_id">Missing library id</string>
+    <string name="series_detail_fact_hours">%1$s to read</string>
+    <string name="series_detail_fact_words">%1$s words</string>
+    <string name="series_detail_updated_short">Updated %1$s</string>
+    <string name="series_detail_last_read_short">Last read %1$s</string>
     <string name="series_detail_series_fallback">Series %1$d</string>
     <string name="series_detail_collection_fallback">Collection %1$d</string>
     <string name="series_detail_volume_fallback">Volume %1$d</string>
@@ -117,13 +121,6 @@
     <string name="series_detail_remove_chapter_body">Remove downloads for %1$s?</string>
     <string name="series_detail_remove_chapter_confirm">Remove</string>
     <string name="download_queued">Download queued</string>
-    <string name="series_detail_author_label">Author: %1$s</string>
-    <string name="series_detail_publication_label">Publication: %1$s</string>
-    <string name="series_detail_release_year_label">Release year: %1$s</string>
-    <string name="series_detail_avg_time_label">Avg time: %1$s / %2$s</string>
-    <string name="series_detail_status_label">Status: %1$s</string>
-    <string name="series_detail_last_read_label">Last read: %1$s</string>
-    <string name="series_detail_last_update_label">Last update: %1$s</string>
     <string name="series_detail_related_sequels">Sequels</string>
     <string name="series_detail_related_prequels">Prequels</string>
     <string name="series_detail_related_spin_offs">Spin-offs</string>

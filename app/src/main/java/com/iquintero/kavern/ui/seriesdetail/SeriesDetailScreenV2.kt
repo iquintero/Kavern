@@ -11,7 +11,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -34,21 +33,15 @@ import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -513,123 +506,65 @@ fun SeriesDetailScreenV2(
                                     .padding(horizontal = 16.dp)
                                     .verticalScroll(rememberScrollState()),
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.Top,
-                            ) {
-                                CoverImage(
-                                    coverUrl = coverUrl,
-                                    context = context,
-                                    modifier =
-                                        Modifier
-                                            .width(140.dp)
-                                            .aspectRatio(2f / 3f)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable { coverExpanded = true },
+                            val seriesTitle =
+                                series?.name?.ifBlank { null }
+                                    ?: context.getString(com.iquintero.kavern.R.string.series_detail_series_fallback, seriesId)
+                            val authors =
+                                metadata
+                                    ?.writers
+                                    ?.mapNotNull { it.name?.takeIf { name -> name.isNotBlank() } }
+                                    ?.joinToString(", ")
+                                    ?.ifBlank { null }
+                            val facts =
+                                seriesFacts(
+                                    readStatus =
+                                        readStateLabel(
+                                            context,
+                                            unreadCount = detail?.detail?.unreadCount,
+                                            totalCount = detail?.detail?.totalCount,
+                                            hasProgress = detail?.hasProgress,
+                                        ),
+                                    publicationStatus =
+                                        metadata?.publicationStatus?.let { status ->
+                                            PublicationState.entries.firstOrNull { it.code == status }?.let { state ->
+                                                context.getString(state.titleRes)
+                                            }
+                                        },
+                                    releaseYear = metadata?.releaseYear,
+                                    timeToRead =
+                                        hoursLeftToRead(detail?.timeLeft?.avgHours, series?.avgHoursToRead)
+                                            ?.let { formatHours(it) }
+                                            ?.let { context.getString(com.iquintero.kavern.R.string.series_detail_fact_hours, it) },
+                                    wordCount = series?.wordCount,
+                                    wordsLabel = { context.getString(com.iquintero.kavern.R.string.series_detail_fact_words, it) },
                                 )
-                                HeaderInfo(
-                                    seriesId = seriesId,
-                                    series = series,
-                                    metadata = metadata,
-                                    detail = detail,
-                                    context = context,
-                                    clipboardManager = clipboardManager,
-                                    onCopyToast = {
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                context.getString(com.iquintero.kavern.R.string.general_copied_to_clipboard),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
+                            val footnote =
+                                listOfNotNull(
+                                    series?.lastChapterAdded?.takeIf { isRealDate(it) }?.let {
+                                        context.getString(com.iquintero.kavern.R.string.series_detail_updated_short, formatDate(it))
                                     },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ActionsRowV2(
-                                wantToRead = detail?.wantToRead == true,
-                                collectionsEnabled = !offlineMode,
-                                wantToReadEnabled = !offlineMode,
-                                onToggleWant = {
-                                    viewModel.toggleWantToRead()
-                                },
-                                onOpenCollections = {
-                                    viewModel.loadCollections()
-                                    showCollectionDialog = true
-                                },
-                                onOpenWeb = {
-                                    val url = webUrl(config, series?.libraryId, seriesId)
-                                    if (url == null) {
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                context.getString(com.iquintero.kavern.R.string.series_detail_missing_library_id),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        return@ActionsRowV2
-                                    }
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                    }.onFailure {
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                context.getString(com.iquintero.kavern.R.string.general_unable_to_share),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                    }
-                                },
-                                onShare = {
-                                    val url = webUrl(config, series?.libraryId, seriesId)
-                                    val title =
-                                        series?.name?.ifBlank { null }
-                                            ?: context.getString(com.iquintero.kavern.R.string.series_detail_series_fallback, seriesId)
-                                    val shareIntent =
-                                        Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_SUBJECT, title)
-                                            putExtra(Intent.EXTRA_TEXT, url ?: title)
-                                        }
-                                    runCatching {
-                                        context.startActivity(
-                                            Intent.createChooser(
-                                                shareIntent,
-                                                context.getString(com.iquintero.kavern.R.string.general_share),
-                                            ),
-                                        )
-                                    }.onFailure {
-                                        Toast
-                                            .makeText(
-                                                context,
-                                                context.getString(com.iquintero.kavern.R.string.general_unable_to_share),
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                    }
+                                    series?.latestReadDate?.takeIf { isRealDate(it) }?.let {
+                                        context.getString(com.iquintero.kavern.R.string.series_detail_last_read_short, formatDate(it))
+                                    },
+                                ).joinToString(" · ").ifBlank { null }
+                            SeriesHero(
+                                title = seriesTitle,
+                                author = authors,
+                                coverUrl = coverUrl,
+                                facts = facts,
+                                footnote = footnote,
+                                onCoverClick = { coverExpanded = true },
+                                onTitleLongClick = {
+                                    clipboardManager.setText(AnnotatedString(seriesTitle))
+                                    Toast
+                                        .makeText(
+                                            context,
+                                            context.getString(com.iquintero.kavern.R.string.general_copied_to_clipboard),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
                                 },
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            SummarySectionV2(
-                                summary = cleanHtml(metadata?.summary),
-                                genres =
-                                    metadata
-                                        ?.genres
-                                        ?.mapNotNull { genre ->
-                                            val title = genre.title ?: return@mapNotNull null
-                                            genre.id to title
-                                        }.orEmpty(),
-                                tags =
-                                    metadata
-                                        ?.tags
-                                        ?.mapNotNull { tag ->
-                                            val title = tag.title ?: return@mapNotNull null
-                                            tag.id to title
-                                        }.orEmpty(),
-                                expanded = summaryExpanded,
-                                onToggle = { summaryExpanded = !summaryExpanded },
-                                onGenreClick = { id, name -> onOpenBrowseGenre(id, name) },
-                                onTagClick = { id, name -> onOpenBrowseTag(id, name) },
-                            )
+                            Spacer(modifier = Modifier.height(20.dp))
                             val continuePoint = detail?.continuePoint
                             val readerProgress = detail?.readerProgress
                             val continueLabel =
@@ -700,10 +635,100 @@ fun SeriesDetailScreenV2(
                                         readerProgress?.pageNum ?: continuePoint?.pagesRead ?: 0
                                     onOpenReader(chapterId, page, sid, volumeId, fmt)
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                             ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = continueLabel)
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            SeriesActionTiles(
+                                wantToRead = detail?.wantToRead == true,
+                                collectionsEnabled = !offlineMode,
+                                wantToReadEnabled = !offlineMode,
+                                onToggleWant = {
+                                    viewModel.toggleWantToRead()
+                                },
+                                onOpenCollections = {
+                                    viewModel.loadCollections()
+                                    showCollectionDialog = true
+                                },
+                                onOpenWeb = {
+                                    val url = webUrl(config, series?.libraryId, seriesId)
+                                    if (url == null) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.series_detail_missing_library_id),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        return@SeriesActionTiles
+                                    }
+                                    runCatching {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    }.onFailure {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.general_unable_to_share),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                    }
+                                },
+                                onShare = {
+                                    val url = webUrl(config, series?.libraryId, seriesId)
+                                    val title =
+                                        series?.name?.ifBlank { null }
+                                            ?: context.getString(com.iquintero.kavern.R.string.series_detail_series_fallback, seriesId)
+                                    val shareIntent =
+                                        Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_SUBJECT, title)
+                                            putExtra(Intent.EXTRA_TEXT, url ?: title)
+                                        }
+                                    runCatching {
+                                        context.startActivity(
+                                            Intent.createChooser(
+                                                shareIntent,
+                                                context.getString(com.iquintero.kavern.R.string.general_share),
+                                            ),
+                                        )
+                                    }.onFailure {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.general_unable_to_share),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                    }
+                                },
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            SummarySectionV2(
+                                summary = cleanHtml(metadata?.summary),
+                                genres =
+                                    metadata
+                                        ?.genres
+                                        ?.mapNotNull { genre ->
+                                            val title = genre.title ?: return@mapNotNull null
+                                            genre.id to title
+                                        }.orEmpty(),
+                                tags =
+                                    metadata
+                                        ?.tags
+                                        ?.mapNotNull { tag ->
+                                            val title = tag.title ?: return@mapNotNull null
+                                            tag.id to title
+                                        }.orEmpty(),
+                                expanded = summaryExpanded,
+                                onToggle = { summaryExpanded = !summaryExpanded },
+                                onGenreClick = { id, name -> onOpenBrowseGenre(id, name) },
+                                onTagClick = { id, name -> onOpenBrowseTag(id, name) },
+                            )
                             val booksCount = detail?.detail?.volumes?.size
                             val chaptersCount = detail?.detail?.chapters?.size
                             val specialsCount = detail?.detail?.specials?.size
@@ -1996,66 +2021,6 @@ private fun flattenTree(
 }
 
 @Composable
-private fun ActionsRowV2(
-    wantToRead: Boolean,
-    collectionsEnabled: Boolean,
-    wantToReadEnabled: Boolean,
-    onToggleWant: () -> Unit,
-    onOpenCollections: () -> Unit,
-    onOpenWeb: () -> Unit,
-    onShare: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FilledTonalButton(
-            onClick = onOpenCollections,
-            enabled = collectionsEnabled,
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            colors =
-                ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SwapHoriz,
-                contentDescription = stringResource(com.iquintero.kavern.R.string.general_collections),
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.iquintero.kavern.R.string.general_collections))
-        }
-        FilledTonalButton(
-            onClick = onToggleWant,
-            enabled = wantToReadEnabled,
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-            colors =
-                ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-        ) {
-            Icon(
-                imageVector = if (wantToRead) Icons.Filled.Star else Icons.Filled.StarBorder,
-                contentDescription = stringResource(com.iquintero.kavern.R.string.general_want_to_read),
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(stringResource(com.iquintero.kavern.R.string.general_want_to_read))
-        }
-        IconButton(onClick = onOpenWeb) {
-            Icon(Icons.Filled.Public, contentDescription = stringResource(com.iquintero.kavern.R.string.general_open_in_browser))
-        }
-        IconButton(onClick = onShare) {
-            Icon(Icons.Filled.Share, contentDescription = stringResource(com.iquintero.kavern.R.string.general_share))
-        }
-    }
-}
-
-@Composable
 private fun VolumeGridRow(
     volumes: List<com.iquintero.kavern.data.api.dto.VolumeDto>,
     config: AppConfig,
@@ -2314,126 +2279,6 @@ private fun SpecialsGridRow(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun HeaderInfo(
-    seriesId: Int,
-    series: com.iquintero.kavern.data.api.dto.SeriesDto?,
-    metadata: com.iquintero.kavern.data.api.dto.SeriesMetadataDto?,
-    detail: KavernDetailV2?,
-    context: android.content.Context,
-    clipboardManager: androidx.compose.ui.platform.ClipboardManager,
-    onCopyToast: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        val seriesTitle =
-            series?.name?.ifBlank { null }
-                ?: context.getString(com.iquintero.kavern.R.string.series_detail_series_fallback, seriesId)
-        Text(
-            text = seriesTitle,
-            style = MaterialTheme.typography.titleLarge,
-            modifier =
-                Modifier.clickable {
-                    if (seriesTitle.isNotBlank()) {
-                        clipboardManager.setText(AnnotatedString(seriesTitle))
-                        onCopyToast()
-                    }
-                },
-        )
-        val writerNames =
-            metadata
-                ?.writers
-                ?.mapNotNull { it.name?.takeIf { name -> name.isNotBlank() } }
-                ?.joinToString(", ")
-                ?.ifBlank { null }
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_author_label,
-                    writerNames ?: "-",
-                ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_publication_label,
-                    metadata?.publicationStatus?.let { status ->
-                        PublicationState.entries.firstOrNull { it.code == status }?.let { state ->
-                            context.getString(state.titleRes)
-                        }
-                    } ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_release_year_label,
-                    metadata?.releaseYear?.toString() ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_avg_time_label,
-                    formatHours(detail?.timeLeft?.avgHours) ?: "-",
-                    formatHours(series?.avgHoursToRead) ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                "${stringResource(id = com.iquintero.kavern.R.string.general_words)}: " +
-                    (series?.wordCount?.let { formatCount(it) } ?: "-"),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_status_label,
-                    readStateLabel(
-                        context,
-                        unreadCount = detail?.detail?.unreadCount,
-                        totalCount = detail?.detail?.totalCount,
-                        hasProgress = detail?.hasProgress,
-                    ) ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        val lastRead = series?.latestReadDate?.takeIf { it.isNotBlank() }
-        val lastUpdated = series?.lastChapterAdded?.takeIf { it.isNotBlank() }
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_last_read_label,
-                    lastRead?.let { formatDate(it) } ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text =
-                stringResource(
-                    id = com.iquintero.kavern.R.string.series_detail_last_update_label,
-                    lastUpdated?.let { formatDate(it) } ?: "-",
-                ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

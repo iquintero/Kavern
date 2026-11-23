@@ -41,6 +41,7 @@ import androidx.compose.material.rememberSwipeableState
 import androidx.compose.material.swipeable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -113,25 +114,16 @@ internal fun SectionChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val labelText = if (count != null) "$label $count" else label
-    AssistChip(
+    FilterChip(
+        selected = selected,
         onClick = onClick,
-        label = { Text(labelText) },
-        colors =
-            androidx.compose.material3.AssistChipDefaults.assistChipColors(
-                containerColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-                labelColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-            ),
+        label = { Text(label) },
+        trailingIcon =
+            if (count != null) {
+                { Text(text = count.toString(), style = MaterialTheme.typography.labelMedium) }
+            } else {
+                null
+            },
     )
 }
 
