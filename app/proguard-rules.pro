@@ -16,6 +16,12 @@
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
 
+# WorkManager creates its input mergers by reflection. Without this, R8 strips their constructors and every
+# background worker (progress sync, downloads, prefetch) fails with "Could not create Input Merger".
+-keep class * extends androidx.work.InputMerger {
+    <init>();
+}
+
 # Tink (via androidx.security) references annotations that are not on the classpath.
 -dontwarn com.google.errorprone.annotations.**
 

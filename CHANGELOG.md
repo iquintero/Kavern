@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Background work (progress sync, downloads, prefetch) failed to start in release builds; WorkManager's input merger is now kept by R8.
 - Fix a crash on the series screen when the Kavita server cannot be reached (for example a home server on mobile data). One failed request among the many that load the screen could take the whole app down; it now shows the cached series and an error instead.
 - Open downloaded books right away when the Kavita server cannot be reached (for example a home server on mobile data) instead of showing a blank page for up to a minute. Inkita now notices an unreachable server within seconds, skips server calls for a minute, and reads downloaded pages, saved reading positions and previously read pages from the device. Switching networks, such as back to home wifi, resets this. The "Reading offline" label now only shows while the server cannot be used, instead of whenever a page was read from a download.
 - Open a new EPUB page at its start instead of reusing the previous page's scroll position.
