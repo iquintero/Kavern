@@ -18,7 +18,7 @@ All notable changes to this project will be documented here.
 - Word lookup (Define) in the EPUB reader.
 - Optional page-by-page EPUB reading (Reader settings, Navigation tab, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the left or right edge of the screen or swiping, like an e-reader. Off by default; scrolling is unchanged.
 - Table of contents button in the EPUB reader to jump to any chapter or section, including its position inside the page.
-- "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. Off by default.
+- "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. On by default.
 
 ### Fixed
 
@@ -53,6 +53,7 @@ All notable changes to this project will be documented here.
 
 ### Changed
 
+- Page-by-page EPUB reading is now on by default for new installs, as on an e-reader. If you have already used Reader settings, your saved choice is kept; switch "Page-by-page reading" in Settings > Reader to change it.
 - E-reader mode draws structure with outlines instead of gray fills, which dither on e-ink: cards, covers, chips, the search bar and buttons get a thin outline, white covers no longer dissolve into the page, and selected items (navigation, chips, the Continue and Resume buttons) turn solid black with white text. Shadows are off.
 - E-reader mode now stills the whole interface, not just page turns: switches, chips and sheets change instantly, press ripples and image fades are off, loading shows a still hourglass instead of a spinner, placeholders no longer shimmer, the cloud status icon no longer pulses, and the Library search bar stays put while you scroll.
 - Light mode is easier on the eyes: the page background is a soft grey instead of near-white, cards and sheets stay brighter so they stand out from it, and dividers and outlines are a little stronger. Text colors are unchanged. Dark mode and the e-ink theme are untouched.

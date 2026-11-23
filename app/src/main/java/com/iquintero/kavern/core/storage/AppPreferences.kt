@@ -56,7 +56,7 @@ data class ReaderPrefs(
     val imagePrefetchPages: Int = 8,
     val pdfRightToLeft: Boolean = false,
     /** EPUB: split each book page into screen-sized pages (Kindle style) instead of scrolling. */
-    val epubPaged: Boolean = false,
+    val epubPaged: Boolean = true,
     /** Keep the screen from dimming and locking while a book is open. */
     val keepScreenOn: Boolean = false,
     /** E-reader mode: a still, high-contrast interface for e-ink displays. Mirrors the global setting. */
@@ -220,7 +220,7 @@ class AppPreferences(
                 imageReaderMode = prefs.toImageReaderMode(),
                 imagePrefetchPages = prefs[KEY_IMAGE_PREFETCH_PAGES] ?: ReaderPrefs.DEFAULT_IMAGE_PREFETCH_PAGES,
                 pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
-                epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
+                epubPaged = prefs[KEY_EPUB_PAGED] ?: true,
                 keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                 einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                 volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
@@ -455,7 +455,7 @@ class AppPreferences(
                     imageReaderMode = prefs.toImageReaderMode(),
                     imagePrefetchPages = prefs[KEY_IMAGE_PREFETCH_PAGES] ?: ReaderPrefs.DEFAULT_IMAGE_PREFETCH_PAGES,
                     pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
-                    epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
+                    epubPaged = prefs[KEY_EPUB_PAGED] ?: true,
                     keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
                     einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                     volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
