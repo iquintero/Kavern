@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,6 +59,7 @@ import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.SeriesCoverCard
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.ShimmerBox
+import com.iquintero.kavern.ui.common.StrongProgressBar
 import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -237,11 +237,7 @@ private fun ResumeCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (progress != null) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.extraSmall),
-                        drawStopIndicator = {},
-                    )
+                    StrongProgressBar(progress = progress)
                     Text(
                         text = stringResource(R.string.home_percent_read, (progress * PERCENT).toInt()),
                         style = MaterialTheme.typography.labelMedium,

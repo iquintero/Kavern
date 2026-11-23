@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Progress bars are readable on e-ink and other grayscale screens: the Continue reading card, the reader's bottom bar and active downloads now draw an outlined track with a solid dark fill instead of two similar pale grays, and the progress strip on covers is a white fill on a darker track.
 - EPUB reader: your Reader settings (alignment, font size, line height, font) apply to body text again. A book's own stylesheet was overriding them, so text came out justified, smaller and tightly spaced whatever you picked. Titles keep their centered or right alignment and larger sizes, and code keeps its monospace font; paragraph indents and spacing from the book are kept.
 - The "Cache still fresh" notification that appeared when opening Library > Series is gone. It only announced that the list was being shown from the cache; the list itself behaves as before.
 - Opening Kavern again from the launcher icon returns to the screen you left instead of starting a second copy of the app on Home. This could happen when an earlier copy had been started some other way, for example by an installer or a development tool.

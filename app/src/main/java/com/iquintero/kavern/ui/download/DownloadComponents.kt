@@ -61,6 +61,7 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.util.formatBytes
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
+import com.iquintero.kavern.ui.common.StrongProgressBar
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 
 private val ListCoverWidth = 56.dp
@@ -254,10 +255,7 @@ fun ActiveDownloadCard(
                 }
                 if (!failed) {
                     if (percent != null && job.status != DownloadJobV2Entity.STATUS_PENDING) {
-                        LinearProgressIndicator(
-                            progress = { percent / 100f },
-                            modifier = Modifier.fillMaxWidth().height(4.dp).clip(MaterialTheme.shapes.extraSmall),
-                        )
+                        StrongProgressBar(progress = percent / 100f, height = 8.dp)
                     } else if (job.status == DownloadJobV2Entity.STATUS_RUNNING) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp).clip(MaterialTheme.shapes.extraSmall))
                     }
