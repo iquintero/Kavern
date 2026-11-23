@@ -48,6 +48,7 @@ All notable changes to this project will be documented here.
 - Log messages and stack traces are scrubbed of API keys and server addresses before they reach logcat, not only the log files.
 - Reading progress that the server permanently rejects is dropped instead of being retried forever, while login failures keep the row for a later retry.
 - Failed downloads wait 2s, 4s, 8s … (up to a minute) between retries instead of being retried back to back.
+- An EPUB page download now fails and is retried when an image cannot be fetched because of a network or server error, instead of saving the page without it. Images the server reports as missing are still skipped.
 
 ## v0.3.2-beta.1
 

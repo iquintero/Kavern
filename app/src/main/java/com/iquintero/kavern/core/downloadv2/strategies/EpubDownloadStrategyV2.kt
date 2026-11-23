@@ -278,13 +278,7 @@ class EpubDownloadStrategyV2(
                 val src = matcher.group(1) ?: continue
                 if (replacements.containsKey(src)) continue
 
-                val absoluteUrl =
-                    when {
-                        src.startsWith("//") -> "https:$src"
-                        src.startsWith("http://") || src.startsWith("https://") -> src
-                        src.startsWith("/") -> config.serverUrl.trimEnd('/') + src
-                        else -> null
-                    } ?: continue
+                val absoluteUrl = absoluteAssetUrl(src, config.serverUrl) ?: continue
 
                 val ext =
                     absoluteUrl
@@ -297,8 +291,11 @@ class EpubDownloadStrategyV2(
                     val (localPath, bytes) = downloadBinary(absoluteUrl, "$assetsRelativeDir/$fileName", config.apiKey, calls, pending)
                     totalBytes += bytes
                     replacements[src] = toHtmlUri(localPath)
-                } catch (_: IOException) {
-                    // ignore failed image
+                } catch (e: IOException) {
+                    // A missing asset will never download, so skip it. Anything else (network, 5xx)
+                    // fails the page so the job's retry fetches it again instead of storing a broken page.
+                    if (!isPermanentAssetFailure(e)) throw e
+                    LoggingManager.w("EpubDownloadV2", "Skipping unavailable image (${e.message})")
                 }
             }
 
@@ -326,7 +323,7 @@ class EpubDownloadStrategyV2(
                     .addHeader("x-api-key", apiKey)
                     .build()
             calls.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                if (!response.isSuccessful) throw AssetHttpException(response.code)
                 val body = response.body ?: throw IOException("Empty body")
                 val stored =
                     body.byteStream().use { input ->
@@ -354,3 +351,27 @@ class EpubDownloadStrategyV2(
         private val SRC_PATTERN = Pattern.compile("src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE)
     }
 }
+
+/** A non-success HTTP answer for a book asset. */
+internal class AssetHttpException(
+    val code: Int,
+) : IOException("HTTP $code")
+
+/** True for answers that will not change on retry (404, 410 …); timeouts and rate limits do. */
+internal fun isPermanentAssetFailure(error: IOException): Boolean = error is AssetHttpException && error.code in 400..499 && error.code != 408 && error.code != 429
+
+/**
+ * Full URL for an image `src` found in a book page, or null when it is not one we can fetch.
+ * Kavita writes its own resources as `//host/...`, which must use the server's scheme: forcing https
+ * makes every image fail on a server that is reached over http.
+ */
+internal fun absoluteAssetUrl(
+    src: String,
+    serverUrl: String,
+): String? =
+    when {
+        src.startsWith("//") -> "${serverUrl.substringBefore("://", missingDelimiterValue = "https")}:$src"
+        src.startsWith("http://") || src.startsWith("https://") -> src
+        src.startsWith("/") -> serverUrl.trimEnd('/') + src
+        else -> null
+    }
