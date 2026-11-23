@@ -40,6 +40,7 @@ import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateResolver
 import com.iquintero.kavern.ui.seriesdetail.KavernDetailV2
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -86,6 +87,11 @@ class BrowseViewModel(
     private val networkMonitor = NetworkMonitor.getInstance(appPreferences.appContext, appPreferences)
     private var lastOfflineError = false
     private val pagingInFlight = AtomicBoolean(false)
+    private val searchDebouncer = Debouncer(viewModelScope, SEARCH_DEBOUNCE_MS)
+    private var reloadJob: Job? = null
+
+    // Bumped by every reload, so a next-page request that started before it can tell its results are stale.
+    private var generation = 0
     private val downloadDao =
         KavernDatabase.getInstance(appPreferences.appContext, appPreferences.profile).downloadV2Dao()
     private var lastDownloadedItems: List<DownloadedItemV2Entity> = emptyList()
@@ -148,11 +154,27 @@ class BrowseViewModel(
         }
     }
 
+    /** Updates the search box and, shortly after typing stops, searches. Enter searches straight away. */
     fun updateSearch(text: TextFieldValue) {
+        val textChanged = text.text != _state.value.searchInput.text
         _state.update { it.copy(searchInput = text) }
+        if (textChanged) {
+            searchDebouncer.schedule {
+                if (_state.value.searchInput.text != _state.value.appliedSearch) applySearch(keepResults = true)
+            }
+        }
     }
 
     fun applySearchAndReload() {
+        searchDebouncer.cancel()
+        applySearch(keepResults = false)
+    }
+
+    /**
+     * With [keepResults] the current grid stays on screen until the new results arrive, so searching
+     * as you type does not flash placeholders between every keystroke.
+     */
+    private fun applySearch(keepResults: Boolean) {
         _state.update {
             it.copy(
                 appliedSearch = it.searchInput.text,
@@ -161,7 +183,7 @@ class BrowseViewModel(
                 error = null,
             )
         }
-        reloadFirstPage()
+        reloadFirstPage(keepResults)
     }
 
     fun updateDraftFilter(update: (AppliedFilter) -> AppliedFilter) {
@@ -183,101 +205,106 @@ class BrowseViewModel(
         reloadFirstPage()
     }
 
-    fun reloadFirstPage() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null, series = emptyList()) }
-            lastOfflineError = false
+    fun reloadFirstPage(keepResults: Boolean = false) {
+        // A newer search or filter replaces whatever is still loading for the previous one.
+        reloadJob?.cancel()
+        generation++
+        reloadJob =
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true, error = null, series = if (keepResults) it.series else emptyList()) }
+                lastOfflineError = false
 
-            val cacheEnabled = browseCacheAllowed()
-            val ttlMinutes = appPreferences.cacheRefreshTtlMinutesFlow.first()
-            val lastRefresh = appPreferences.lastBrowseRefreshFlow.first()
-            val now = System.currentTimeMillis()
-            val queryKey = currentQueryKey(page = 1)
-            val pageSize = appPreferences.browsePageSizeFlow.first()
+                val cacheEnabled = browseCacheAllowed()
+                val ttlMinutes = appPreferences.cacheRefreshTtlMinutesFlow.first()
+                val lastRefresh = appPreferences.lastBrowseRefreshFlow.first()
+                val now = System.currentTimeMillis()
+                val queryKey = currentQueryKey(page = 1)
+                val pageSize = appPreferences.browsePageSizeFlow.first()
 
-            var cachedPage: List<Series> = emptyList()
-            if (cacheEnabled) {
-                cachedPage =
-                    runCatchingCancellable {
-                        cacheManager.getCachedLibraryV2SeriesList(
-                            listType = LibraryV2CacheKeys.BROWSE,
-                            listKey = queryKey,
-                        )
-                    }.getOrNull().orEmpty()
-                if (cachedPage.isNotEmpty()) {
-                    _state.update {
-                        it.copy(
-                            series = cachedPage,
-                            currentPage = 1,
-                            canLoadMore = true,
-                            isLoading = true, // still fetch fresh unless cache is valid
-                            isLoadingMore = false,
-                            error = null,
-                        )
-                    }
-                    updateDownloadStates(lastDownloadedItems)
-                }
-            }
-
-            val ttlMillis = ttlMinutes * 60_000L
-            if (cacheEnabled && cachedPage.isNotEmpty() && ttlMinutes > 0 && lastRefresh > 0 && (now - lastRefresh) < ttlMillis) {
-                showFreshCacheNotification(ttlMinutes - ((now - lastRefresh) / 60_000L).toInt())
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = null,
-                        canLoadMore = true,
-                        isLoadingMore = false,
-                    )
-                }
-                updateDownloadStates(lastDownloadedItems)
-                return@launch
-            }
-
-            val page =
-                runCatchingCancellable {
-                    fetchPageProgressive(
-                        page = 1,
-                        pageSize = appPreferences.browsePageSizeFlow.first(),
-                        cacheKey = if (cacheEnabled) queryKey else null,
-                    ) { progress ->
+                var cachedPage: List<Series> = emptyList()
+                if (cacheEnabled) {
+                    cachedPage =
+                        runCatchingCancellable {
+                            cacheManager.getCachedLibraryV2SeriesList(
+                                listType = LibraryV2CacheKeys.BROWSE,
+                                listKey = queryKey,
+                            )
+                        }.getOrNull().orEmpty()
+                    if (cachedPage.isNotEmpty()) {
                         _state.update {
                             it.copy(
-                                series = progress,
+                                series = cachedPage,
                                 currentPage = 1,
                                 canLoadMore = true,
-                                isLoading = true,
+                                isLoading = true, // still fetch fresh unless cache is valid
                                 isLoadingMore = false,
                                 error = null,
                             )
                         }
+                        updateDownloadStates(lastDownloadedItems)
                     }
-                }.onFailure { e ->
-                    lastOfflineError = e is IOException || (e.message?.contains("offline", ignoreCase = true) == true)
-                    _state.update { st -> st.copy(isLoading = false, error = e.userMessage(appPreferences.appContext) ?: "Failed to load series") }
-                }.getOrNull() ?: return@launch
+                }
 
-            lastOfflineError = false
-            _state.update {
-                it.copy(
-                    series = page,
-                    currentPage = 1,
-                    canLoadMore = page.isNotEmpty(),
-                    isLoading = false,
-                    isLoadingMore = false,
-                )
+                val ttlMillis = ttlMinutes * 60_000L
+                if (cacheEnabled && cachedPage.isNotEmpty() && ttlMinutes > 0 && lastRefresh > 0 && (now - lastRefresh) < ttlMillis) {
+                    showFreshCacheNotification(ttlMinutes - ((now - lastRefresh) / 60_000L).toInt())
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = null,
+                            canLoadMore = true,
+                            isLoadingMore = false,
+                        )
+                    }
+                    updateDownloadStates(lastDownloadedItems)
+                    return@launch
+                }
+
+                val page =
+                    runCatchingCancellable {
+                        fetchPageProgressive(
+                            page = 1,
+                            pageSize = appPreferences.browsePageSizeFlow.first(),
+                            cacheKey = if (cacheEnabled) queryKey else null,
+                        ) { progress ->
+                            _state.update {
+                                it.copy(
+                                    series = progress,
+                                    currentPage = 1,
+                                    canLoadMore = true,
+                                    isLoading = true,
+                                    isLoadingMore = false,
+                                    error = null,
+                                )
+                            }
+                        }
+                    }.onFailure { e ->
+                        lastOfflineError = e is IOException || (e.message?.contains("offline", ignoreCase = true) == true)
+                        _state.update { st -> st.copy(isLoading = false, error = e.userMessage(appPreferences.appContext) ?: "Failed to load series") }
+                    }.getOrNull() ?: return@launch
+
+                lastOfflineError = false
+                _state.update {
+                    it.copy(
+                        series = page,
+                        currentPage = 1,
+                        canLoadMore = page.isNotEmpty(),
+                        isLoading = false,
+                        isLoadingMore = false,
+                    )
+                }
+                updateDownloadStates(lastDownloadedItems)
+                if (cacheEnabled) {
+                    runCatchingCancellable { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
+                }
             }
-            updateDownloadStates(lastDownloadedItems)
-            if (cacheEnabled) {
-                runCatchingCancellable { appPreferences.setLastBrowseRefresh(System.currentTimeMillis()) }
-            }
-        }
     }
 
     fun loadNextPage() {
         val current = _state.value
         if (current.isLoading || current.isLoadingMore || !current.canLoadMore) return
         if (!pagingInFlight.compareAndSet(false, true)) return
+        val startedAt = generation
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoadingMore = true, error = null) }
@@ -294,6 +321,7 @@ class BrowseViewModel(
                             pageSize = pageSize,
                             cacheKey = if (cacheEnabled) queryKey else null,
                         ) { progress ->
+                            if (startedAt != generation) return@fetchPageProgressive
                             val combined = base + progress.filter { it.id !in baseIds }
                             _state.update { st ->
                                 st.copy(
@@ -308,6 +336,8 @@ class BrowseViewModel(
                         _state.update { st -> st.copy(isLoadingMore = false, error = e.userMessage(appPreferences.appContext) ?: "Failed to load page") }
                     }.getOrNull() ?: return@launch
 
+                // The search or filter changed while this page loaded, so these results belong to the old one.
+                if (startedAt != generation) return@launch
                 lastOfflineError = false
                 _state.update {
                     it.copy(
@@ -622,3 +652,6 @@ internal fun browseCacheKey(
     filter: String,
     page: Int,
 ): String = "s=$search|f=$filter|fmt=${BROWSE_FORMATS.joinToString(",") { it.id.toString() }}|p=$page"
+
+/** How long typing must pause before the Series list searches on its own. */
+private const val SEARCH_DEBOUNCE_MS = 350L

@@ -3,7 +3,14 @@ package com.iquintero.kavern.ui.reader.viewmodel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.iquintero.kavern.domain.repository.ReaderRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertFalse
+import org.junit.Before
 import org.junit.Test
 import java.lang.reflect.Proxy
 
@@ -14,7 +21,20 @@ import java.lang.reflect.Proxy
  * Building the real view model needs Android's main looper, which unit tests do not have, so these tests only check
  * that the factory finds its initializer: any other failure comes after that.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReaderViewModelFactoryTest {
+    // Creating a view model launches work on the Main dispatcher. A standard test dispatcher only queues that work,
+    // so nothing runs and nothing fails later in an unrelated test.
+    @Before
+    fun setMain() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @After
+    fun resetMain() {
+        Dispatchers.resetMain()
+    }
+
     private val repository: ReaderRepository =
         Proxy.newProxyInstance(javaClass.classLoader, arrayOf(ReaderRepository::class.java)) { _, _, _ -> null } as ReaderRepository
 
