@@ -65,6 +65,8 @@ import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 import com.iquintero.kavern.ui.library.MessageState
 import com.iquintero.kavern.ui.library.seriesProgress
+import com.iquintero.kavern.ui.theme.einkBorder
+import com.iquintero.kavern.ui.theme.einkOutline
 
 @Composable
 fun HomeScreen(
@@ -196,6 +198,7 @@ private fun ResumeCard(
                 .alpha(if (unavailable) UNAVAILABLE_ALPHA else 1f),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = einkBorder(),
         onClick = { onOpenSeries(series.id) },
         enabled = !unavailable,
     ) {
@@ -216,7 +219,8 @@ private fun ResumeCard(
                             .fillMaxWidth()
                             .aspectRatio(COVER_ASPECT_RATIO)
                             .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                            .einkOutline(MaterialTheme.shapes.medium),
                     contentScale = ContentScale.Crop,
                 )
             }

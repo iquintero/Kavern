@@ -37,6 +37,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -65,6 +66,8 @@ import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
 import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
 import com.iquintero.kavern.ui.common.ShimmerBox
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
+import com.iquintero.kavern.ui.theme.LocalEinkMode
+import com.iquintero.kavern.ui.theme.einkOutline
 
 private val AvatarSize = 88.dp
 private val BACK_BUTTON_SIZE = 48.dp
@@ -94,7 +97,7 @@ fun SearchAndFilterBar(
         TextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).einkOutline(RoundedCornerShape(SearchBarCorner)),
             placeholder = { Text(stringResource(R.string.general_search)) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             trailingIcon = {
@@ -119,7 +122,21 @@ fun SearchAndFilterBar(
             keyboardActions = KeyboardActions(onSearch = { onSearch() }),
         )
         val filterDescription = stringResource(R.string.general_filter)
-        FilledTonalIconButton(onClick = onOpenFilters, modifier = Modifier.size(FilterButtonSize)) {
+        // Selection is inverted black on e-ink, which would read as "pressed"; an outlined button reads as a button.
+        val filterButtonColors =
+            if (LocalEinkMode.current) {
+                IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            } else {
+                IconButtonDefaults.filledTonalIconButtonColors()
+            }
+        FilledTonalIconButton(
+            onClick = onOpenFilters,
+            modifier = Modifier.size(FilterButtonSize).einkOutline(CircleShape),
+            colors = filterButtonColors,
+        ) {
             BadgedBox(
                 badge = {
                     if (filterCount > 0) {
@@ -272,7 +289,8 @@ fun CoverTile(
                     .fillMaxWidth()
                     .aspectRatio(COVER_ASPECT_RATIO)
                     .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .einkOutline(MaterialTheme.shapes.medium),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -335,7 +353,12 @@ fun PersonTile(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.size(AvatarSize).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            modifier =
+                Modifier
+                    .size(AvatarSize)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    .einkOutline(CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

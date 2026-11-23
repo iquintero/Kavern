@@ -41,6 +41,7 @@ import com.iquintero.kavern.ui.common.DownloadStateBadge
 import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 import com.iquintero.kavern.ui.library.seriesProgress
+import com.iquintero.kavern.ui.theme.einkOutline
 
 /** Smallest width of a cover cell; the grid fits as many columns as the window allows. */
 val COVER_MIN_WIDTH = 110.dp
@@ -106,6 +107,7 @@ fun SeriesCoverCard(
                         .aspectRatio(COVER_ASPECT_RATIO)
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .einkOutline(MaterialTheme.shapes.medium)
                         .alpha(coverAlpha),
                 contentScale = ContentScale.Crop,
             )

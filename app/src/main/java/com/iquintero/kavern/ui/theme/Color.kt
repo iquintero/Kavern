@@ -95,13 +95,13 @@ internal val EinkLightColors: ColorScheme =
     lightColorScheme(
         primary = Color.Black,
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFE6E6E6),
-        onPrimaryContainer = Color.Black,
+        primaryContainer = Color.Black,
+        onPrimaryContainer = Color.White,
         inversePrimary = Color.White,
         secondary = Color.Black,
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFE6E6E6),
-        onSecondaryContainer = Color.Black,
+        secondaryContainer = Color.Black,
+        onSecondaryContainer = Color.White,
         tertiary = Color.Black,
         onTertiary = Color.White,
         tertiaryContainer = Color(0xFFE6E6E6),
@@ -127,21 +127,21 @@ internal val EinkLightColors: ColorScheme =
         surfaceContainerLowest = Color.White,
         surfaceContainerLow = Color.White,
         surfaceContainer = Color.White,
-        surfaceContainerHigh = Color(0xFFF2F2F2),
-        surfaceContainerHighest = Color(0xFFE6E6E6),
+        surfaceContainerHigh = Color.White,
+        surfaceContainerHighest = Color.White,
     )
 
 internal val EinkDarkColors: ColorScheme =
     darkColorScheme(
         primary = Color.White,
         onPrimary = Color.Black,
-        primaryContainer = Color(0xFF262626),
-        onPrimaryContainer = Color.White,
+        primaryContainer = Color.White,
+        onPrimaryContainer = Color.Black,
         inversePrimary = Color.Black,
         secondary = Color.White,
         onSecondary = Color.Black,
-        secondaryContainer = Color(0xFF262626),
-        onSecondaryContainer = Color.White,
+        secondaryContainer = Color.White,
+        onSecondaryContainer = Color.Black,
         tertiary = Color.White,
         onTertiary = Color.Black,
         tertiaryContainer = Color(0xFF262626),
@@ -167,8 +167,8 @@ internal val EinkDarkColors: ColorScheme =
         surfaceContainerLowest = Color.Black,
         surfaceContainerLow = Color.Black,
         surfaceContainer = Color.Black,
-        surfaceContainerHigh = Color(0xFF131313),
-        surfaceContainerHighest = Color(0xFF262626),
+        surfaceContainerHigh = Color.Black,
+        surfaceContainerHighest = Color.Black,
     )
 
 /** How far the dividers and outlines move toward the stronger outline color. */

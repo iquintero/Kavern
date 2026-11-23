@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.iquintero.kavern.R
+import com.iquintero.kavern.ui.theme.LocalEinkMode
+import com.iquintero.kavern.ui.theme.einkBorder
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -120,7 +122,9 @@ internal fun SeriesHero(
         Surface(
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            shadowElevation = 3.dp,
+            // A shadow is a gray gradient, which e-ink panels dither; the outline does the job there.
+            shadowElevation = if (LocalEinkMode.current) 0.dp else 3.dp,
+            border = einkBorder(),
             modifier = Modifier.width(HeroCoverWidth).aspectRatio(COVER_RATIO),
             onClick = onCoverClick,
         ) {
@@ -189,6 +193,7 @@ private fun FactChip(text: String) {
     Surface(
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = einkBorder(),
     ) {
         Text(
             text = text,
@@ -266,6 +271,7 @@ private fun ActionTile(
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
             color = if (highlighted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = einkBorder(),
             modifier = Modifier.size(width = 56.dp, height = 36.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {

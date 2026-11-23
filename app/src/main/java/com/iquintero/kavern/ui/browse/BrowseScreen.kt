@@ -94,6 +94,7 @@ import com.iquintero.kavern.ui.library.SearchAndFilterBar
 import com.iquintero.kavern.ui.library.activeFilterCount
 import com.iquintero.kavern.ui.library.seriesProgress
 import com.iquintero.kavern.ui.theme.LocalEinkMode
+import com.iquintero.kavern.ui.theme.einkOutline
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.File
@@ -754,7 +755,8 @@ private fun SeriesGrid(
                                 .fillMaxWidth()
                                 .aspectRatio(2f / 3f)
                                 .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .einkOutline(MaterialTheme.shapes.medium),
                         contentAlignment = Alignment.Center,
                     ) {
                         SubcomposeAsyncImage(

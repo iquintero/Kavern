@@ -64,6 +64,8 @@ import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.ui.common.StrongProgressBar
 import com.iquintero.kavern.ui.common.seriesCoverUrl
 import com.iquintero.kavern.ui.theme.LocalEinkMode
+import com.iquintero.kavern.ui.theme.einkBorder
+import com.iquintero.kavern.ui.theme.einkOutline
 
 private val ListCoverWidth = 56.dp
 private val ListCoverHeight = 84.dp
@@ -149,6 +151,7 @@ fun BookRow(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = einkBorder(),
         onClick = onOpen,
     ) {
         Row(
@@ -232,7 +235,7 @@ fun ActiveDownloadCard(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         // A failed download keeps the neutral card and is marked by an outline, which reads well in light and dark.
-        border = if (failed) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = FAILED_BORDER_ALPHA)) else null,
+        border = if (failed) BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = FAILED_BORDER_ALPHA)) else einkBorder(),
     ) {
         Row(
             modifier = Modifier.padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),

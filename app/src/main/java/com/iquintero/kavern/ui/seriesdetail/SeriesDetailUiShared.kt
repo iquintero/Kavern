@@ -74,6 +74,7 @@ import com.iquintero.kavern.data.mapper.TocItem
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.chapterCoverUrl
+import com.iquintero.kavern.ui.theme.einkOutline
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -642,10 +643,8 @@ internal fun CoverImage(
             contentDescription = null,
             modifier =
                 modifier
-                    .clip(
-                        androidx.compose.foundation.shape
-                            .RoundedCornerShape(8.dp),
-                    ),
+                    .clip(RoundedCornerShape(8.dp))
+                    .einkOutline(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop,
         )
     } else {
@@ -653,7 +652,8 @@ internal fun CoverImage(
             modifier =
                 modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .einkOutline(RoundedCornerShape(8.dp)),
         )
     }
 }
