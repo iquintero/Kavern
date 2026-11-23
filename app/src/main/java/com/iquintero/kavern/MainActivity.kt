@@ -591,9 +591,7 @@ fun KavernApp(
                                 viewModel(factory = DownloadQueueViewModelFactory.create(appPreferences, cacheManager))
                             DownloadQueueScreen(
                                 viewModel = vm,
-                                onOpenReader = { chapterId, page, sid, vid, fmt ->
-                                    navController.navigate("reader/$chapterId?page=$page&sid=$sid&vid=$vid&fmt=${fmt ?: -1}")
-                                },
+                                onOpenSeries = { seriesId -> navController.navigate("series/$seriesId") },
                             )
                         }
                         composable(MainScreen.SETTINGS_ROUTE) {

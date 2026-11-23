@@ -44,6 +44,7 @@ All notable changes to this project will be documented here.
 
 ### Changed
 
+- The Downloads page is redesigned: one row per book with its cover, size and age instead of every chapter, a short "In progress" section with pause, cancel and retry on top, a confirmation before removing, and a chapter list on request for series with several chapters downloaded. Tapping a book opens its series page.
 - Android Auto Backup is turned off, so the server URL and settings are no longer copied to Google backups (credentials could not be restored from one anyway).
 - The Series tab (Browse) is now cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.
 - The Kavita API key is no longer sent to another host if the server redirects a request there.

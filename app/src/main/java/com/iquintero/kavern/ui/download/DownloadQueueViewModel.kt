@@ -9,16 +9,16 @@ import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.downloadv2.DownloadManagerV2
 import com.iquintero.kavern.core.downloadv2.DownloadStorageManager
 import com.iquintero.kavern.core.logging.LoggingManager
+import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
-import com.iquintero.kavern.data.api.dto.SeriesDetailDto
 import com.iquintero.kavern.data.api.dto.VolumeDto
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
-import com.iquintero.kavern.ui.seriesdetail.KavernDetailV2
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +33,16 @@ class DownloadQueueViewModel(
     private val cacheManager: CacheManager,
     private val deleteDownload: suspend (Long) -> Boolean,
     private val enqueueWorker: suspend () -> Unit,
+    configFlow: Flow<AppConfig>,
 ) : ViewModel() {
+    /** Server address and keys, needed to show cover images. */
+    val config: StateFlow<AppConfig> =
+        configFlow.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
+        )
+
     val tasks =
         downloadDao
             .observeJobs()
@@ -104,14 +113,17 @@ class DownloadQueueViewModel(
         requeueTask(id, DownloadJobV2Entity.STATUS_FAILED)
     }
 
-    fun deleteDownloaded(itemId: Long) {
+    /** Removes downloaded items from the device, for example every page of a chapter. */
+    fun deleteDownloads(itemIds: List<Long>) {
         viewModelScope.launch {
-            try {
-                if (!deleteDownload(itemId)) LoggingManager.w("DownloadQueue", "Could not delete download item $itemId")
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                LoggingManager.e("DownloadQueue", "Could not delete download item $itemId", e)
+            itemIds.forEach { itemId ->
+                try {
+                    if (!deleteDownload(itemId)) LoggingManager.w("DownloadQueue", "Could not delete download item $itemId")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    LoggingManager.e("DownloadQueue", "Could not delete download item $itemId", e)
+                }
             }
         }
     }
@@ -121,10 +133,6 @@ class DownloadQueueViewModel(
             downloadDao.clearItemsForJob(id)
             downloadDao.deleteJob(id)
         }
-    }
-
-    fun clearCompleted() {
-        viewModelScope.launch { downloadDao.deleteJobsByStatus(DownloadJobV2Entity.STATUS_COMPLETED) }
     }
 
     private fun requeueTask(
@@ -238,9 +246,7 @@ data class DownloadLookup(
     val chapterTitles: Map<Int, String> = emptyMap(),
 )
 
-/**
- * Jednoduchý factory pro manuální vytvoření (bez DI).
- */
+/** Creates the view model by hand, since the app has no dependency injection. */
 object DownloadQueueViewModelFactory {
     fun create(
         preferences: AppPreferences,
@@ -255,6 +261,7 @@ object DownloadQueueViewModelFactory {
                     cacheManager,
                     deleteDownload = { itemId -> storage.deleteDownload(db, itemId) },
                     enqueueWorker = { DownloadManagerV2.enqueueWorker(preferences) },
+                    configFlow = preferences.configFlow,
                 )
             }
         }

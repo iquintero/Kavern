@@ -19,9 +19,7 @@
     <string name="general_today">오늘</string>
     <string name="general_yesterday">어제</string>
     <string name="general_unknown_date">날짜 불명</string>
-    <string name="general_series">시리즈</string>
     <string name="general_unable_to_share">공유할 수 없습니다.</string>
-    <string name="general_completed">완료</string>
     <string name="general_cancel">취소</string>
     <string name="general_no_server_logged_in">로그인된 서버가 없습니다.</string>
     <string name="general_collections">컬렉션</string>
@@ -249,8 +247,6 @@
     <string name="notifications_prompt_body">업데이트 및 다운로드 알림을 받으려면 알림을 허용해 주십시오.</string>
     <string name="notifications_prompt_accept">활성화</string>
     <string name="notifications_prompt_dismiss">나중에</string>
-    <string name="general_queue">대기열</string>
-    <string name="general_downloaded">다운로드됨</string>
     <string name="general_unknown_error">알려지지 않은 오류</string>
     <string name="settings_kavita_saved_toast">설정이 저장되었습니다. 앱을 다시 시작해 주십시오.</string>
     <string name="settings_kavita_save_failed">저장 실패: %1$s</string>
@@ -277,21 +273,10 @@
 
     <!-- Downloads queue -->
     <string name="download_screen_title">다운로드</string>
-    <string name="download_clear_completed">완료된 항목 삭제</string>
     <string name="download_type_volume">권</string>
-    <string name="download_item_title">시리즈 %1$s · %2$s</string>
-    <string name="download_item_created">생성됨: %1$s</string>
-    <string name="download_item_updated">업데이트됨: %1$s</string>
-    <string name="download_item_progress">진행중: %1$d/%2$d (%3$d%%)</string>
-    <string name="download_item_error">오류: %1$s</string>
     <string name="download_action_pause">일시정지</string>
     <string name="download_action_resume">다시 시작</string>
     <string name="download_action_retry">다시 시도</string>
-    <string name="download_action_clear">기록 삭제</string>
-    <string name="download_completed_updated">업데이트됨: %1$s</string>
-    <string name="download_completed_size">크기: %1$s</string>
-    <string name="download_completed_open">열기</string>
-    <string name="download_completed_delete">삭제</string>
 
     <!-- Download settings -->
     <string name="settings_downloads_title">다운로드</string>
@@ -411,8 +396,6 @@
     <string name="settings_browse_thumbnails_off_title">썸네일 탐색 비활성화</string>
     <string name="settings_browse_thumbnails_off_subtitle">탐색에서 텍스트로만 결과를 표시해 데이터를 절약합니다.</string>
     <string name="library_empty_reading_list">읽기 목록 없음.</string>
-    <string name="download_empty_queue">다운로드 대기열 없음.</string>
-    <string name="download_empty_downloaded">다운로드한 페이지 없음.</string>
     <string name="update_info_title">중요 업데이트</string>
     <string name="series_detail_mark_volume_read">이 권을 읽음으로 표시</string>
     <string name="series_detail_mark_volume_unread">이 권을 읽지 않음으로 표시</string>

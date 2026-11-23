@@ -22,9 +22,7 @@
     <string name="general_today">Today</string>
     <string name="general_yesterday">Yesterday</string>
     <string name="general_unknown_date">Unknown date</string>
-    <string name="general_series">Series</string>
     <string name="general_unable_to_share">Unable to share.</string>
-    <string name="general_completed">Completed</string>
     <string name="general_cancel">Cancel</string>
     <string name="general_no_server_logged_in">No server is logged in.</string>
     <string name="general_collections">Collections</string>
@@ -147,8 +145,6 @@
     <string name="volume_detail_start_reading">Start reading %1$s</string>
     <string name="volume_detail_continue_label">Continue %1$s Pg. %2$d</string>
     <string name="general_weekly">Weekly</string>
-    <string name="general_queue">Queue</string>
-    <string name="general_downloaded">Downloaded</string>
     <string name="general_unknown_error">unknown error</string>
     <!-- Languages -->
     <string name="general_language_system">System</string>
@@ -230,8 +226,6 @@
     <string name="history_no_history">No history yet.</string>
     <!-- ibrary Screen-->
     <string name="library_empty_reading_list">No reading lists found.</string>
-    <string name="download_empty_queue">No downloads in queue.</string>
-    <string name="download_empty_downloaded">No downloaded pages.</string>
     <string name="update_info_title">Important update</string>
     <string name="series_detail_mark_volume_read">Mark volume as read</string>
     <string name="series_detail_mark_volume_unread">Mark volume as unread</string>
@@ -445,23 +439,44 @@
     <string name="settings_appearance_title">Appearance</string>
     <!-- Downloads queue -->
     <string name="download_screen_title">Downloads</string>
-    <string name="download_clear_completed">Clear completed</string>
+    <string name="download_unknown_series">Unknown series</string>
+    <string name="download_summary_format">%1$s · %2$s on this device</string>
+    <string name="download_meta_format">%1$s · %2$s</string>
+    <string name="download_downloaded_ago">Downloaded %1$s</string>
+    <string name="download_just_now">just now</string>
+    <string name="download_section_active">In progress (%1$d)</string>
+    <string name="download_section_device">On this device</string>
+    <string name="download_type_series_all">Whole series</string>
+    <string name="download_chapter_number">Chapter %1$d</string>
+    <string name="download_status_waiting">Waiting…</string>
+    <string name="download_status_starting">Starting…</string>
+    <string name="download_status_downloading">Downloading · %1$d%%</string>
+    <string name="download_status_paused">Paused</string>
+    <string name="download_status_failed">Failed</string>
+    <string name="download_menu_remove">Remove from device</string>
+    <string name="download_menu_chapters">Choose chapters</string>
+    <string name="download_remove_title">Remove download?</string>
+    <string name="download_remove_body">“%1$s” will be removed from this device, freeing %2$s. You can download it again from its series page.</string>
+    <string name="download_remove_confirm">Remove</string>
+    <string name="download_sheet_subtitle">Remove chapters you have finished to free space.</string>
+    <string name="download_sheet_remove_all">Remove all chapters</string>
+    <string name="download_empty_title">Nothing downloaded yet</string>
+    <string name="download_empty_body">Books you download show up here, so you can read them without a connection.</string>
+    <string name="download_more_description">More options for %1$s</string>
+    <string name="download_cancel_description">Cancel download of %1$s</string>
+    <string name="download_remove_chapter_description">Remove %1$s from this device</string>
+    <plurals name="download_book_count">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+    <plurals name="download_chapter_count">
+        <item quantity="one">%1$d chapter</item>
+        <item quantity="other">%1$d chapters</item>
+    </plurals>
     <string name="download_type_volume">Volume</string>
-    <string name="download_item_title">Series %1$s · %2$s</string>
-    <string name="download_item_created">Created: %1$s</string>
-    <string name="download_item_updated">Updated: %1$s</string>
-    <string name="download_item_progress">Progress: %1$d/%2$d (%3$d%%)</string>
-    <string name="download_item_error">Error: %1$s</string>
     <string name="download_action_pause">Pause</string>
     <string name="download_action_resume">Resume</string>
     <string name="download_action_retry">Retry</string>
-    <string name="download_action_clear">Clear</string>
-    <string name="download_completed_updated">Updated: %1$s</string>
-    <string name="download_completed_size">Size: %1$s</string>
-    <string name="download_completed_open">Open</string>
-    <string name="download_completed_delete">Delete</string>
-    <string name="download_complete_series_group">%1$s (%2$d)</string>
-    <string name="download_completed_toggle_description">Toggle list of downloaded items</string>
     <!-- Download settings -->
     <string name="settings_downloads_title">Downloads</string>
     <string name="settings_downloads_allow_metered_title">Allow metered data</string>

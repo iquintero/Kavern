@@ -19,9 +19,7 @@
     <string name="general_today">今天</string>
     <string name="general_yesterday">昨天</string>
     <string name="general_unknown_date">未知日期</string>
-    <string name="general_series">系列</string>
     <string name="general_unable_to_share">无法分享。</string>
-    <string name="general_completed">已完成</string>
     <string name="general_cancel">取消</string>
     <string name="general_no_server_logged_in">没有已登录的服务器。</string>
     <string name="general_collections">合集</string>
@@ -249,8 +247,6 @@
     <string name="notifications_prompt_body">Please allow notifications so we can alert you about updates and downloads.</string>
     <string name="notifications_prompt_accept">启用</string>
     <string name="notifications_prompt_dismiss">先别</string>
-    <string name="general_queue">队列</string>
-    <string name="general_downloaded">已下载</string>
     <string name="general_unknown_error">未知错误</string>
     <string name="settings_kavita_saved_toast">配置已保存。请重启应用。</string>
     <string name="settings_kavita_save_failed">保存失败：%1$s</string>
@@ -277,21 +273,10 @@
 
     <!-- Downloads queue -->
     <string name="download_screen_title">下载</string>
-    <string name="download_clear_completed">清理完成</string>
     <string name="download_type_volume">卷</string>
-    <string name="download_item_title">系列 %1$s · %2$s</string>
-    <string name="download_item_created">创建：%1$s</string>
-    <string name="download_item_updated">更新：%1$s</string>
-    <string name="download_item_progress">进度：%1$d/%2$d (%3$d%%)</string>
-    <string name="download_item_error">错误：%1$s</string>
     <string name="download_action_pause">暂停</string>
     <string name="download_action_resume">继续</string>
     <string name="download_action_retry">重试</string>
-    <string name="download_action_clear">清除</string>
-    <string name="download_completed_updated">更新：%1$s</string>
-    <string name="download_completed_size">大小：%1$s</string>
-    <string name="download_completed_open">打开</string>
-    <string name="download_completed_delete">删除</string>
 
     <!-- Download settings -->
     <string name="settings_downloads_title">下载</string>
@@ -411,8 +396,6 @@
     <string name="settings_browse_thumbnails_off_title">关闭浏览缩略图</string>
     <string name="settings_browse_thumbnails_off_subtitle">浏览页显示纯文本结果以节省数据流量。</string>
     <string name="library_empty_reading_list">找不到阅读列表。</string>
-    <string name="download_empty_queue">队列中无下载。</string>
-    <string name="download_empty_downloaded">没有已下载的页。</string>
     <string name="update_info_title">重要升级</string>
     <string name="series_detail_mark_volume_read">标记卷为已读</string>
     <string name="series_detail_mark_volume_unread">标记卷为未读</string>
