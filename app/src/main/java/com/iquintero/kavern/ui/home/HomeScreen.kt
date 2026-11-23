@@ -209,7 +209,6 @@ private fun ResumeCard(
                         ImageRequest
                             .Builder(LocalContext.current)
                             .data(seriesCoverUrl(config, series.id))
-                            .crossfade(true)
                             .build(),
                     contentDescription = null,
                     modifier =

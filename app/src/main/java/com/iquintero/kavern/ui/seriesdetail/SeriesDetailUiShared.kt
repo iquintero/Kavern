@@ -72,6 +72,7 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.data.mapper.TocItem
 import com.iquintero.kavern.ui.common.DownloadState
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.chapterCoverUrl
 import java.time.Instant
 import java.time.LocalDateTime
@@ -637,7 +638,6 @@ internal fun CoverImage(
                 ImageRequest
                     .Builder(context)
                     .data(coverUrl)
-                    .crossfade(true)
                     .build(),
             contentDescription = null,
             modifier =
@@ -788,7 +788,7 @@ internal fun CollectionDialogV2(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (isLoading) {
-                    androidx.compose.material3.CircularProgressIndicator()
+                    LoadingIndicator()
                 } else {
                     if (collections.isEmpty()) {
                         Text(stringResource(R.string.series_detail_no_colls_reload))

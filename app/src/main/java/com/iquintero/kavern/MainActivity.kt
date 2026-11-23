@@ -414,7 +414,7 @@ fun KavernApp(
         }
 
         val imageLoader =
-            remember(maxThumbnailsParallel, config) {
+            remember(maxThumbnailsParallel, config, einkMode) {
                 val dispatcher =
                     Dispatcher().apply {
                         maxRequestsPerHost = maxThumbnailsParallel
@@ -432,6 +432,8 @@ fun KavernApp(
                     // Keep covers on disk so the library still looks right offline. Kavita's
                     // cache headers are short-lived, so ignore them and rely on the size cap.
                     .respectCacheHeaders(false)
+                    // Images fade in normally; on e-ink they just appear.
+                    .crossfade(!einkMode)
                     .diskCache {
                         DiskCache
                             .Builder()

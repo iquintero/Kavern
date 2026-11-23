@@ -2,13 +2,13 @@ package com.iquintero.kavern.ui.reader.renderer
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.iquintero.kavern.R
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.reader.screen.PdfPageViewer
 
 object PdfReader : BaseReader {
@@ -22,7 +22,7 @@ object PdfReader : BaseReader {
         when {
             params.uiState.isLoading -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
             params.uiState.pdfPath == null -> {

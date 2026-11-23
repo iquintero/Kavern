@@ -39,7 +39,6 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -91,6 +90,7 @@ import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.ui.browse.utils.PublicationState
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateResolver
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.chapterCoverUrl
 import com.iquintero.kavern.ui.common.collectionCoverUrl
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -467,7 +467,7 @@ fun SeriesDetailScreenV2(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                             Text(
                                 text = stringResource(id = com.iquintero.kavern.R.string.general_loading),
                                 style = MaterialTheme.typography.titleMedium,
@@ -1772,7 +1772,7 @@ fun SeriesDetailScreenV2(
                                 modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                CircularProgressIndicator()
+                                LoadingIndicator()
                             }
                         } else if (downloadTreeNodes.isEmpty()) {
                             Text(stringResource(com.iquintero.kavern.R.string.series_detail_download_tree_empty))

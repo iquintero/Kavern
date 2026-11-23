@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -288,7 +287,6 @@ fun CoverTile(
                         ImageRequest
                             .Builder(LocalContext.current)
                             .data(imageUrl)
-                            .crossfade(true)
                             .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -352,7 +350,6 @@ fun PersonTile(
                         ImageRequest
                             .Builder(LocalContext.current)
                             .data(imageUrl)
-                            .crossfade(true)
                             .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +40,7 @@ import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.DateTimePagesReadOnADayCountDto
 import com.iquintero.kavern.data.api.dto.Int32StatCountDto
 import com.iquintero.kavern.data.api.dto.UserReadStatisticsDto
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -116,7 +116,7 @@ fun SettingsStatsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
         }

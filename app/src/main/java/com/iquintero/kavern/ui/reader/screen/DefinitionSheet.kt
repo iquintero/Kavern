@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -36,6 +35,7 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.dictionary.DefinitionResult
 import com.iquintero.kavern.core.dictionary.DictionaryEntry
 import com.iquintero.kavern.core.dictionary.WiktionaryClient
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import java.util.Locale
 
 /** Bottom sheet that looks [request] up on Wiktionary and shows its definitions. */
@@ -71,7 +71,7 @@ internal fun DefinitionSheet(
             when (val current = result) {
                 null -> {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                        LoadingIndicator(modifier = Modifier.size(20.dp))
                         Text(stringResource(R.string.dictionary_loading), style = MaterialTheme.typography.bodyMedium)
                     }
                 }

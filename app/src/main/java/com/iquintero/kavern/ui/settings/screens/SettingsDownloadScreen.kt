@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,6 +50,7 @@ import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.dao.DownloadV2Dao
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -355,7 +355,7 @@ fun SettingsDownloadScreen(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                     }
                 } else {
                     Text(statsBody)
@@ -438,7 +438,7 @@ fun SettingsDownloadScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                     Text(stringResource(com.iquintero.kavern.R.string.settings_downloads_location_moving_text))
                 }
             },

@@ -98,7 +98,6 @@ fun SeriesCoverCard(
                     ImageRequest
                         .Builder(LocalContext.current)
                         .data(imageUrl)
-                        .crossfade(true)
                         .build(),
                 contentDescription = null,
                 modifier =

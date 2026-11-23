@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +49,7 @@ import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.data.api.dto.ReadHistoryEventDto
 import com.iquintero.kavern.data.api.dto.ReadingHistorySessionDto
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -201,7 +200,7 @@ fun HistoryScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator()
+                        LoadingIndicator()
                     }
                 }
                 error.value != null -> {
@@ -293,7 +292,7 @@ private fun HistoryRow(
                 contentScale = ContentScale.Crop,
             ) {
                 when (painter.state) {
-                    is AsyncImagePainter.State.Loading -> CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                    is AsyncImagePainter.State.Loading -> LoadingIndicator(modifier = Modifier.size(18.dp))
                     is AsyncImagePainter.State.Error -> Text(stringResource(R.string.history_no_cover), style = MaterialTheme.typography.labelSmall)
                     else -> SubcomposeAsyncImageContent()
                 }

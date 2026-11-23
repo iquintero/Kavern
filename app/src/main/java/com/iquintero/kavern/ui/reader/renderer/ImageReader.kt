@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,7 +55,9 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.network.HttpException
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.storage.ImageReaderMode
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.reader.viewmodel.WebtoonChapterUiState
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -263,7 +264,7 @@ object ImageReader : BaseReader {
         ) {
             if (imageUrl.isNullOrBlank()) {
                 if (params.uiState.isLoading) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 } else {
                     Text(
                         text = params.uiState.error ?: stringResource(R.string.general_error),
@@ -342,7 +343,7 @@ object ImageReader : BaseReader {
                 }
 
                 if (params.uiState.isLoading) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
         }
@@ -367,7 +368,7 @@ private fun WebtoonContent(
                     color = MaterialTheme.colorScheme.error,
                 )
             } else {
-                CircularProgressIndicator()
+                LoadingIndicator()
             }
         }
         return
@@ -384,6 +385,7 @@ private fun WebtoonContent(
                 }
             }
         }
+    val einkMode = LocalEinkMode.current
     val activeChapterId = uiState.activeChapterId ?: chapters.first().chapterId
     val activePage = activeChapterId to uiState.pageIndex
     val initialItemIndex =
@@ -420,7 +422,7 @@ private fun WebtoonContent(
         if (targetItemIndex >= 0 && activePage != reportedPage) {
             programmaticScrollTarget = targetItemIndex
             try {
-                listState.animateScrollToItem(targetItemIndex)
+                if (einkMode) listState.scrollToItem(targetItemIndex) else listState.animateScrollToItem(targetItemIndex)
             } finally {
                 programmaticScrollTarget = null
                 val visiblePage = listState.mostVisiblePage(webtoonItems)
@@ -559,7 +561,7 @@ private fun WebtoonChapterBoundary(
                 )
             }
             else -> {
-                CircularProgressIndicator(color = Color.White)
+                LoadingIndicator(color = Color.White)
                 Text(
                     text = stringResource(R.string.reader_webtoon_loading_next_chapter),
                     style = MaterialTheme.typography.bodyMedium,
@@ -587,7 +589,7 @@ private fun WebtoonPlaceholder() {
                 .aspectRatio(WEBTOON_PLACEHOLDER_ASPECT_RATIO),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator()
+        LoadingIndicator()
     }
 }
 

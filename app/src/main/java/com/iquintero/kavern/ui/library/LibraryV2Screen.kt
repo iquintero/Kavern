@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,6 +56,7 @@ import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.ui.browse.BrowseScreen
 import com.iquintero.kavern.ui.browse.BrowseViewModel
 import com.iquintero.kavern.ui.common.DownloadState
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.SeriesCoverCard
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.collectionCoverUrl
@@ -271,7 +271,7 @@ fun LibraryV2Screen(
                         if (uiState.isPeopleLoadingMore) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
                                 Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                    LoadingIndicator(modifier = Modifier.size(24.dp))
                                 }
                             }
                         }

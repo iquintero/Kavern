@@ -2,67 +2,24 @@ package com.iquintero.kavern.ui.reader.screen
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Matrix
-import android.graphics.pdf.PdfRenderer
-import android.os.Handler
-import android.os.Looper
-import android.os.ParcelFileDescriptor
-import android.view.GestureDetector
 import android.view.KeyEvent
-import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
-import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.FormatAlignCenter
-import androidx.compose.material.icons.filled.FormatAlignJustify
-import androidx.compose.material.icons.filled.FormatAlignLeft
-import androidx.compose.material.icons.filled.FormatAlignRight
-import androidx.compose.material.icons.filled.FormatSize
-import androidx.compose.material.icons.filled.NavigateBefore
-import androidx.compose.material.icons.filled.NavigateNext
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.Toc
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -76,47 +33,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.iquintero.kavern.R
-import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.network.ServerReachability
-import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
-import com.iquintero.kavern.core.storage.ImageReaderMode
 import com.iquintero.kavern.core.storage.ReaderPrefs
 import com.iquintero.kavern.core.storage.ReaderThemeMode
 import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.domain.model.ReaderTocItem
 import com.iquintero.kavern.domain.repository.ReaderRepository
-import com.iquintero.kavern.ui.reader.model.ReaderFontOption
-import com.iquintero.kavern.ui.reader.model.fontFaceCss
 import com.iquintero.kavern.ui.reader.model.readerFontOptions
-import com.iquintero.kavern.ui.reader.model.readerThemeOptions
 import com.iquintero.kavern.ui.reader.renderer.BaseReader
 import com.iquintero.kavern.ui.reader.renderer.PdfReader
 import com.iquintero.kavern.ui.reader.renderer.ReaderRenderCallbacks
@@ -125,17 +65,13 @@ import com.iquintero.kavern.ui.reader.viewmodel.BaseReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ImageReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.PdfReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ReaderUiState
-import kotlinx.coroutines.Dispatchers
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.File
 import java.util.Locale
 import kotlin.coroutines.resume
-import kotlin.math.abs
-import kotlin.math.max
 
 @Composable
 fun ReaderScreen(
@@ -766,10 +702,13 @@ internal fun BaseReaderScreen(
                 )
             }
 
+            val einkOverlays = LocalEinkMode.current
             AnimatedVisibility(
                 // Shown while the server cannot be used, not merely because the page came from a download.
                 visible = withoutServer,
                 modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp),
+                enter = if (einkOverlays) EnterTransition.None else fadeIn() + expandVertically(),
+                exit = if (einkOverlays) ExitTransition.None else fadeOut() + shrinkVertically(),
             ) {
                 Box(
                     modifier =
@@ -787,6 +726,8 @@ internal fun BaseReaderScreen(
                     Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 72.dp), // raise above bottom bar
+                enter = if (einkOverlays) EnterTransition.None else fadeIn() + expandVertically(),
+                exit = if (einkOverlays) ExitTransition.None else fadeOut() + shrinkVertically(),
             ) {
                 val settingsState =
                     ReaderSettingsState(

@@ -19,10 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.ServerReachability
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 
 /** What the app currently knows about its link to the Kavita server. */
 enum class ServerConnection {
@@ -65,12 +65,20 @@ fun ServerConnectionIndicator(
     connection: ServerConnection,
     modifier: Modifier = Modifier,
 ) {
-    val pulse by rememberInfiniteTransition(label = "serverCheck").animateFloat(
-        initialValue = PULSE_MIN_ALPHA,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(PULSE_MS), RepeatMode.Reverse),
-        label = "serverCheckAlpha",
-    )
+    // Only a check in progress pulses, and never on e-ink: a transition that always runs keeps redrawing the screen.
+    val pulse =
+        if (connection == ServerConnection.Checking && !LocalEinkMode.current) {
+            val transition = rememberInfiniteTransition(label = "serverCheck")
+            transition
+                .animateFloat(
+                    initialValue = PULSE_MIN_ALPHA,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(PULSE_MS), RepeatMode.Reverse),
+                    label = "serverCheckAlpha",
+                ).value
+        } else {
+            1f
+        }
     val (icon, description) =
         when (connection) {
             ServerConnection.Connected -> Icons.Filled.CloudDone to stringResource(R.string.server_status_connected)
@@ -84,7 +92,7 @@ fun ServerConnectionIndicator(
         imageVector = icon,
         contentDescription = description,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = modifier.alpha(if (connection == ServerConnection.Checking) pulse else 1f),
+        modifier = modifier.alpha(pulse),
     )
 }
 

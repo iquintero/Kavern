@@ -93,6 +93,7 @@ import com.iquintero.kavern.ui.library.MessageState
 import com.iquintero.kavern.ui.library.SearchAndFilterBar
 import com.iquintero.kavern.ui.library.activeFilterCount
 import com.iquintero.kavern.ui.library.seriesProgress
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.File
@@ -208,7 +209,8 @@ fun BrowseScreen(
         Column(
             modifier = Modifier.fillMaxSize(),
         ) {
-            AnimatedVisibility(visible = !hideSearch || uiState.series.isEmpty()) {
+            // On e-ink the bar stays put: hiding it while scrolling would shift the whole grid and redraw it.
+            AnimatedVisibility(visible = LocalEinkMode.current || !hideSearch || uiState.series.isEmpty()) {
                 Column {
                     SearchAndFilterBar(
                         query = uiState.searchInput,

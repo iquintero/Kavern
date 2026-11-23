@@ -63,6 +63,7 @@ import com.iquintero.kavern.core.util.formatBytes
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
 import com.iquintero.kavern.ui.common.StrongProgressBar
 import com.iquintero.kavern.ui.common.seriesCoverUrl
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 
 private val ListCoverWidth = 56.dp
 private val ListCoverHeight = 84.dp
@@ -98,7 +99,6 @@ private fun BookCover(
                     ImageRequest
                         .Builder(LocalContext.current)
                         .data(url)
-                        .crossfade(true)
                         .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -257,7 +257,11 @@ fun ActiveDownloadCard(
                     if (percent != null && job.status != DownloadJobV2Entity.STATUS_PENDING) {
                         StrongProgressBar(progress = percent / 100f, height = 8.dp)
                     } else if (job.status == DownloadJobV2Entity.STATUS_RUNNING) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp).clip(MaterialTheme.shapes.extraSmall))
+                        if (LocalEinkMode.current) {
+                            StrongProgressBar(progress = 0f, height = 8.dp)
+                        } else {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp).clip(MaterialTheme.shapes.extraSmall))
+                        }
                     }
                 }
                 Text(

@@ -2,7 +2,6 @@ package com.iquintero.kavern.ui.reader.renderer
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.iquintero.kavern.R
+import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.reader.screen.ReaderWebView
 
 object EpubReader : BaseReader {
@@ -26,7 +26,7 @@ object EpubReader : BaseReader {
         if (html == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (params.uiState.isLoading) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 } else {
                     Text(
                         params.uiState.error ?: stringResource(R.string.general_error),

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.Dp
+import com.iquintero.kavern.ui.theme.LocalEinkMode
 
 @Composable
 fun ShimmerBox(
@@ -42,7 +43,8 @@ fun ShimmerBox(
 
 @Composable
 fun rememberShimmerProgress(enabled: Boolean): Float {
-    if (!enabled) return 0f
+    // A moving highlight keeps redrawing an e-ink panel; there the placeholders stay still.
+    if (!enabled || LocalEinkMode.current) return 0f
     val transition = rememberInfiniteTransition(label = "shimmer")
     return transition
         .animateFloat(

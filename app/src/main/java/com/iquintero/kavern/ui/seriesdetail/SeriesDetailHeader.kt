@@ -137,7 +137,6 @@ internal fun SeriesHero(
                             ImageRequest
                                 .Builder(LocalContext.current)
                                 .data(coverUrl)
-                                .crossfade(true)
                                 .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
