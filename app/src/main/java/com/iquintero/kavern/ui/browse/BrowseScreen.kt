@@ -203,7 +203,7 @@ fun BrowseScreen(
     // back handling solved via confirmValueChange in sheet state
 
     when {
-        uiState.error != null -> {
+        showBrowseError(uiState.error, hasItems = uiState.series.isNotEmpty()) -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("${stringResource(R.string.general_error)}: ${uiState.error}")
             }
@@ -1049,3 +1049,9 @@ private fun TriStateRowString(
         }
     }
 }
+
+/** A failed refresh must not hide results that are already on screen (e.g. the cached list while offline). */
+internal fun showBrowseError(
+    error: String?,
+    hasItems: Boolean,
+): Boolean = error != null && !hasItems

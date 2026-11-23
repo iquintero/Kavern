@@ -14,6 +14,7 @@ import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.runCatchingCancellable
+import com.iquintero.kavern.core.util.userMessage
 import com.iquintero.kavern.data.local.db.KavernDatabase
 import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
 import com.iquintero.kavern.domain.model.Collection
@@ -141,7 +142,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     libraries = result.getOrDefault(emptyList()),
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message,
+                    error = result.exceptionOrNull()?.userMessage(appPreferences.appContext),
                 )
             }
         }
@@ -201,7 +202,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     collections = result.getOrDefault(emptyList()),
                     isCollectionsLoading = false,
-                    collectionsError = result.exceptionOrNull()?.message,
+                    collectionsError = result.exceptionOrNull()?.userMessage(appPreferences.appContext),
                 )
             }
             cacheManager.cacheLibraryV2Collections(
@@ -266,7 +267,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     readingLists = result.getOrDefault(emptyList()),
                     isReadingListsLoading = false,
-                    readingListsError = result.exceptionOrNull()?.message,
+                    readingListsError = result.exceptionOrNull()?.userMessage(appPreferences.appContext),
                 )
             }
             cacheManager.cacheLibraryV2ReadingLists(
@@ -342,7 +343,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     people = pageItems,
                     isPeopleLoading = false,
-                    peopleError = result.exceptionOrNull()?.message,
+                    peopleError = result.exceptionOrNull()?.userMessage(appPreferences.appContext),
                     peoplePage = 1,
                     canLoadMorePeople = pageItems.size == 50,
                 )
@@ -369,7 +370,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     people = it.people + pageItems,
                     isPeopleLoadingMore = false,
-                    peopleError = result.exceptionOrNull()?.message ?: it.peopleError,
+                    peopleError = result.exceptionOrNull()?.userMessage(appPreferences.appContext) ?: it.peopleError,
                     peoplePage = if (pageItems.isNotEmpty()) nextPage else it.peoplePage,
                     canLoadMorePeople = pageItems.size == 50,
                 )
@@ -439,7 +440,7 @@ class LibraryV2ViewModel(
                 it.copy(
                     collectionSeries = result.getOrDefault(emptyList()),
                     isCollectionSeriesLoading = false,
-                    collectionSeriesError = result.exceptionOrNull()?.message,
+                    collectionSeriesError = result.exceptionOrNull()?.userMessage(appPreferences.appContext),
                 )
             }
             updateDownloadStates(lastDownloadedItems)

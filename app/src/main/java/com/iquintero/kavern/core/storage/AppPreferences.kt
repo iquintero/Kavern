@@ -243,7 +243,7 @@ class AppPreferences(
     val libraryCacheEnabledFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[KEY_LIBRARY_CACHE_ENABLED] ?: true }
     val browseCacheEnabledFlow: Flow<Boolean> =
-        context.dataStore.data.map { prefs -> prefs[KEY_BROWSE_CACHE_ENABLED] ?: false }
+        context.dataStore.data.map { prefs -> prefs[KEY_BROWSE_CACHE_ENABLED] ?: true }
     val cacheAlwaysRefreshFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[KEY_CACHE_ALWAYS_REFRESH] ?: true }
     val cacheStaleMinutesFlow: Flow<Int> =

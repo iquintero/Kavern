@@ -35,6 +35,7 @@
     <string name="general_coll_name">Collection name</string>
     <string name="general_create_and_add">Create and add</string>
     <string name="general_offline">Offline</string>
+    <string name="error_offline_not_saved">You are offline and this list has not been saved on this device yet.</string>
     <string name="general_offline_mode">Offline mode</string>
     <string name="general_close">Close</string>
     <string name="general_reading_time">Reading time</string>

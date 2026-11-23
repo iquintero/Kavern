@@ -65,7 +65,7 @@ fun SettingsAdvancedScreen(
     val scope = rememberCoroutineScope()
     var globalCacheEnabled by remember { mutableStateOf(true) }
     var cacheEnabled by remember { mutableStateOf(false) }
-    var browseCacheEnabled by remember { mutableStateOf(false) }
+    var browseCacheEnabled by remember { mutableStateOf(true) }
     var libraryCacheHomeEnabled by remember { mutableStateOf(false) }
     var libraryCacheWantEnabled by remember { mutableStateOf(false) }
     var libraryCacheCollectionsEnabled by remember { mutableStateOf(false) }

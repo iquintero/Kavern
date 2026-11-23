@@ -15,6 +15,7 @@ import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.notification.AppNotificationManager
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.runCatchingCancellable
+import com.iquintero.kavern.core.util.userMessage
 import com.iquintero.kavern.data.api.dto.CollectionDto
 import com.iquintero.kavern.data.api.dto.DecodeFilterRequest
 import com.iquintero.kavern.data.api.dto.FilterDefinitionDto
@@ -252,7 +253,7 @@ class BrowseViewModel(
                     }
                 }.onFailure { e ->
                     lastOfflineError = e is IOException || (e.message?.contains("offline", ignoreCase = true) == true)
-                    _state.update { st -> st.copy(isLoading = false, error = e.message ?: "Failed to load series") }
+                    _state.update { st -> st.copy(isLoading = false, error = e.userMessage(appPreferences.appContext) ?: "Failed to load series") }
                 }.getOrNull() ?: return@launch
 
             lastOfflineError = false
@@ -303,7 +304,7 @@ class BrowseViewModel(
                         }
                     }.onFailure { e ->
                         lastOfflineError = e is IOException || (e.message?.contains("offline", ignoreCase = true) == true)
-                        _state.update { st -> st.copy(isLoadingMore = false, error = e.message ?: "Failed to load page") }
+                        _state.update { st -> st.copy(isLoadingMore = false, error = e.userMessage(appPreferences.appContext) ?: "Failed to load page") }
                     }.getOrNull() ?: return@launch
 
                 lastOfflineError = false
