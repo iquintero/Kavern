@@ -181,6 +181,13 @@ private val IMPORTANT_INFO_FIXED =
 
 private const val FORCE_SHOW_IMPORTANT_INFO = false
 
+/**
+ * The version of the "important info" notes above. The dialog shows once to anyone who has not seen this version, so
+ * raise it only when the notes change. It used to follow the app's version code, which would show the same old
+ * notes again after every release.
+ */
+private const val IMPORTANT_INFO_VERSION = 11
+
 private fun applyLocale(languageTag: String) {
     val locales =
         if (languageTag.isBlank() || languageTag == "system") {
@@ -278,7 +285,7 @@ fun KavernApp(
             return@LaunchedEffect
         }
         if (lastImportantInfoVersion < 0) return@LaunchedEffect
-        showImportantInfoDialog.value = BuildConfig.VERSION_CODE > lastImportantInfoVersion
+        showImportantInfoDialog.value = IMPORTANT_INFO_VERSION > lastImportantInfoVersion
     }
 
     LaunchedEffect(appLanguage) {
@@ -407,7 +414,7 @@ fun KavernApp(
                     TextButton(
                         onClick = {
                             showImportantInfoDialog.value = false
-                            scope.launch { appPreferences.setImportantInfoVersion(BuildConfig.VERSION_CODE) }
+                            scope.launch { appPreferences.setImportantInfoVersion(IMPORTANT_INFO_VERSION) }
                         },
                     ) { Text(context.getString(R.string.general_close)) }
                 },

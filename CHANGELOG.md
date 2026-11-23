@@ -2,39 +2,73 @@
 
 All notable changes to this project will be documented here.
 
-## Unreleased
+## v0.1.0
+
+First release of Kavern, a fork of [Inkita](https://github.com/dom-53/Inkita) for reading from your own Kavita server, with e-ink readers in mind. It has its own name, icon, package and application ID, so it installs alongside Inkita. Everything below is new since the fork.
 
 ### Added
 
-- "Reverse the volume keys" reader setting (Settings > Reader): volume up turns to the next page and volume down to the previous one. The default is unchanged. It applies when "Volume keys turn pages" is on.
-- E-reader mode adds page-by-page scrolling to long lists (Home, Library, Downloads and the series page): two buttons jump one screen up or down instantly, and the hardware page-up and page-down keys do the same.
-- E-reader mode is now a global setting in Settings > Appearance (it was a switch in Reader settings). It turns on by default on e-ink devices such as Boox readers; a choice you already made is kept.
-- Kavern is now a fork of Inkita with its own name, package and application ID, so it installs alongside the original app. The in-app updater and the permission to install other apps were removed.
-- Home is now a single grid of your series sorted by last read.
-- Reading progress bars on series covers in the library.
-- E-ink mode (Settings > Reader > General) that turns off page-turn and screen animations.
-- A new lantern app icon, also used in the README and the About screen.
-- "Volume keys turn pages" reader setting. Page buttons on e-readers always turn pages.
-- Word lookup (Define) in the EPUB reader.
-- Optional page-by-page EPUB reading (Reader settings, Navigation tab, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the left or right edge of the screen or swiping, like an e-reader. Off by default; scrolling is unchanged.
-- Table of contents button in the EPUB reader to jump to any chapter or section, including its position inside the page.
-- "Keep screen on" reader setting (Settings > Reader > General) that stops the screen from dimming or locking while a book is open. On by default.
+- **E-reader mode**, a global setting in Settings > Appearance. It turns on by itself on e-ink devices (Onyx/Boox, Bigme, Meebook, Likebook, iReader, Dasung) and can be switched on anywhere. It makes the whole interface still and high contrast:
+  - No animations: switches, chips and sheets change instantly, there are no press ripples or image fades, loading shows a still hourglass, and placeholders and the cloud icon no longer shimmer or pulse.
+  - Structure comes from thin outlines instead of gray fills, selected items turn solid black with white text, and shadows are off.
+  - Long lists (Home, Library, Downloads, series page) get two buttons that jump one screen up or down, and the hardware page-up and page-down keys do the same.
+- **Page-by-page EPUB reading** (Reader settings, or Settings > Reader). Each book page is split into screen-sized pages that you turn by tapping the screen edges or swiping, like an e-reader. On by default for new installs.
+- Hardware page buttons turn pages in the reader, and a "Volume keys turn pages" setting adds the volume keys, and "Reverse the volume keys" swaps which one goes forward.
+- Word lookup (Define) for selected text in the EPUB reader.
+- Table of contents button in the EPUB reader, including positions inside a page.
+- "Keep screen on" reader setting.
+- Reading progress bars on series covers, and progress bars that stay readable on grayscale screens.
+- Search in Library > Series as you type.
+- Screen reader support in the reader: comic and PDF pages are announced as "Page N of M", and the EPUB reader offers next and previous page actions.
+- A new lantern app icon, used in the app, the About screen and the README.
+
+### Changed
+
+- **Redesigned Home, Library, Downloads and the series page.**
+  - Home has a Continue reading card with a progress bar and a Resume button, and shelves for in progress, want to read and recently added.
+  - Library has a rounded search field with a filter button that shows how many filters are on, tidier cover tiles, round portraits for people, loading placeholders, and clear empty and offline states with Retry.
+  - Downloads shows one row per book with its cover, size and age instead of one row per chapter, an "In progress" section with pause, cancel and retry, and a confirmation before removing. A chapter list is available for series with several chapters.
+  - The series page has a larger cover, short fact chips (status, publication, year, time to read, length), a prominent Continue or Start reading button, and labelled Want to read, Collections, Open in browser and Share tiles. Placeholders such as "Release year: 0" are no longer shown.
+- Light mode is easier on the eyes: the page is a soft gray, cards stay brighter so they stand out, and outlines are a little stronger. Dark mode is unchanged.
+- The Library > Series list is cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.
+- Android Auto Backup is off, so the server address and settings are no longer copied to Google backups.
+- Release builds keep line numbers in crash traces so reports can be read.
+- The in-app updater and the permission to install other apps were removed, and the Czech translation was dropped (English, Korean and Simplified Chinese remain).
 
 ### Fixed
 
-- Closing the word definition sheet no longer makes the reader's page jump and re-wrap. The sheet showed the status and navigation bars and the reader then hid them again; the sheet now leaves them hidden, so the page underneath stays exactly as it was.
-- In E-reader mode, selected text in the EPUB reader is drawn as inverse video (page color on text color) instead of the system's tinted highlight, which turned into a dark block on e-ink and hid the selected words.
-- The first hardware page-button press after touching the screen is no longer ignored in the reader. Android can swallow that press's key-down, so it is now counted when the key comes back up.
-- Progress bars are readable on e-ink and other grayscale screens: the Continue reading card, the reader's bottom bar and active downloads now draw an outlined track with a solid dark fill instead of two similar pale grays, and the progress strip on covers is a white fill on a darker track.
-- EPUB reader: your Reader settings (alignment, font size, line height, font) apply to body text again. A book's own stylesheet was overriding them, so text came out justified, smaller and tightly spaced whatever you picked. Titles keep their centered or right alignment and larger sizes, and code keeps its monospace font; paragraph indents and spacing from the book are kept.
-- The "Cache still fresh" notification that appeared when opening Library > Series is gone. It only announced that the list was being shown from the cache; the list itself behaves as before.
-- Opening Kavern again from the launcher icon returns to the screen you left instead of starting a second copy of the app on Home. This could happen when an earlier copy had been started some other way, for example by an installer or a development tool.
-- Library > Series no longer loses its search box, filter button and library chips when a search or filter matches nothing, or when loading fails; they stay on screen so you can change or clear it. A failed load now shows a Retry button.
-- Comics (CBZ, CBR and image-folder series) are now listed in Library > Series, including under the Comics library chip. Browse only listed EPUB and PDF series before.
-- Background work (progress sync, downloads, prefetch) failed to start in release builds; WorkManager's input merger is now kept by R8.
-- Fix a crash on the series screen when the Kavita server cannot be reached (for example a home server on mobile data). One failed request among the many that load the screen could take the whole app down; it now shows the cached series and an error instead.
-- Open downloaded books right away when the Kavita server cannot be reached (for example a home server on mobile data) instead of showing a blank page for up to a minute. Inkita now notices an unreachable server within seconds, skips server calls for a minute, and reads downloaded pages, saved reading positions and previously read pages from the device. Switching networks, such as back to home wifi, resets this. The "Reading offline" label now only shows while the server cannot be used, instead of whenever a page was read from a download.
-- Open a new EPUB page at its start instead of reusing the previous page's scroll position.
+- EPUB reader: your Reader settings (alignment, font size, line height, font) apply to body text again; a book's own stylesheet was overriding them. Titles keep their centering and larger sizes, code keeps its monospace font, and the book's paragraph indents are kept.
+- EPUB reader: books apply their own styles, fonts and images (Kavita's styles, embedded fonts and pictures were blocked or ignored before), paged reading no longer skips text or lets a finger drag the page, and code blocks wrap instead of running off the screen.
+- The first hardware page-button press after touching the screen is no longer ignored.
+- Comics (CBZ, CBR, image folders) are listed in Library > Series, including under the Comics chip. Only EPUB and PDF series were listed before.
+- Library > Series keeps its search box, filter button and chips when a search matches nothing or loading fails, and a failed load shows a Retry button.
+- Opening Kavern again from the launcher icon returns to the screen you left instead of starting a second copy on Home.
+- Reading progress and downloads in the background failed to start in release builds, so progress made offline never synced. They run now.
+- The reader's web view is freed when you leave a book, so opening and closing books repeatedly no longer piles them up.
+- Download fixes:
+  - Starting the same download twice no longer queues it twice.
+  - Failed downloads wait 2s, 4s, 8s (up to a minute) between retries.
+  - An EPUB page whose images cannot be fetched because of a network or server error is retried, instead of being saved without them.
+  - Images in downloaded EPUBs load from servers reached over plain HTTP.
+- Cached library lists are replaced in one step, so a failure partway no longer leaves a half-updated list.
+- A request cancelled by leaving a screen is no longer shown as an error.
+- The "Cache still fresh" notification is gone.
+- Reading progress the server permanently rejects is dropped instead of being retried forever; login failures keep it for a later retry.
+
+### Security and privacy
+
+- The Kavita API key is no longer sent to another host if the server redirects a request there.
+- Log messages and stack traces are scrubbed of API keys and server addresses before they reach logcat, not only the log files.
+
+---
+
+# Before the fork: Inkita
+
+The entries below are Inkita's own history, kept for reference. Links point to the Inkita repository.
+
+## Inkita, unreleased at the time of the fork
+
+### Fixed
 
 - Fix a database migration that could prevent Inkita from opening after an upgrade from older versions such as v0.2.0-beta.2.
 - Preserve newer local reading progress when an older synchronization finishes.
@@ -50,28 +84,6 @@ All notable changes to this project will be documented here.
 - Restrict EPUB WebView access to book resources and block scripts embedded in books. Previously downloaded books can still be read offline.
 - Restore EPUB links to footnotes and other anchors on the current page.
 - Make Reader settings scrollable and restore font selection ([#69](https://github.com/dom-53/Inkita/issues/69)).
-- Paged EPUB reading no longer skips text between pages or lets a finger drag the page, and code blocks wrap instead of running off the screen.
-- A request cancelled by leaving a screen is no longer shown as an error on the Reader, Library, Browse, Series and History screens.
-
-### Changed
-
-- Page-by-page EPUB reading is now on by default for new installs, as on an e-reader. If you have already used Reader settings, your saved choice is kept; switch "Page-by-page reading" in Settings > Reader to change it.
-- E-reader mode draws structure with outlines instead of gray fills, which dither on e-ink: cards, covers, chips, the search bar and buttons get a thin outline, white covers no longer dissolve into the page, and selected items (navigation, chips, the Continue and Resume buttons) turn solid black with white text. Shadows are off.
-- E-reader mode now stills the whole interface, not just page turns: switches, chips and sheets change instantly, press ripples and image fades are off, loading shows a still hourglass instead of a spinner, placeholders no longer shimmer, the cloud status icon no longer pulses, and the Library search bar stays put while you scroll.
-- Light mode is easier on the eyes: the page background is a soft grey instead of near-white, cards and sheets stay brighter so they stand out from it, and dividers and outlines are a little stronger. Text colors are unchanged. Dark mode and the e-ink theme are untouched.
-- The series page is redesigned: a larger cover, title and author with short chips for status, publication, year, time to read and length (placeholders such as "Release year: 0" and "Last read: 1 Jan 0001" are no longer shown), a prominent Continue or Start reading button, and Want to read, Collections, Open in browser and Share as labelled tiles. The Books, Chapters and Specials tabs match the Library's chips.
-- Home is redesigned: the Continue reading card sits in its own container with a progress bar and a play button, the shelves are spaced more evenly, and loading and empty states match the Library's.
-- Library > Series searches as you type, shortly after you stop typing, instead of waiting for the Enter key. The current results stay on screen while the new ones load, and results from an earlier search can no longer appear after a newer one.
-- The Library page is redesigned: a rounded search field with a filter button that shows how many filters are on (replacing the floating button), tidier cover tiles with a progress bar on started books, round portraits for people, shimmering placeholders while a tab loads, and clear empty and offline states with a Retry button. The filter sheet opens with Sort and Status showing, and sections with selections show a count.
-- The Downloads page is redesigned: one row per book with its cover, size and age instead of every chapter, a short "In progress" section with pause, cancel and retry on top, a confirmation before removing, and a chapter list on request for series with several chapters downloaded. Tapping a book opens its series page.
-- Android Auto Backup is turned off, so the server URL and settings are no longer copied to Google backups (credentials could not be restored from one anyway).
-- The Series tab (Browse) is now cached for offline use by default, and Library tabs show a short "you are offline" message instead of a raw network error.
-- The Kavita API key is no longer sent to another host if the server redirects a request there.
-- Log messages and stack traces are scrubbed of API keys and server addresses before they reach logcat, not only the log files.
-- Reading progress that the server permanently rejects is dropped instead of being retried forever, while login failures keep the row for a later retry.
-- Failed downloads wait 2s, 4s, 8s … (up to a minute) between retries instead of being retried back to back.
-- An EPUB page download now fails and is retried when an image cannot be fetched because of a network or server error, instead of saving the page without it. Images the server reports as missing are still skipped.
-- Screen readers: comic and PDF pages are announced as "Page N of M", the EPUB reader exposes next and previous page actions, and the text-alignment buttons use translatable labels.
 
 ## v0.3.2-beta.1
 
