@@ -6,6 +6,7 @@ All notable changes to this project will be documented here.
 
 ### Added
 
+- E-reader mode adds page-by-page scrolling to long lists (Home, Library, Downloads and the series page): two buttons jump one screen up or down instantly, and the hardware page-up and page-down keys do the same.
 - E-reader mode is now a global setting in Settings > Appearance (it was a switch in Reader settings). It turns on by default on e-ink devices such as Boox readers; a choice you already made is kept.
 - Kavern is now a fork of Inkita with its own name, package and application ID, so it installs alongside the original app. The in-app updater and the permission to install other apps were removed.
 - Home is now a single grid of your series sorted by last read.
@@ -20,6 +21,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- The first hardware page-button press after touching the screen is no longer ignored in the reader. Android can swallow that press's key-down, so it is now counted when the key comes back up.
 - Progress bars are readable on e-ink and other grayscale screens: the Continue reading card, the reader's bottom bar and active downloads now draw an outlined track with a solid dark fill instead of two similar pale grays, and the progress strip on covers is a white fill on a darker track.
 - EPUB reader: your Reader settings (alignment, font size, line height, font) apply to body text again. A book's own stylesheet was overriding them, so text came out justified, smaller and tightly spaced whatever you picked. Titles keep their centered or right alignment and larger sizes, and code keeps its monospace font; paragraph indents and spacing from the book are kept.
 - The "Cache still fresh" notification that appeared when opening Library > Series is gone. It only announced that the list was being shown from the cache; the list itself behaves as before.

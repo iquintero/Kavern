@@ -87,6 +87,7 @@ import com.iquintero.kavern.domain.repository.AuthRepository
 import com.iquintero.kavern.domain.repository.CollectionsRepository
 import com.iquintero.kavern.domain.repository.LibraryRepository
 import com.iquintero.kavern.domain.repository.SeriesRepository
+import com.iquintero.kavern.ui.common.PageKeyEvents
 import com.iquintero.kavern.ui.download.DownloadQueueScreen
 import com.iquintero.kavern.ui.download.DownloadQueueViewModel
 import com.iquintero.kavern.ui.download.DownloadQueueViewModelFactory
@@ -110,7 +111,7 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     // Page buttons (and optionally the volume keys) turn pages while a book is open instead of changing the volume.
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = ReaderKeyEvents.handle(event) || super.dispatchKeyEvent(event)
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = ReaderKeyEvents.handle(event) || PageKeyEvents.handle(event) || super.dispatchKeyEvent(event)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

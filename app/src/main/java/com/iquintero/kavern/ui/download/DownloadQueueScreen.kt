@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,7 +26,9 @@ import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.util.formatBytes
 import com.iquintero.kavern.data.local.db.entity.DownloadJobV2Entity
+import com.iquintero.kavern.ui.common.PagedBox
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
+import com.iquintero.kavern.ui.common.pageScroller
 import com.iquintero.kavern.ui.common.rememberServerConnection
 
 /** What a pending removal will delete: a whole book, or a single chapter of one. */
@@ -56,6 +59,7 @@ fun DownloadQueueScreen(
     var chapterSheetFor by remember { mutableStateOf<Int?>(null) }
     val unknownSeries = stringResource(R.string.download_unknown_series)
 
+    val listState = rememberLazyListState()
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(stringResource(R.string.download_screen_title)) },
@@ -68,61 +72,64 @@ fun DownloadQueueScreen(
                 )
             },
         )
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (books.isNotEmpty()) {
-                item(key = "summary") {
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.download_summary_format,
-                                pluralStringResource(R.plurals.download_book_count, books.size, books.size),
-                                formatBytes(books.sumOf { it.bytes }),
-                            ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        PagedBox(listState.pageScroller()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                if (books.isNotEmpty()) {
+                    item(key = "summary") {
+                        Text(
+                            text =
+                                stringResource(
+                                    R.string.download_summary_format,
+                                    pluralStringResource(R.plurals.download_book_count, books.size, books.size),
+                                    formatBytes(books.sumOf { it.bytes }),
+                                ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-            if (active.isNotEmpty()) {
-                item(key = "active-header") { SectionHeader(stringResource(R.string.download_section_active, active.size)) }
-                items(active, key = { "job-${it.id}" }) { job ->
-                    ActiveDownloadCard(
-                        job = job,
-                        title = lookup.seriesNames[job.seriesId] ?: unknownSeries,
-                        subtitle =
-                            jobSubtitle(job, lookup)?.takeUnless {
-                                it.equals(lookup.seriesNames[job.seriesId], ignoreCase = true)
-                            },
-                        config = config,
-                        onPause = { viewModel.pauseTask(job.id) },
-                        onResume = { viewModel.resumeTask(job.id) },
-                        onRetry = { viewModel.retryTask(job.id) },
-                        onCancel = { viewModel.cancelTask(job.id) },
-                    )
-                }
-            }
-            if (books.isNotEmpty()) {
                 if (active.isNotEmpty()) {
-                    item(key = "device-header") { SectionHeader(stringResource(R.string.download_section_device)) }
+                    item(key = "active-header") { SectionHeader(stringResource(R.string.download_section_active, active.size)) }
+                    items(active, key = { "job-${it.id}" }) { job ->
+                        ActiveDownloadCard(
+                            job = job,
+                            title = lookup.seriesNames[job.seriesId] ?: unknownSeries,
+                            subtitle =
+                                jobSubtitle(job, lookup)?.takeUnless {
+                                    it.equals(lookup.seriesNames[job.seriesId], ignoreCase = true)
+                                },
+                            config = config,
+                            onPause = { viewModel.pauseTask(job.id) },
+                            onResume = { viewModel.resumeTask(job.id) },
+                            onRetry = { viewModel.retryTask(job.id) },
+                            onCancel = { viewModel.cancelTask(job.id) },
+                        )
+                    }
                 }
-                items(books, key = { "book-${it.seriesId}" }) { book ->
-                    BookRow(
-                        book = book,
-                        config = config,
-                        onOpen = { onOpenSeries(book.seriesId) },
-                        onRemove = {
-                            removal = RemovalRequest(book.title ?: unknownSeries, book.bytes, book.itemIds)
-                        },
-                        onChooseChapters = { chapterSheetFor = book.seriesId },
-                    )
+                if (books.isNotEmpty()) {
+                    if (active.isNotEmpty()) {
+                        item(key = "device-header") { SectionHeader(stringResource(R.string.download_section_device)) }
+                    }
+                    items(books, key = { "book-${it.seriesId}" }) { book ->
+                        BookRow(
+                            book = book,
+                            config = config,
+                            onOpen = { onOpenSeries(book.seriesId) },
+                            onRemove = {
+                                removal = RemovalRequest(book.title ?: unknownSeries, book.bytes, book.itemIds)
+                            },
+                            onChooseChapters = { chapterSheetFor = book.seriesId },
+                        )
+                    }
                 }
-            }
-            if (books.isEmpty() && active.isEmpty()) {
-                item(key = "empty") { EmptyDownloads() }
+                if (books.isEmpty() && active.isEmpty()) {
+                    item(key = "empty") { EmptyDownloads() }
+                }
             }
         }
     }

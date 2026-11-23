@@ -85,8 +85,10 @@ import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
 import com.iquintero.kavern.ui.common.CoverProgressBar
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateBadge
+import com.iquintero.kavern.ui.common.PagedBox
 import com.iquintero.kavern.ui.common.ShimmerBox
 import com.iquintero.kavern.ui.common.ShimmerBoxAnimated
+import com.iquintero.kavern.ui.common.pageScroller
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.library.LibraryGridPadding
 import com.iquintero.kavern.ui.library.MessageState
@@ -720,115 +722,117 @@ private fun SeriesGrid(
 
     val context = LocalContext.current
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
-        modifier = Modifier.fillMaxSize(),
-        state = gridState,
-        contentPadding = LibraryGridPadding,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items(seriesList, key = { it.id }) { series ->
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { onSeriesClick(series) },
-            ) {
-                if (!disableThumbnails) {
-                    val imageData = series.localThumbPath?.let { java.io.File(it) } ?: seriesCoverUrl(config, series.id)
-                    val imageRequest =
-                        remember(imageData) {
-                            imageData?.let {
-                                ImageRequest
-                                    .Builder(context)
-                                    .data(it)
-                                    .diskCachePolicy(CachePolicy.ENABLED)
-                                    .memoryCachePolicy(CachePolicy.ENABLED)
-                                    .networkCachePolicy(CachePolicy.ENABLED)
-                                    .build()
+    PagedBox(gridState.pageScroller()) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
+            modifier = Modifier.fillMaxSize(),
+            state = gridState,
+            contentPadding = LibraryGridPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(seriesList, key = { it.id }) { series ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onSeriesClick(series) },
+                ) {
+                    if (!disableThumbnails) {
+                        val imageData = series.localThumbPath?.let { java.io.File(it) } ?: seriesCoverUrl(config, series.id)
+                        val imageRequest =
+                            remember(imageData) {
+                                imageData?.let {
+                                    ImageRequest
+                                        .Builder(context)
+                                        .data(it)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .networkCachePolicy(CachePolicy.ENABLED)
+                                        .build()
+                                }
                             }
-                        }
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(2f / 3f)
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                                .einkOutline(MaterialTheme.shapes.medium),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        SubcomposeAsyncImage(
-                            model = imageRequest,
-                            contentDescription = series.name,
-                            modifier = Modifier.matchParentSize(),
-                            contentScale = ContentScale.Crop,
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(2f / 3f)
+                                    .clip(MaterialTheme.shapes.medium)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                    .einkOutline(MaterialTheme.shapes.medium),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            when (painter.state) {
-                                is coil.compose.AsyncImagePainter.State.Loading -> {
-                                    ShimmerBoxAnimated(
-                                        modifier = Modifier.matchParentSize(),
-                                    )
+                            SubcomposeAsyncImage(
+                                model = imageRequest,
+                                contentDescription = series.name,
+                                modifier = Modifier.matchParentSize(),
+                                contentScale = ContentScale.Crop,
+                            ) {
+                                when (painter.state) {
+                                    is coil.compose.AsyncImagePainter.State.Loading -> {
+                                        ShimmerBoxAnimated(
+                                            modifier = Modifier.matchParentSize(),
+                                        )
+                                    }
+                                    is coil.compose.AsyncImagePainter.State.Error -> {
+                                        Icon(
+                                            imageVector = Icons.Filled.ImageNotSupported,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    else -> SubcomposeAsyncImageContent()
                                 }
-                                is coil.compose.AsyncImagePainter.State.Error -> {
-                                    Icon(
-                                        imageVector = Icons.Filled.ImageNotSupported,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                else -> SubcomposeAsyncImageContent()
                             }
-                        }
-                        CoverProgressBar(
-                            progress = seriesProgress(series.pagesRead, series.pages),
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                        )
-                        if (showDownloadBadges) {
-                            DownloadStateBadge(
-                                state = downloadStates[series.id] ?: DownloadState.None,
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .padding(end = 6.dp, bottom = 10.dp),
+                            CoverProgressBar(
+                                progress = seriesProgress(series.pagesRead, series.pages),
+                                modifier = Modifier.align(Alignment.BottomCenter),
                             )
+                            if (showDownloadBadges) {
+                                DownloadStateBadge(
+                                    state = downloadStates[series.id] ?: DownloadState.None,
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .padding(end = 6.dp, bottom = 10.dp),
+                                )
+                            }
                         }
                     }
-                }
 
-                Text(
-                    series.name,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                // Unread is the usual state, so only started and finished series get a label.
-                readingStatusLabel(context, series.readState.takeIf { it != ReadState.Unread })?.let { status ->
                     Text(
-                        text = status,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                color =
-                                    when (series.readState) {
-                                        ReadState.Completed -> MaterialTheme.colorScheme.primary
-                                        ReadState.InProgress -> MaterialTheme.colorScheme.secondary
-                                        ReadState.Unread, null -> MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                            ),
-                        modifier = Modifier.padding(top = 2.dp),
+                        series.name,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(top = 8.dp),
                     )
+                    // Unread is the usual state, so only started and finished series get a label.
+                    readingStatusLabel(context, series.readState.takeIf { it != ReadState.Unread })?.let { status ->
+                        Text(
+                            text = status,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color =
+                                        when (series.readState) {
+                                            ReadState.Completed -> MaterialTheme.colorScheme.primary
+                                            ReadState.InProgress -> MaterialTheme.colorScheme.secondary
+                                            ReadState.Unread, null -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                ),
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
                 }
             }
-        }
 
-        if (isLoadingMore) {
-            items(loadingPlaceholderCount, key = { "loading_$it" }) {
-                PlaceholderSeriesTile(
-                    shimmerProgress = shimmerProgress,
-                    disableThumbnails = disableThumbnails,
-                )
+            if (isLoadingMore) {
+                items(loadingPlaceholderCount, key = { "loading_$it" }) {
+                    PlaceholderSeriesTile(
+                        shimmerProgress = shimmerProgress,
+                        disableThumbnails = disableThumbnails,
+                    )
+                }
             }
         }
     }

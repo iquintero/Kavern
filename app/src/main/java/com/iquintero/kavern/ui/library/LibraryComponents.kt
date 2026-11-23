@@ -64,7 +64,9 @@ import coil.request.ImageRequest
 import com.iquintero.kavern.R
 import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
 import com.iquintero.kavern.ui.common.COVER_MIN_WIDTH
+import com.iquintero.kavern.ui.common.PagedBox
 import com.iquintero.kavern.ui.common.ShimmerBox
+import com.iquintero.kavern.ui.common.pageScroller
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.theme.LocalEinkMode
 import com.iquintero.kavern.ui.theme.einkOutline
@@ -262,15 +264,17 @@ fun LibraryGrid(
     state: LazyGridState = rememberLazyGridState(),
     content: LazyGridScope.() -> Unit,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
-        state = state,
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = LibraryGridPadding,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        content = content,
-    )
+    PagedBox(state.pageScroller()) {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = COVER_MIN_WIDTH),
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = LibraryGridPadding,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            content = content,
+        )
+    }
 }
 
 /** A cover with a title and an optional second line, used for collections and reading lists. */

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -56,10 +57,12 @@ import com.iquintero.kavern.domain.model.Series
 import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
 import com.iquintero.kavern.ui.common.DownloadState
+import com.iquintero.kavern.ui.common.PagedBox
 import com.iquintero.kavern.ui.common.SeriesCoverCard
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
 import com.iquintero.kavern.ui.common.ShimmerBox
 import com.iquintero.kavern.ui.common.StrongProgressBar
+import com.iquintero.kavern.ui.common.pageScroller
 import com.iquintero.kavern.ui.common.rememberServerConnection
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -107,6 +110,7 @@ fun HomeScreen(
                 }
             },
         )
+        val listState = rememberLazyListState()
         when {
             sections.isEmpty && uiState.isLoading -> HomeSkeleton()
 
@@ -119,24 +123,27 @@ fun HomeScreen(
                 )
 
             else ->
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                ) {
-                    sections.resume?.let { series ->
-                        item(key = "resume") {
-                            ResumeCard(
-                                series = series,
-                                config = config,
-                                downloadState = uiState.downloadStates[series.id] ?: DownloadState.None,
-                                onOpenSeries = onOpenSeries,
-                            )
+                PagedBox(listState.pageScroller()) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        sections.resume?.let { series ->
+                            item(key = "resume") {
+                                ResumeCard(
+                                    series = series,
+                                    config = config,
+                                    downloadState = uiState.downloadStates[series.id] ?: DownloadState.None,
+                                    onOpenSeries = onOpenSeries,
+                                )
+                            }
                         }
+                        seriesRow(R.string.home_in_progress, sections.inProgress, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
+                        seriesRow(R.string.home_want_to_read, sections.wantToRead, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
+                        seriesRow(R.string.home_recently_added, sections.recentlyAdded, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
                     }
-                    seriesRow(R.string.home_in_progress, sections.inProgress, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
-                    seriesRow(R.string.home_want_to_read, sections.wantToRead, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
-                    seriesRow(R.string.home_recently_added, sections.recentlyAdded, config, uiState.downloadStates, showDownloadBadges, onOpenSeries)
                 }
         }
     }

@@ -27,6 +27,8 @@
     <string name="general_no_server_logged_in">No server is logged in.</string>
     <string name="general_collections">Collections</string>
     <string name="general_copied_to_clipboard">Copied to clipboard</string>
+    <string name="general_page_up">Scroll up one page</string>
+    <string name="general_page_down">Scroll down one page</string>
     <string name="general_loading">Loading…</string>
     <string name="general_not_implemented">Not implemented yet</string>
     <string name="general_create_new_coll">Create new collection</string>

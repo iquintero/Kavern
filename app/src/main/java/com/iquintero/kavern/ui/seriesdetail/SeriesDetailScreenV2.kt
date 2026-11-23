@@ -91,6 +91,7 @@ import com.iquintero.kavern.ui.browse.utils.PublicationState
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateResolver
 import com.iquintero.kavern.ui.common.LoadingIndicator
+import com.iquintero.kavern.ui.common.PagedBox
 import com.iquintero.kavern.ui.common.chapterCoverUrl
 import com.iquintero.kavern.ui.common.collectionCoverUrl
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -489,11 +490,13 @@ fun SeriesDetailScreenV2(
                 }
 
                 else -> {
+                    val detailScroll = rememberScrollState()
                     val detail = uiState.detail
                     val series = detail?.series
                     val metadata = detail?.metadata
                     val coverUrl = series?.id?.let { seriesCoverUrl(config, it) }
-                    Box(
+                    PagedBox(
+                        scrollState = detailScroll,
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -504,7 +507,7 @@ fun SeriesDetailScreenV2(
                                 Modifier
                                     .fillMaxSize()
                                     .padding(horizontal = 16.dp)
-                                    .verticalScroll(rememberScrollState()),
+                                    .verticalScroll(detailScroll),
                         ) {
                             val seriesTitle =
                                 series?.name?.ifBlank { null }
