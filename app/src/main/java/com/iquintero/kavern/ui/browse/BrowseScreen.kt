@@ -29,9 +29,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ImageNotSupported
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -87,6 +89,7 @@ import com.iquintero.kavern.ui.common.ShimmerBox
 import com.iquintero.kavern.ui.common.ShimmerBoxAnimated
 import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.library.LibraryGridPadding
+import com.iquintero.kavern.ui.library.MessageState
 import com.iquintero.kavern.ui.library.SearchAndFilterBar
 import com.iquintero.kavern.ui.library.activeFilterCount
 import com.iquintero.kavern.ui.library.seriesProgress
@@ -198,423 +201,421 @@ fun BrowseScreen(
     // Initial load handled by ViewModel on init; search/filter changes applied via ViewModel.
     // back handling solved via confirmValueChange in sheet state
 
-    when {
-        showBrowseError(uiState.error, hasItems = uiState.series.isNotEmpty()) -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("${stringResource(R.string.general_error)}: ${uiState.error}")
+    // The search bar, chips and filter sheet stay on screen whatever the results are, so a search or filter
+    // that matches nothing can always be changed. Only the area below them swaps between results, a message
+    // and the placeholders.
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            AnimatedVisibility(visible = !hideSearch || uiState.series.isEmpty()) {
+                Column {
+                    SearchAndFilterBar(
+                        query = uiState.searchInput,
+                        onQueryChange = { viewModel.updateSearch(it) },
+                        onSearch = {
+                            viewModel.applySearchAndReload()
+                            focusManager.clearFocus()
+                        },
+                        onClear = {
+                            viewModel.updateSearch(TextFieldValue(""))
+                            viewModel.applySearchAndReload()
+                        },
+                        filterCount = activeFilterCount(uiState.appliedFilter),
+                        onOpenFilters = { showFilterSheet = true },
+                    )
+                    libraryChips()
+                }
+            }
+
+            if (showBrowseError(uiState.error, hasItems = uiState.series.isNotEmpty())) {
+                MessageState(
+                    icon = Icons.Filled.CloudOff,
+                    text = uiState.error.orEmpty(),
+                    actionLabel = stringResource(R.string.download_action_retry),
+                    onAction = { viewModel.reloadFirstPage() },
+                )
+            } else if (uiState.series.isEmpty() && uiState.isLoading) {
+                PlaceholderSeriesGrid(
+                    placeholderCount = browsePageSize,
+                    gridState = gridState,
+                    disableThumbnails = disableBrowseThumbnails,
+                )
+            } else if (uiState.series.isEmpty()) {
+                MessageState(icon = Icons.Filled.SearchOff, text = stringResource(R.string.general_no_results), nearTop = true)
+            } else {
+                SeriesGrid(
+                    seriesList = uiState.series,
+                    config = config,
+                    isLoadingMore = uiState.isLoadingMore,
+                    loadingPlaceholderCount = browsePageSize,
+                    gridState = gridState,
+                    disableThumbnails = disableBrowseThumbnails,
+                    downloadStates = uiState.downloadStates,
+                    showDownloadBadges = showDownloadBadges,
+                    onSeriesClick = { onOpenSeries(it.id) },
+                    onLoadMore = { viewModel.loadNextPage() },
+                )
             }
         }
-        uiState.series.isEmpty() && !uiState.isLoading -> {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.general_no_results))
+
+        if (showFilterSheet) {
+            var minFocused by remember { mutableStateOf(false) }
+            var maxFocused by remember { mutableStateOf(false) }
+            val sheetState =
+                rememberModalBottomSheetState(
+                    skipPartiallyExpanded = true,
+                    confirmValueChange = { target ->
+                        if (target == SheetValue.Hidden && (minFocused || maxFocused)) {
+                            focusManager.clearFocus(force = true)
+                            false
+                        } else {
+                            true
+                        }
+                    },
+                )
+            var combinationExpanded by remember { mutableStateOf(false) }
+            var sortExpanded by remember { mutableStateOf(true) }
+            var statusExpanded by remember { mutableStateOf(true) }
+            var yearExpanded by remember { mutableStateOf(false) }
+            var genresExpanded by remember { mutableStateOf(false) }
+            var tagsExpanded by remember { mutableStateOf(false) }
+            var languagesExpanded by remember { mutableStateOf(false) }
+            var ageExpanded by remember { mutableStateOf(false) }
+            var publicationExpanded by remember { mutableStateOf(false) }
+            var collectionsExpanded by remember { mutableStateOf(false) }
+            var librariesExpanded by remember { mutableStateOf(false) }
+            var specialExpanded by remember { mutableStateOf(false) }
+            var smartExpanded by remember { mutableStateOf(false) }
+
+            BackHandler(enabled = showFilterSheet) {
+                if (sheetHasFocus || minFocused || maxFocused) {
+                    focusManager.clearFocus(force = true)
+                } else {
+                    showFilterSheet = false
+                }
             }
-        }
-        else -> {
-            Box(Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
+
+            ModalBottomSheet(
+                onDismissRequest = { showFilterSheet = false },
+                sheetState = sheetState,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
                 ) {
-                    AnimatedVisibility(visible = !hideSearch) {
-                        Column {
-                            SearchAndFilterBar(
-                                query = uiState.searchInput,
-                                onQueryChange = { viewModel.updateSearch(it) },
-                                onSearch = {
-                                    viewModel.applySearchAndReload()
-                                    focusManager.clearFocus()
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(stringResource(R.string.general_filter), style = MaterialTheme.typography.titleLarge)
+
+                        SectionHeader(stringResource(R.string.general_combination), combinationExpanded) {
+                            combinationExpanded = !combinationExpanded
+                        }
+                        if (combinationExpanded) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = uiState.draftFilter.combination == KavitaCombination.MatchAll,
+                                    onClick = { viewModel.setCombination(KavitaCombination.MatchAll) },
+                                    label = { Text(stringResource(R.string.browse_filter_match_all)) },
+                                )
+                                FilterChip(
+                                    selected = uiState.draftFilter.combination == KavitaCombination.MatchAny,
+                                    onClick = { viewModel.setCombination(KavitaCombination.MatchAny) },
+                                    label = { Text(stringResource(R.string.browse_filter_match_any)) },
+                                )
+                            }
+                        }
+
+                        SectionHeader(
+                            stringResource(R.string.browse_filter_sort_by),
+                            sortExpanded,
+                            count =
+                                if (uiState.draftFilter.sortField != KavitaSortField.SortName ||
+                                    uiState.draftFilter.sortDesc
+                                ) {
+                                    1
+                                } else {
+                                    0
                                 },
-                                onClear = {
-                                    viewModel.updateSearch(TextFieldValue(""))
-                                    viewModel.applySearchAndReload()
+                        ) { sortExpanded = !sortExpanded }
+                        if (sortExpanded) {
+                            val sortOptions =
+                                listOf(
+                                    stringResource(R.string.browse_filter_sort_name) to KavitaSortField.SortName,
+                                    stringResource(R.string.browse_filter_sort_created) to KavitaSortField.Created,
+                                    stringResource(R.string.browse_filter_sort_last_modified) to KavitaSortField.LastModified,
+                                    stringResource(R.string.browse_filter_sort_item_added) to KavitaSortField.ItemAdded,
+                                    stringResource(R.string.browse_filter_sort_time_to_read) to KavitaSortField.TimeToRead,
+                                    stringResource(R.string.browse_filter_sort_release_year) to KavitaSortField.ReleaseYear,
+                                    stringResource(R.string.browse_filter_sort_last_read) to KavitaSortField.LastRead,
+                                    stringResource(R.string.browse_filter_sort_avg_rating) to KavitaSortField.AverageRating,
+                                    stringResource(R.string.browse_filter_sort_random) to KavitaSortField.Random,
+                                )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                sortOptions.chunked(3).forEach { chunk ->
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        chunk.forEach { (label, field) ->
+                                            SortChip(
+                                                label = label,
+                                                field = field,
+                                                current = uiState.draftFilter.sortField,
+                                                descending = uiState.draftFilter.sortDesc,
+                                            ) { f, d -> viewModel.setSort(f, d) }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        SectionHeader(
+                            stringResource(R.string.browse_filter_status),
+                            statusExpanded,
+                            count =
+                                if (uiState.draftFilter.statusFilter !=
+                                    ReadStatusFilter.Any
+                                ) {
+                                    1
+                                } else {
+                                    0
                                 },
-                                filterCount = activeFilterCount(uiState.appliedFilter),
-                                onOpenFilters = { showFilterSheet = true },
-                            )
-                            libraryChips()
+                        ) { statusExpanded = !statusExpanded }
+                        if (statusExpanded) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                StatusChip(ReadStatusFilter.Any, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
+                                StatusChip(ReadStatusFilter.Unread, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
+                                StatusChip(ReadStatusFilter.InProgress, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
+                                StatusChip(ReadStatusFilter.Completed, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
+                            }
+                        }
+
+                        SectionHeader(
+                            stringResource(R.string.browse_filter_release_year),
+                            yearExpanded,
+                            count =
+                                if (uiState.draftFilter.minYear.isNotBlank() ||
+                                    uiState.draftFilter.maxYear.isNotBlank()
+                                ) {
+                                    1
+                                } else {
+                                    0
+                                },
+                        ) { yearExpanded = !yearExpanded }
+                        if (yearExpanded) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = uiState.draftFilter.minYear,
+                                    onValueChange = { viewModel.setYearBounds(it, uiState.draftFilter.maxYear) },
+                                    label = { Text(stringResource(R.string.general_min)) },
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .onFocusChanged { focusState ->
+                                                minFocused = focusState.isFocused
+                                                sheetHasFocus = focusState.isFocused || maxFocused
+                                            },
+                                )
+                                OutlinedTextField(
+                                    value = uiState.draftFilter.maxYear,
+                                    onValueChange = { viewModel.setYearBounds(uiState.draftFilter.minYear, it) },
+                                    label = { Text(stringResource(R.string.general_max)) },
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .onFocusChanged { focusState ->
+                                                maxFocused = focusState.isFocused
+                                                sheetHasFocus = focusState.isFocused || minFocused
+                                            },
+                                )
+                            }
+                        }
+
+                        val genreItems = uiState.genresRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
+                        SectionHeader(stringResource(R.string.general_genres), genresExpanded, count = uiState.draftFilter.genres.size) { genresExpanded = !genresExpanded }
+                        if (genresExpanded) {
+                            TriStateRow(genreItems, uiState.draftFilter.genres) { id, st ->
+                                viewModel.setTriStateGenre(id, st)
+                            }
+                        }
+                        val tagItems = uiState.tagsRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
+                        SectionHeader(stringResource(R.string.general_tags), tagsExpanded, count = uiState.draftFilter.tags.size) { tagsExpanded = !tagsExpanded }
+                        if (tagsExpanded) {
+                            TriStateRow(tagItems, uiState.draftFilter.tags) { id, st ->
+                                viewModel.setTriStateTag(id, st)
+                            }
+                        }
+                        val languageItems = uiState.languagesRemote.map { (it.isoCode) to (it.title ?: it.isoCode) }
+                        SectionHeader(stringResource(R.string.general_languages), languagesExpanded, count = uiState.draftFilter.languages.size) {
+                            languagesExpanded =
+                                !languagesExpanded
+                        }
+                        if (languagesExpanded) {
+                            TriStateRowString(languageItems, uiState.draftFilter.languages) { code, st ->
+                                viewModel.setTriStateLanguage(code, st)
+                            }
+                        }
+                        SectionHeader(stringResource(R.string.browse_filter_age_rating), ageExpanded, count = uiState.draftFilter.ageRatings.size) {
+                            ageExpanded =
+                                !ageExpanded
+                        }
+                        if (ageExpanded) {
+                            TriStateRow(ageRatingsList, uiState.draftFilter.ageRatings) { id, st ->
+                                viewModel.setTriStateAge(id, st)
+                            }
+                        }
+                        SectionHeader(
+                            stringResource(R.string.general_publication_status),
+                            publicationExpanded,
+                            count = uiState.draftFilter.publication.count { it.value },
+                        ) {
+                            publicationExpanded =
+                                !publicationExpanded
+                        }
+                        if (publicationExpanded) {
+                            MultiToggleRow(publicationItems, uiState.draftFilter.publication) { id, checked ->
+                                viewModel.setPublication(id, checked)
+                            }
+                        }
+                        SectionHeader(stringResource(R.string.general_collections), collectionsExpanded, count = uiState.draftFilter.collections.size) {
+                            collectionsExpanded =
+                                !collectionsExpanded
+                        }
+                        if (collectionsExpanded) {
+                            val collectionItems = uiState.collectionsRemote.map { it.id to (it.title ?: it.id.toString()) }
+                            TriStateRow(collectionItems, uiState.draftFilter.collections) { id, st ->
+                                viewModel.setTriStateCollection(id, st)
+                            }
+                        }
+
+                        SectionHeader(stringResource(R.string.general_libraries), librariesExpanded, count = uiState.draftFilter.libraries.size) {
+                            librariesExpanded =
+                                !librariesExpanded
+                        }
+                        if (librariesExpanded) {
+                            val libraryItems = uiState.librariesRemote.map { it.id to (it.name ?: it.id.toString()) }
+                            TriStateRow(libraryItems, uiState.draftFilter.libraries) { id, st ->
+                                viewModel.setTriStateLibrary(id, st)
+                            }
+                        }
+
+                        HorizontalDivider()
+                        Text(stringResource(R.string.browse_filter_filter_no_others))
+                        SectionHeader(
+                            stringResource(R.string.browse_filter_special_list),
+                            specialExpanded,
+                            count =
+                                if (uiState.draftFilter.special !=
+                                    null
+                                ) {
+                                    1
+                                } else {
+                                    0
+                                },
+                        ) { specialExpanded = !specialExpanded }
+                        if (specialExpanded) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                specialOptions.forEach { option ->
+                                    val label =
+                                        when (option) {
+                                            SpecialFilter.WantToRead -> stringResource(R.string.general_want_to_read)
+                                        }
+                                    FilterChip(
+                                        selected = uiState.draftFilter.special == option,
+                                        onClick = {
+                                            viewModel.setSmartFilter(null, null)
+                                            viewModel.setSpecial(option)
+                                        },
+                                        label = { Text(label) },
+                                    )
+                                }
+                                FilterChip(
+                                    selected = uiState.draftFilter.special == null,
+                                    onClick = { viewModel.setSpecial(null) },
+                                    label = { Text(stringResource(R.string.general_none)) },
+                                )
+                            }
+                        }
+
+                        SectionHeader(
+                            stringResource(R.string.browse_filter_smart_filters),
+                            smartExpanded,
+                            count =
+                                if (uiState.draftFilter.smartFilterId !=
+                                    null
+                                ) {
+                                    1
+                                } else {
+                                    0
+                                },
+                        ) { smartExpanded = !smartExpanded }
+                        if (smartExpanded) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                val smartItems = uiState.smartFilters.map { it.id to (it.name ?: "${stringResource(R.string.general_filter)} ${it.id}") }
+                                smartItems.forEach { (id, name) ->
+                                    FilterChip(
+                                        selected = uiState.draftFilter.smartFilterId == id,
+                                        onClick = { viewModel.onSmartSelected(id) },
+                                        label = { Text(name) },
+                                    )
+                                }
+                                FilterChip(
+                                    selected = uiState.draftFilter.smartFilterId == null,
+                                    onClick = { viewModel.onSmartSelected(null) },
+                                    label = { Text(stringResource(R.string.general_none)) },
+                                )
+                            }
                         }
                     }
-
-                    if (uiState.series.isEmpty() && uiState.isLoading) {
-                        PlaceholderSeriesGrid(
-                            placeholderCount = browsePageSize,
-                            gridState = gridState,
-                            disableThumbnails = disableBrowseThumbnails,
-                        )
-                    } else {
-                        SeriesGrid(
-                            seriesList = uiState.series,
-                            config = config,
-                            isLoadingMore = uiState.isLoadingMore,
-                            loadingPlaceholderCount = browsePageSize,
-                            gridState = gridState,
-                            disableThumbnails = disableBrowseThumbnails,
-                            downloadStates = uiState.downloadStates,
-                            showDownloadBadges = showDownloadBadges,
-                            onSeriesClick = { onOpenSeries(it.id) },
-                            onLoadMore = { viewModel.loadNextPage() },
-                        )
-                    }
-                }
-
-                if (showFilterSheet) {
-                    var minFocused by remember { mutableStateOf(false) }
-                    var maxFocused by remember { mutableStateOf(false) }
-                    val sheetState =
-                        rememberModalBottomSheetState(
-                            skipPartiallyExpanded = true,
-                            confirmValueChange = { target ->
-                                if (target == SheetValue.Hidden && (minFocused || maxFocused)) {
-                                    focusManager.clearFocus(force = true)
-                                    false
-                                } else {
-                                    true
+                    Row(
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedButton(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                viewModel.updateDraftFilter { AppliedFilter() }
+                                viewModel.applyFilterAndReload()
+                                showFilterSheet = false
+                            },
+                        ) {
+                            Text(stringResource(R.string.general_reset))
+                        }
+                        Button(
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                showFilterSheet = false
+                                scope.launch {
+                                    val smartId = uiState.draftFilter.smartFilterId
+                                    if (smartId != null && uiState.draftFilter.decodedSmartFilter == null) {
+                                        val decoded = viewModel.decodeSmartFilter(smartId)
+                                        if (decoded != null) {
+                                            viewModel.setSmartFilter(smartId, decoded)
+                                        }
+                                    }
+                                    viewModel.applyFilterAndReload()
                                 }
                             },
-                        )
-                    var combinationExpanded by remember { mutableStateOf(false) }
-                    var sortExpanded by remember { mutableStateOf(true) }
-                    var statusExpanded by remember { mutableStateOf(true) }
-                    var yearExpanded by remember { mutableStateOf(false) }
-                    var genresExpanded by remember { mutableStateOf(false) }
-                    var tagsExpanded by remember { mutableStateOf(false) }
-                    var languagesExpanded by remember { mutableStateOf(false) }
-                    var ageExpanded by remember { mutableStateOf(false) }
-                    var publicationExpanded by remember { mutableStateOf(false) }
-                    var collectionsExpanded by remember { mutableStateOf(false) }
-                    var librariesExpanded by remember { mutableStateOf(false) }
-                    var specialExpanded by remember { mutableStateOf(false) }
-                    var smartExpanded by remember { mutableStateOf(false) }
-
-                    BackHandler(enabled = showFilterSheet) {
-                        if (sheetHasFocus || minFocused || maxFocused) {
-                            focusManager.clearFocus(force = true)
-                        } else {
-                            showFilterSheet = false
-                        }
-                    }
-
-                    ModalBottomSheet(
-                        onDismissRequest = { showFilterSheet = false },
-                        sheetState = sheetState,
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth(),
                         ) {
-                            Column(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .verticalScroll(rememberScrollState())
-                                        .padding(horizontal = 16.dp)
-                                        .padding(bottom = 96.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Text(stringResource(R.string.general_filter), style = MaterialTheme.typography.titleLarge)
-
-                                SectionHeader(stringResource(R.string.general_combination), combinationExpanded) {
-                                    combinationExpanded = !combinationExpanded
-                                }
-                                if (combinationExpanded) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        FilterChip(
-                                            selected = uiState.draftFilter.combination == KavitaCombination.MatchAll,
-                                            onClick = { viewModel.setCombination(KavitaCombination.MatchAll) },
-                                            label = { Text(stringResource(R.string.browse_filter_match_all)) },
-                                        )
-                                        FilterChip(
-                                            selected = uiState.draftFilter.combination == KavitaCombination.MatchAny,
-                                            onClick = { viewModel.setCombination(KavitaCombination.MatchAny) },
-                                            label = { Text(stringResource(R.string.browse_filter_match_any)) },
-                                        )
-                                    }
-                                }
-
-                                SectionHeader(
-                                    stringResource(R.string.browse_filter_sort_by),
-                                    sortExpanded,
-                                    count =
-                                        if (uiState.draftFilter.sortField != KavitaSortField.SortName ||
-                                            uiState.draftFilter.sortDesc
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
-                                ) { sortExpanded = !sortExpanded }
-                                if (sortExpanded) {
-                                    val sortOptions =
-                                        listOf(
-                                            stringResource(R.string.browse_filter_sort_name) to KavitaSortField.SortName,
-                                            stringResource(R.string.browse_filter_sort_created) to KavitaSortField.Created,
-                                            stringResource(R.string.browse_filter_sort_last_modified) to KavitaSortField.LastModified,
-                                            stringResource(R.string.browse_filter_sort_item_added) to KavitaSortField.ItemAdded,
-                                            stringResource(R.string.browse_filter_sort_time_to_read) to KavitaSortField.TimeToRead,
-                                            stringResource(R.string.browse_filter_sort_release_year) to KavitaSortField.ReleaseYear,
-                                            stringResource(R.string.browse_filter_sort_last_read) to KavitaSortField.LastRead,
-                                            stringResource(R.string.browse_filter_sort_avg_rating) to KavitaSortField.AverageRating,
-                                            stringResource(R.string.browse_filter_sort_random) to KavitaSortField.Random,
-                                        )
-                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        sortOptions.chunked(3).forEach { chunk ->
-                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                chunk.forEach { (label, field) ->
-                                                    SortChip(
-                                                        label = label,
-                                                        field = field,
-                                                        current = uiState.draftFilter.sortField,
-                                                        descending = uiState.draftFilter.sortDesc,
-                                                    ) { f, d -> viewModel.setSort(f, d) }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                SectionHeader(
-                                    stringResource(R.string.browse_filter_status),
-                                    statusExpanded,
-                                    count =
-                                        if (uiState.draftFilter.statusFilter !=
-                                            ReadStatusFilter.Any
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
-                                ) { statusExpanded = !statusExpanded }
-                                if (statusExpanded) {
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        StatusChip(ReadStatusFilter.Any, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
-                                        StatusChip(ReadStatusFilter.Unread, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
-                                        StatusChip(ReadStatusFilter.InProgress, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
-                                        StatusChip(ReadStatusFilter.Completed, uiState.draftFilter.statusFilter) { viewModel.setStatusFilter(it) }
-                                    }
-                                }
-
-                                SectionHeader(
-                                    stringResource(R.string.browse_filter_release_year),
-                                    yearExpanded,
-                                    count =
-                                        if (uiState.draftFilter.minYear.isNotBlank() ||
-                                            uiState.draftFilter.maxYear.isNotBlank()
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
-                                ) { yearExpanded = !yearExpanded }
-                                if (yearExpanded) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(
-                                            value = uiState.draftFilter.minYear,
-                                            onValueChange = { viewModel.setYearBounds(it, uiState.draftFilter.maxYear) },
-                                            label = { Text(stringResource(R.string.general_min)) },
-                                            modifier =
-                                                Modifier
-                                                    .weight(1f)
-                                                    .onFocusChanged { focusState ->
-                                                        minFocused = focusState.isFocused
-                                                        sheetHasFocus = focusState.isFocused || maxFocused
-                                                    },
-                                        )
-                                        OutlinedTextField(
-                                            value = uiState.draftFilter.maxYear,
-                                            onValueChange = { viewModel.setYearBounds(uiState.draftFilter.minYear, it) },
-                                            label = { Text(stringResource(R.string.general_max)) },
-                                            modifier =
-                                                Modifier
-                                                    .weight(1f)
-                                                    .onFocusChanged { focusState ->
-                                                        maxFocused = focusState.isFocused
-                                                        sheetHasFocus = focusState.isFocused || minFocused
-                                                    },
-                                        )
-                                    }
-                                }
-
-                                val genreItems = uiState.genresRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
-                                SectionHeader(stringResource(R.string.general_genres), genresExpanded, count = uiState.draftFilter.genres.size) { genresExpanded = !genresExpanded }
-                                if (genresExpanded) {
-                                    TriStateRow(genreItems, uiState.draftFilter.genres) { id, st ->
-                                        viewModel.setTriStateGenre(id, st)
-                                    }
-                                }
-                                val tagItems = uiState.tagsRemote.map { (it.id ?: 0) to (it.title ?: (it.id ?: 0).toString()) }
-                                SectionHeader(stringResource(R.string.general_tags), tagsExpanded, count = uiState.draftFilter.tags.size) { tagsExpanded = !tagsExpanded }
-                                if (tagsExpanded) {
-                                    TriStateRow(tagItems, uiState.draftFilter.tags) { id, st ->
-                                        viewModel.setTriStateTag(id, st)
-                                    }
-                                }
-                                val languageItems = uiState.languagesRemote.map { (it.isoCode) to (it.title ?: it.isoCode) }
-                                SectionHeader(stringResource(R.string.general_languages), languagesExpanded, count = uiState.draftFilter.languages.size) {
-                                    languagesExpanded =
-                                        !languagesExpanded
-                                }
-                                if (languagesExpanded) {
-                                    TriStateRowString(languageItems, uiState.draftFilter.languages) { code, st ->
-                                        viewModel.setTriStateLanguage(code, st)
-                                    }
-                                }
-                                SectionHeader(stringResource(R.string.browse_filter_age_rating), ageExpanded, count = uiState.draftFilter.ageRatings.size) {
-                                    ageExpanded =
-                                        !ageExpanded
-                                }
-                                if (ageExpanded) {
-                                    TriStateRow(ageRatingsList, uiState.draftFilter.ageRatings) { id, st ->
-                                        viewModel.setTriStateAge(id, st)
-                                    }
-                                }
-                                SectionHeader(
-                                    stringResource(R.string.general_publication_status),
-                                    publicationExpanded,
-                                    count = uiState.draftFilter.publication.count { it.value },
-                                ) {
-                                    publicationExpanded =
-                                        !publicationExpanded
-                                }
-                                if (publicationExpanded) {
-                                    MultiToggleRow(publicationItems, uiState.draftFilter.publication) { id, checked ->
-                                        viewModel.setPublication(id, checked)
-                                    }
-                                }
-                                SectionHeader(stringResource(R.string.general_collections), collectionsExpanded, count = uiState.draftFilter.collections.size) {
-                                    collectionsExpanded =
-                                        !collectionsExpanded
-                                }
-                                if (collectionsExpanded) {
-                                    val collectionItems = uiState.collectionsRemote.map { it.id to (it.title ?: it.id.toString()) }
-                                    TriStateRow(collectionItems, uiState.draftFilter.collections) { id, st ->
-                                        viewModel.setTriStateCollection(id, st)
-                                    }
-                                }
-
-                                SectionHeader(stringResource(R.string.general_libraries), librariesExpanded, count = uiState.draftFilter.libraries.size) {
-                                    librariesExpanded =
-                                        !librariesExpanded
-                                }
-                                if (librariesExpanded) {
-                                    val libraryItems = uiState.librariesRemote.map { it.id to (it.name ?: it.id.toString()) }
-                                    TriStateRow(libraryItems, uiState.draftFilter.libraries) { id, st ->
-                                        viewModel.setTriStateLibrary(id, st)
-                                    }
-                                }
-
-                                HorizontalDivider()
-                                Text(stringResource(R.string.browse_filter_filter_no_others))
-                                SectionHeader(
-                                    stringResource(R.string.browse_filter_special_list),
-                                    specialExpanded,
-                                    count =
-                                        if (uiState.draftFilter.special !=
-                                            null
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
-                                ) { specialExpanded = !specialExpanded }
-                                if (specialExpanded) {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        specialOptions.forEach { option ->
-                                            val label =
-                                                when (option) {
-                                                    SpecialFilter.WantToRead -> stringResource(R.string.general_want_to_read)
-                                                }
-                                            FilterChip(
-                                                selected = uiState.draftFilter.special == option,
-                                                onClick = {
-                                                    viewModel.setSmartFilter(null, null)
-                                                    viewModel.setSpecial(option)
-                                                },
-                                                label = { Text(label) },
-                                            )
-                                        }
-                                        FilterChip(
-                                            selected = uiState.draftFilter.special == null,
-                                            onClick = { viewModel.setSpecial(null) },
-                                            label = { Text(stringResource(R.string.general_none)) },
-                                        )
-                                    }
-                                }
-
-                                SectionHeader(
-                                    stringResource(R.string.browse_filter_smart_filters),
-                                    smartExpanded,
-                                    count =
-                                        if (uiState.draftFilter.smartFilterId !=
-                                            null
-                                        ) {
-                                            1
-                                        } else {
-                                            0
-                                        },
-                                ) { smartExpanded = !smartExpanded }
-                                if (smartExpanded) {
-                                    FlowRow(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    ) {
-                                        val smartItems = uiState.smartFilters.map { it.id to (it.name ?: "${stringResource(R.string.general_filter)} ${it.id}") }
-                                        smartItems.forEach { (id, name) ->
-                                            FilterChip(
-                                                selected = uiState.draftFilter.smartFilterId == id,
-                                                onClick = { viewModel.onSmartSelected(id) },
-                                                label = { Text(name) },
-                                            )
-                                        }
-                                        FilterChip(
-                                            selected = uiState.draftFilter.smartFilterId == null,
-                                            onClick = { viewModel.onSmartSelected(null) },
-                                            label = { Text(stringResource(R.string.general_none)) },
-                                        )
-                                    }
-                                }
-                            }
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .align(Alignment.BottomCenter)
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                OutlinedButton(
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        viewModel.updateDraftFilter { AppliedFilter() }
-                                        viewModel.applyFilterAndReload()
-                                        showFilterSheet = false
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.general_reset))
-                                }
-                                Button(
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        showFilterSheet = false
-                                        scope.launch {
-                                            val smartId = uiState.draftFilter.smartFilterId
-                                            if (smartId != null && uiState.draftFilter.decodedSmartFilter == null) {
-                                                val decoded = viewModel.decodeSmartFilter(smartId)
-                                                if (decoded != null) {
-                                                    viewModel.setSmartFilter(smartId, decoded)
-                                                }
-                                            }
-                                            viewModel.applyFilterAndReload()
-                                        }
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.general_filter))
-                                }
-                            }
+                            Text(stringResource(R.string.general_filter))
                         }
                     }
                 }

@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 
 ### Fixed
 
+- Library > Series no longer loses its search box, filter button and library chips when a search or filter matches nothing, or when loading fails; they stay on screen so you can change or clear it. A failed load now shows a Retry button.
 - Comics (CBZ, CBR and image-folder series) are now listed in Library > Series, including under the Comics library chip. Browse only listed EPUB and PDF series before.
 - Background work (progress sync, downloads, prefetch) failed to start in release builds; WorkManager's input merger is now kept by R8.
 - Fix a crash on the series screen when the Kavita server cannot be reached (for example a home server on mobile data). One failed request among the many that load the screen could take the whole app down; it now shows the cached series and an error instead.

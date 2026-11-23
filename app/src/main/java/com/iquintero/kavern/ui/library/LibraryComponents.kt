@@ -69,6 +69,7 @@ import com.iquintero.kavern.ui.common.rememberShimmerProgress
 
 private val AvatarSize = 88.dp
 private val BACK_BUTTON_SIZE = 48.dp
+private val NEAR_TOP_PADDING = 48.dp
 private val SearchBarCorner = 28.dp
 private val FilterButtonSize = 52.dp
 
@@ -163,11 +164,13 @@ fun MessageState(
     text: String,
     actionLabel: String? = null,
     onAction: () -> Unit = {},
+    nearTop: Boolean = false,
 ) {
+    // Near the top keeps the message above the keyboard when it is open, as it is while searching.
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp).padding(top = if (nearTop) NEAR_TOP_PADDING else 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = if (nearTop) Arrangement.Top else Arrangement.Center,
     ) {
         Surface(
             shape = CircleShape,
