@@ -148,6 +148,7 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("org.jsoup:jsoup:1.22.2")
     testImplementation(libs.junit)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
