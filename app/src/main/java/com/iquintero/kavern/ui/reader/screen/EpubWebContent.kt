@@ -87,6 +87,7 @@ internal class EpubWebContent(
 
     private fun prepareElement(element: Element) {
         rewriteStyleElement(element, ::resourceUrl)
+        if (element.hasAttr("style")) element.attr("style", withoutReaderOwnedDeclarations(element.attr("style")))
         element
             .attributes()
             .asList()
@@ -194,9 +195,72 @@ internal fun rewriteStyleElement(
     if (element.normalName() != "style") return
     // Fonts and background images named in the book's own CSS must go through the same checked route as <img>.
     val css = element.data()
-    val rewritten = rewriteCssUrls(css, map)
+    val rewritten = withoutReaderOwnedStyles(rewriteCssUrls(css, map))
     if (rewritten != css) element.empty().appendChild(DataNode(rewritten))
 }
+
+// Braces are escaped everywhere: Android's regex engine rejects a bare closing brace that Java accepts.
+private val CSS_BLOCK = Regex("""([^\{\}]*)\{([^\{\}]*)\}""")
+private val CSS_DECLARATION = Regex("""(?:[^;()]|\([^)]*\))+""")
+private val FONT_SIZE_VALUE = Regex("""^\s*(\d*\.?\d+)\s*(em|rem|%)\s*(!important)?\s*$""", RegexOption.IGNORE_CASE)
+private val MONOSPACE_FONT = Regex("""mono|courier|consolas|menlo|code""", RegexOption.IGNORE_CASE)
+
+/** Plain body text sits within this fraction of the reader's own size, so a book that nudges it (0.96em) is not obeyed. */
+private const val BODY_SIZE_MIN = 0.9
+private const val BODY_SIZE_MAX = 1.1
+private const val PERCENT_PER_UNIT = 100.0
+
+/**
+ * Whether the reader's settings should win over this one CSS declaration of a book.
+ *
+ * The reader owns how body text looks (font, size, line height, alignment). A book's own rule would override it for
+ * every paragraph class it names, so those declarations are dropped. Deliberate styling is kept: centered or right
+ * aligned titles, sizes clearly larger or smaller than body text, and monospace fonts for code.
+ */
+internal fun isReaderOwnedDeclaration(
+    property: String,
+    value: String,
+): Boolean {
+    val v = value.trim()
+    return when (property.trim().lowercase()) {
+        "line-height" -> true
+        "text-align" -> v.removeSuffix("!important").trim().lowercase() in setOf("justify", "left", "start", "inherit", "initial")
+        "font-family" -> !MONOSPACE_FONT.containsMatchIn(v)
+        "font-size" -> {
+            val match = FONT_SIZE_VALUE.matchEntire(v)
+            val keyword = v.removeSuffix("!important").trim().lowercase() in setOf("medium", "inherit", "initial", "unset")
+            val relative =
+                match?.let {
+                    val number = it.groupValues[1].toDouble()
+                    val size = if (it.groupValues[2] == "%") number / PERCENT_PER_UNIT else number
+                    size in BODY_SIZE_MIN..BODY_SIZE_MAX
+                } ?: false
+            keyword || relative
+        }
+        else -> false
+    }
+}
+
+/** [declarations] (the inside of a rule, or a `style` attribute) without the ones the reader's settings own. */
+internal fun withoutReaderOwnedDeclarations(declarations: String): String =
+    CSS_DECLARATION
+        .findAll(declarations)
+        .map { it.value }
+        .filterNot {
+            val colon = it.indexOf(':')
+            colon > 0 && isReaderOwnedDeclaration(it.substring(0, colon), it.substring(colon + 1))
+        }.joinToString(";") { it.trim() }
+
+/** A book's [css] with the declarations the reader's settings own removed, leaving `@font-face` and `@page` alone. */
+internal fun withoutReaderOwnedStyles(css: String): String =
+    CSS_BLOCK.replace(css) { block ->
+        val selector = block.groupValues[1]
+        if (selector.contains("@font-face", ignoreCase = true) || selector.contains("@page", ignoreCase = true)) {
+            block.value
+        } else {
+            "$selector{${withoutReaderOwnedDeclarations(block.groupValues[2])}}"
+        }
+    }
 
 /**
  * Keeps the reader's own layout settings in charge once a book's CSS applies: the book's page width, margins and
