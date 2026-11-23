@@ -47,6 +47,7 @@ All notable changes to this project will be documented here.
 
 ### Changed
 
+- Home is redesigned: the Continue reading card sits in its own container with a progress bar and a play button, the shelves are spaced more evenly, and loading and empty states match the Library's.
 - Library > Series searches as you type, shortly after you stop typing, instead of waiting for the Enter key. The current results stay on screen while the new ones load, and results from an earlier search can no longer appear after a newer one.
 - The Library page is redesigned: a rounded search field with a filter button that shows how many filters are on (replacing the floating button), tidier cover tiles with a progress bar on started books, round portraits for people, shimmering placeholders while a tab loads, and clear empty and offline states with a Retry button. The filter sheet opens with Sort and Status showing, and sections with selections show a count.
 - The Downloads page is redesigned: one row per book with its cover, size and age instead of every chapter, a short "In progress" section with pause, cancel and retry on top, a confirmation before removing, and a chapter list on request for series with several chapters downloaded. Tapping a book opens its series page.

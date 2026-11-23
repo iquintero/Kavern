@@ -1,7 +1,6 @@
 package com.iquintero.kavern.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,21 +13,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -52,12 +56,14 @@ import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.domain.model.Series
 import com.iquintero.kavern.domain.repository.SeriesRepository
 import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
-import com.iquintero.kavern.ui.common.CoverProgressBar
 import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.SeriesCoverCard
 import com.iquintero.kavern.ui.common.ServerConnectionIndicator
+import com.iquintero.kavern.ui.common.ShimmerBox
 import com.iquintero.kavern.ui.common.rememberServerConnection
+import com.iquintero.kavern.ui.common.rememberShimmerProgress
 import com.iquintero.kavern.ui.common.seriesCoverUrl
+import com.iquintero.kavern.ui.library.MessageState
 import com.iquintero.kavern.ui.library.seriesProgress
 
 @Composable
@@ -100,34 +106,21 @@ fun HomeScreen(
             },
         )
         when {
-            sections.isEmpty && uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            }
+            sections.isEmpty && uiState.isLoading -> HomeSkeleton()
 
-            sections.isEmpty -> {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = stringResource(if (uiState.loadFailed) R.string.library_home_load_failed else R.string.home_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (uiState.loadFailed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    )
-                    if (uiState.loadFailed) {
-                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.download_action_retry)) }
-                    }
-                }
-            }
+            sections.isEmpty ->
+                MessageState(
+                    icon = if (uiState.loadFailed) Icons.Filled.CloudOff else Icons.AutoMirrored.Filled.MenuBook,
+                    text = stringResource(if (uiState.loadFailed) R.string.library_home_load_failed else R.string.home_empty),
+                    actionLabel = if (uiState.loadFailed) stringResource(R.string.download_action_retry) else null,
+                    onAction = viewModel::refresh,
+                )
 
             else ->
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     sections.resume?.let { series ->
                         item(key = "resume") {
@@ -163,9 +156,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.seriesRow(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
+            Spacer(modifier = Modifier.height(4.dp))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(series, key = { it.id }) { item ->
                     Box(modifier = Modifier.width(ROW_COVER_WIDTH)) {
@@ -194,65 +188,102 @@ private fun ResumeCard(
     // Without the server only downloaded series can be opened.
     val unavailable = rememberServerConnection().isUnavailable && downloadState == DownloadState.None
     val progress = seriesProgress(series.pagesRead, series.pages)
-    Row(
+    Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .alpha(if (unavailable) UNAVAILABLE_ALPHA else 1f)
-                .clickable(enabled = !unavailable) { onOpenSeries(series.id) },
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .alpha(if (unavailable) UNAVAILABLE_ALPHA else 1f),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        onClick = { onOpenSeries(series.id) },
+        enabled = !unavailable,
     ) {
-        Box(modifier = Modifier.width(RESUME_COVER_WIDTH)) {
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(seriesCoverUrl(config, series.id))
-                        .crossfade(true)
-                        .build(),
-                contentDescription = null,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(COVER_ASPECT_RATIO)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-                contentScale = ContentScale.Crop,
-            )
-            CoverProgressBar(progress = progress, modifier = Modifier.align(Alignment.BottomCenter))
-        }
-        Column(
-            modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            modifier = Modifier.padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.home_continue_reading),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = series.name.ifBlank { "Series ${series.id}" },
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (progress != null) {
-                Text(
-                    text = stringResource(R.string.home_percent_read, (progress * PERCENT).toInt()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Box(modifier = Modifier.width(RESUME_COVER_WIDTH)) {
+                AsyncImage(
+                    model =
+                        ImageRequest
+                            .Builder(LocalContext.current)
+                            .data(seriesCoverUrl(config, series.id))
+                            .crossfade(true)
+                            .build(),
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(COVER_ASPECT_RATIO)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    contentScale = ContentScale.Crop,
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Button(onClick = { onOpenSeries(series.id) }, enabled = !unavailable) {
-                Text(stringResource(R.string.home_resume))
+            Column(
+                modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_continue_reading),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = series.name.ifBlank { "Series ${series.id}" },
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (progress != null) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.extraSmall),
+                        drawStopIndicator = {},
+                    )
+                    Text(
+                        text = stringResource(R.string.home_percent_read, (progress * PERCENT).toInt()),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Button(onClick = { onOpenSeries(series.id) }, enabled = !unavailable) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.home_resume))
+                }
             }
         }
     }
 }
 
-private val ROW_COVER_WIDTH = 110.dp
-private val RESUME_COVER_WIDTH = 140.dp
+/** Grey shapes in the layout of the real page, shimmering while Home loads. */
+@Composable
+private fun HomeSkeleton() {
+    val progress = rememberShimmerProgress(enabled = true)
+    Column(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        ShimmerBox(modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large), height = 190.dp, progress = progress)
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ShimmerBox(modifier = Modifier.width(120.dp).clip(RoundedCornerShape(4.dp)), height = 16.dp, progress = progress)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                repeat(SKELETON_COVERS) {
+                    ShimmerBox(
+                        modifier = Modifier.width(ROW_COVER_WIDTH).aspectRatio(COVER_ASPECT_RATIO).clip(MaterialTheme.shapes.medium),
+                        progress = progress,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val ROW_COVER_WIDTH = 112.dp
+private const val SKELETON_COVERS = 3
+private val RESUME_COVER_WIDTH = 128.dp
 private const val UNAVAILABLE_ALPHA = 0.4f
 private const val PERCENT = 100
