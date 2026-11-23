@@ -249,8 +249,6 @@
     <string name="reader_mark_chapter_read_skip">Continue without marking</string>
     <string name="reader_font_selection">Select font</string>
     <string name="reader_settings_general_section">General</string>
-    <string name="reader_eink_mode">E-ink mode</string>
-    <string name="reader_eink_mode_subtitle">Turn pages instantly and skip screen animations, for e-ink displays.</string>
     <string name="reader_volume_keys">Volume keys turn pages</string>
     <string name="reader_volume_keys_subtitle">Use the volume buttons, or an e-reader\'s page buttons, to turn pages while reading.</string>
     <string name="reader_keep_screen_on">Keep screen on</string>
@@ -379,6 +377,8 @@
     <string name="settings_kavita_login_toast">Fill URL and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
     <string name="settings_appearance_dark">Dark</string>
+    <string name="settings_appearance_eink">E-reader mode</string>
+    <string name="settings_appearance_eink_subtitle">A still, high-contrast interface for e-ink screens: black and white with outlines, no animations, and page buttons for scrolling lists. Turned on automatically on e-ink readers.</string>
     <string name="settings_appearance_dynamic_color">Dynamic color</string>
     <string name="settings_appearance_dynamic_color_subtitle">Use colors from your wallpaper. Turn off to use the Kavern green palette. E-ink mode always uses black and white.</string>
     <string name="settings_appearance_light">Light</string>

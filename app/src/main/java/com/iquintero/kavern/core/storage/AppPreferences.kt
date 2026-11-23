@@ -1,6 +1,7 @@
 package com.iquintero.kavern.core.storage
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.ui.text.style.TextAlign
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -58,7 +59,7 @@ data class ReaderPrefs(
     val epubPaged: Boolean = false,
     /** Keep the screen from dimming and locking while a book is open. */
     val keepScreenOn: Boolean = false,
-    /** E-ink displays: no page-turn or screen-transition animations. */
+    /** E-reader mode: a still, high-contrast interface for e-ink displays. Mirrors the global setting. */
     val einkMode: Boolean = false,
     /** Volume keys turn pages while reading (page-up/page-down keys always do). */
     val volumeKeysTurnPages: Boolean = false,
@@ -103,6 +104,9 @@ class AppPreferences(
         private val KEY_EPUB_PAGED = booleanPreferencesKey("epub_paged")
         private val KEY_READER_KEEP_SCREEN_ON = booleanPreferencesKey("reader_keep_screen_on")
         private val KEY_READER_EINK_MODE = booleanPreferencesKey("reader_eink_mode")
+
+        /** Known e-ink readers start with E-reader mode on. */
+        private val EINK_DEFAULT = isEinkDevice(Build.MANUFACTURER, Build.BRAND)
         private val KEY_READER_VOLUME_KEYS = booleanPreferencesKey("reader_volume_keys_turn_pages")
 
         private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
@@ -215,7 +219,7 @@ class AppPreferences(
                 pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
                 epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                 keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
-                einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
+                einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                 volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
             )
         }
@@ -234,6 +238,14 @@ class AppPreferences(
                 else -> AppTheme.System
             }
         }
+
+    /** E-reader mode: on by default on known e-ink devices, off elsewhere, and always whatever was last chosen. */
+    val einkModeFlow: Flow<Boolean> =
+        context.dataStore.data.map { prefs -> prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT }
+
+    suspend fun setEinkMode(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_READER_EINK_MODE] = enabled }
+    }
 
     val dynamicColorFlow: Flow<Boolean> =
         context.dataStore.data.map { prefs -> prefs[KEY_DYNAMIC_COLOR] ?: true }
@@ -441,7 +453,7 @@ class AppPreferences(
                     pdfRightToLeft = prefs[KEY_PDF_RIGHT_TO_LEFT] ?: false,
                     epubPaged = prefs[KEY_EPUB_PAGED] ?: false,
                     keepScreenOn = prefs[KEY_READER_KEEP_SCREEN_ON] ?: false,
-                    einkMode = prefs[KEY_READER_EINK_MODE] ?: false,
+                    einkMode = prefs[KEY_READER_EINK_MODE] ?: EINK_DEFAULT,
                     volumeKeysTurnPages = prefs[KEY_READER_VOLUME_KEYS] ?: false,
                 )
             val next = current.transform()

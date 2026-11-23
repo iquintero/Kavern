@@ -82,7 +82,6 @@ import com.iquintero.kavern.core.startup.StartupManager
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.AppTheme
-import com.iquintero.kavern.core.storage.ReaderPrefs
 import com.iquintero.kavern.data.repository.ComicPageFallback
 import com.iquintero.kavern.domain.repository.AuthRepository
 import com.iquintero.kavern.domain.repository.CollectionsRepository
@@ -247,9 +246,7 @@ fun KavernApp(
     readerRepository: com.iquintero.kavern.domain.repository.ReaderRepository,
     cacheManager: CacheManager,
 ) {
-    val einkMode by appPreferences.readerPrefsFlow.collectAsState(initial = ReaderPrefs()).let { state ->
-        androidx.compose.runtime.derivedStateOf { state.value.einkMode }
-    }
+    val einkMode by appPreferences.einkModeFlow.collectAsState(initial = false)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val notifPromptShown by appPreferences.notificationsPromptShownFlow.collectAsState(initial = false)

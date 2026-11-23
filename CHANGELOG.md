@@ -6,6 +6,7 @@ All notable changes to this project will be documented here.
 
 ### Added
 
+- E-reader mode is now a global setting in Settings > Appearance (it was a switch in Reader settings). It turns on by default on e-ink devices such as Boox readers; a choice you already made is kept.
 - Kavern is now a fork of Inkita with its own name, package and application ID, so it installs alongside the original app. The in-app updater and the permission to install other apps were removed.
 - Home is now a single grid of your series sorted by last read.
 - Reading progress bars on series covers in the library.

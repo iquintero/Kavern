@@ -36,6 +36,7 @@ fun SettingsAppearanceScreen(
     val scope = rememberCoroutineScope()
     val selectedTheme by appPreferences.appThemeFlow.collectAsState(initial = AppTheme.System)
     val dynamicColor by appPreferences.dynamicColorFlow.collectAsState(initial = true)
+    val einkMode by appPreferences.einkModeFlow.collectAsState(initial = false)
     val themeOptions =
         listOf(
             AppTheme.System to R.string.settings_appearance_by_system,
@@ -66,6 +67,17 @@ fun SettingsAppearanceScreen(
                 }
             }
         }
+
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_appearance_eink)) },
+            supportingContent = { Text(stringResource(R.string.settings_appearance_eink_subtitle)) },
+            trailingContent = {
+                Switch(
+                    checked = einkMode,
+                    onCheckedChange = { scope.launch { appPreferences.setEinkMode(it) } },
+                )
+            },
+        )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ListItem(
