@@ -1,7 +1,5 @@
 package com.iquintero.kavern.ui.browse
 
-import android.Manifest
-import androidx.annotation.RequiresPermission
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -12,7 +10,6 @@ import com.iquintero.kavern.core.cache.CacheManager
 import com.iquintero.kavern.core.cache.LibraryV2CacheKeys
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkMonitor
-import com.iquintero.kavern.core.notification.AppNotificationManager
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.runCatchingCancellable
 import com.iquintero.kavern.core.util.userMessage
@@ -83,7 +80,6 @@ class BrowseViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(BrowseUiState())
     val state: StateFlow<BrowseUiState> = _state
-    private val cacheFreshNotificationId = 3001
     private val networkMonitor = NetworkMonitor.getInstance(appPreferences.appContext, appPreferences)
     private var lastOfflineError = false
     private val pagingInFlight = AtomicBoolean(false)
@@ -247,7 +243,6 @@ class BrowseViewModel(
 
                 val ttlMillis = ttlMinutes * 60_000L
                 if (cacheEnabled && cachedPage.isNotEmpty() && ttlMinutes > 0 && lastRefresh > 0 && (now - lastRefresh) < ttlMillis) {
-                    showFreshCacheNotification(ttlMinutes - ((now - lastRefresh) / 60_000L).toInt())
                     _state.update {
                         it.copy(
                             isLoading = false,
@@ -604,23 +599,6 @@ class BrowseViewModel(
     }
 
     private suspend fun browseCacheAllowed(): Boolean = cacheManager.policy().browseEnabled
-
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    private fun showFreshCacheNotification(minutesRemaining: Int) {
-        val content =
-            if (minutesRemaining > 0) {
-                "Cache is fresh. Next refresh in ~$minutesRemaining min."
-            } else {
-                "Cache is fresh. Refresh postponed."
-            }
-        AppNotificationManager.showInfo(
-            id = cacheFreshNotificationId,
-            channel = AppNotificationManager.CHANNEL_GENERAL,
-            title = "Cache still fresh",
-            text = content,
-            autoCancel = true,
-        )
-    }
 
     private fun observeConnectivity() {
         viewModelScope.launch {
