@@ -142,6 +142,7 @@ data class ReaderSettingsState(
     val fontSize: Float,
     val lineHeight: Float,
     val padding: Dp,
+    val paddingVertical: Dp,
     val themeMode: ReaderThemeMode,
     val textAlign: TextAlign,
     val fontOptions: List<ReaderFontOption>,
@@ -155,6 +156,7 @@ data class ReaderSettingsCallbacks(
     val onFontSizeChange: (Float) -> Unit,
     val onLineHeightChange: (Float) -> Unit,
     val onPaddingChange: (Dp) -> Unit,
+    val onPaddingVerticalChange: (Dp) -> Unit,
     val onThemeChange: (ReaderThemeMode) -> Unit,
     val onTextAlignChange: (TextAlign) -> Unit,
     val onFontFamilyChange: (ReaderFontOption) -> Unit,
@@ -172,6 +174,8 @@ internal fun SettingsPanel(
     onLineHeightChange: (Float) -> Unit,
     padding: Dp,
     onPaddingChange: (Dp) -> Unit,
+    paddingVertical: Dp,
+    onPaddingVerticalChange: (Dp) -> Unit,
     themeMode: ReaderThemeMode,
     onThemeChange: (ReaderThemeMode) -> Unit,
     textAlign: TextAlign,
@@ -245,6 +249,8 @@ internal fun SettingsPanel(
                     onLineHeightChange = onLineHeightChange,
                     padding = padding,
                     onPaddingChange = onPaddingChange,
+                    paddingVertical = paddingVertical,
+                    onPaddingVerticalChange = onPaddingVerticalChange,
                     textAlign = textAlign,
                     onTextAlignChange = onTextAlignChange,
                     fontOptions = fontOptions,
@@ -293,6 +299,8 @@ private fun FontSettings(
     onLineHeightChange: (Float) -> Unit,
     padding: Dp,
     onPaddingChange: (Dp) -> Unit,
+    paddingVertical: Dp,
+    onPaddingVerticalChange: (Dp) -> Unit,
     textAlign: TextAlign,
     onTextAlignChange: (TextAlign) -> Unit,
     fontOptions: List<ReaderFontOption>,
@@ -313,6 +321,9 @@ private fun FontSettings(
         }
         StepperRow(stringResource(R.string.reader_padding), valueText = "${padding.value.toInt()} dp") {
             onPaddingChange((padding + it.dp))
+        }
+        StepperRow(stringResource(R.string.reader_padding_vertical), valueText = "${paddingVertical.value.toInt()} dp") {
+            onPaddingVerticalChange((paddingVertical + (it * ReaderPrefs.VERTICAL_PADDING_STEP_DP).dp))
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,

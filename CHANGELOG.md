@@ -1,3 +1,9 @@
+## Unreleased
+
+### Added
+
+- A "Top and bottom margins" reader setting (Reader settings > Text, and Settings > Reader) that adds space above and below the text on every page. It goes from 0 to 64 dp in steps of 4 and starts at 0, so pages look as before until you change it. The existing "Padding" setting is now called "Side margins".
+
 ## v0.1.1
 
 ### Fixed

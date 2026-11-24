@@ -98,4 +98,20 @@ class EpubReaderStyleTest {
         assertTrue(on, on.contains("::selection { background: #E0E0E0 !important; color: #121212 !important; }"))
         assertFalse(readerCss(settings).contains("::selection"))
     }
+
+    @Test
+    fun `scroll mode adds the top and bottom margin to the page padding`() {
+        val css = readerCss(settings.copy(verticalPaddingPx = 30f))
+
+        // Half the side padding (20) plus the extra 30.
+        assertTrue(css.contains("padding-top: 50.0px !important"))
+        assertTrue(css.contains("padding-bottom: 50.0px !important"))
+    }
+
+    @Test
+    fun `paged mode leaves the margin to the page size, not the css`() {
+        val css = readerCss(settings.copy(paged = true, verticalPaddingPx = 30f))
+
+        assertTrue(css.contains("padding-top: 20.0px !important"))
+    }
 }

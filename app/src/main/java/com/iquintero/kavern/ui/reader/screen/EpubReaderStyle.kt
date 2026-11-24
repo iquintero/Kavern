@@ -20,6 +20,8 @@ internal data class ReaderCssSettings(
     val fontSize: Float,
     val lineHeight: Float,
     val paddingPx: Float,
+    /** Extra space above and below the text. Paged mode shrinks the page itself instead, so it ignores this. */
+    val verticalPaddingPx: Float = 0f,
     val textAlignCss: String,
     val backgroundColor: String,
     val textColor: String,
@@ -30,7 +32,7 @@ internal data class ReaderCssSettings(
 
 /** The stylesheet the reader appends to a book page, so the reader's settings win over the book's own CSS. */
 internal fun readerCss(settings: ReaderCssSettings): String {
-    val paddingTopPx = settings.paddingPx / 2f
+    val paddingTopPx = settings.paddingPx / 2f + if (settings.paged) 0f else settings.verticalPaddingPx
     val themeCss =
         """
         html, body {

@@ -4,6 +4,7 @@ import android.webkit.WebView
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.ImageReaderMode
 import com.iquintero.kavern.core.storage.ReaderThemeMode
@@ -28,6 +29,7 @@ data class ReaderRenderParams(
     val fontSize: Float,
     val lineHeight: Float,
     val padding: Dp,
+    val paddingVertical: Dp = 0.dp,
     val fontOption: ReaderFontOption,
     val textAlign: TextAlign,
     val themeMode: ReaderThemeMode,

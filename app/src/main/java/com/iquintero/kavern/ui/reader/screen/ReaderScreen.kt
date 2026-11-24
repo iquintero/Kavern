@@ -206,6 +206,7 @@ internal fun BaseReaderScreen(
     var fontSize by remember { mutableStateOf(18f) }
     var lineHeight by remember { mutableStateOf(1.4f) }
     var padding by remember { mutableStateOf(5.dp) }
+    var paddingVertical by remember { mutableStateOf(0.dp) }
     var fontFamilyId by remember { mutableStateOf(ReaderPrefs.DEFAULT_FONT_FAMILY) }
     var textAlign by remember { mutableStateOf(TextAlign.Justify) }
     var themeMode by remember { mutableStateOf(ReaderThemeMode.Light) }
@@ -241,6 +242,7 @@ internal fun BaseReaderScreen(
         fontSize = readerPrefs.fontSize
         lineHeight = readerPrefs.lineHeight
         padding = readerPrefs.paddingDp.dp
+        paddingVertical = readerPrefs.paddingVerticalDp.dp
         textAlign = readerPrefs.textAlign
         fontFamilyId = readerPrefs.fontFamily
         themeMode = readerPrefs.readerTheme
@@ -457,6 +459,7 @@ internal fun BaseReaderScreen(
                     fontSize = fontSize,
                     lineHeight = lineHeight,
                     padding = padding,
+                    paddingVertical = paddingVertical,
                     fontOption = selectedFont,
                     textAlign = textAlign,
                     themeMode = themeMode,
@@ -729,6 +732,7 @@ internal fun BaseReaderScreen(
                         fontSize = fontSize,
                         lineHeight = lineHeight,
                         padding = padding,
+                        paddingVertical = paddingVertical,
                         themeMode = themeMode,
                         textAlign = textAlign,
                         fontOptions = fontOptions,
@@ -756,6 +760,12 @@ internal fun BaseReaderScreen(
                             val new = it.coerceIn(0.dp, 32.dp)
                             padding = new
                             scope.launch { appPreferences.updateReaderPrefs { copy(paddingDp = new.value) } }
+                        },
+                        onPaddingVerticalChange = {
+                            pendingScrollY = webViewRef.value?.scrollY ?: 0
+                            val new = it.coerceIn(0.dp, ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp)
+                            paddingVertical = new
+                            scope.launch { appPreferences.updateReaderPrefs { copy(paddingVerticalDp = new.value) } }
                         },
                         onThemeChange = { mode ->
                             themeMode = mode
@@ -813,6 +823,8 @@ internal fun BaseReaderScreen(
                         onLineHeightChange = settingsCallbacks.onLineHeightChange,
                         padding = settingsState.padding,
                         onPaddingChange = settingsCallbacks.onPaddingChange,
+                        paddingVertical = settingsState.paddingVertical,
+                        onPaddingVerticalChange = settingsCallbacks.onPaddingVerticalChange,
                         themeMode = settingsState.themeMode,
                         onThemeChange = settingsCallbacks.onThemeChange,
                         textAlign = settingsState.textAlign,

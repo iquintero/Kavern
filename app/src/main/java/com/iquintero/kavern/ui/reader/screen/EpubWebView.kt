@@ -177,6 +177,7 @@ internal fun ReaderWebView(
     fontSize: Float,
     lineHeight: Float,
     paddingPx: Float,
+    verticalPaddingPx: Float = 0f,
     fontOption: ReaderFontOption,
     textAlignCss: String,
     themeMode: ReaderThemeMode,
@@ -239,6 +240,7 @@ internal fun ReaderWebView(
                 fontSize = fontSize,
                 lineHeight = lineHeight,
                 paddingPx = paddingPx,
+                verticalPaddingPx = verticalPaddingPx,
                 textAlignCss = textAlignCss,
                 backgroundColor = bgColor,
                 textColor = textColor,
@@ -292,8 +294,8 @@ internal fun ReaderWebView(
                                             },
                                         )
                                 }.padding(
-                                    top = with(density) { insetTopPx.toDp() },
-                                    bottom = with(density) { insetBottomPx.toDp() },
+                                    top = with(density) { (insetTopPx + verticalPaddingPx).toDp() },
+                                    bottom = with(density) { (insetBottomPx + verticalPaddingPx).toDp() },
                                 )
                         } else {
                             Modifier

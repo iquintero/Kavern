@@ -74,6 +74,7 @@ fun SettingsReaderScreen(
     var fontSize by remember { mutableStateOf(prefs.fontSize) }
     var lineHeight by remember { mutableStateOf(prefs.lineHeight) }
     var padding by remember { mutableStateOf(prefs.paddingDp.dp) }
+    var paddingVertical by remember { mutableStateOf(prefs.paddingVerticalDp.dp) }
     var textAlign by remember { mutableStateOf(prefs.textAlign) }
     var fontFamilyId by remember { mutableStateOf(prefs.fontFamily) }
     var themeMode by remember { mutableStateOf(prefs.readerTheme) }
@@ -86,6 +87,7 @@ fun SettingsReaderScreen(
         fontSize = prefs.fontSize
         lineHeight = prefs.lineHeight
         padding = prefs.paddingDp.dp
+        paddingVertical = prefs.paddingVerticalDp.dp
         textAlign = prefs.textAlign
         fontFamilyId = prefs.fontFamily
         themeMode = prefs.readerTheme
@@ -223,6 +225,11 @@ fun SettingsReaderScreen(
             val newVal = (padding + delta.dp).coerceIn(0.dp, 32.dp)
             padding = newVal
             scope.launch { appPreferences.updateReaderPrefs { copy(paddingDp = newVal.value) } }
+        }
+        StepperRow(stringResource(R.string.reader_padding_vertical), "${paddingVertical.value.toInt()} dp") { delta ->
+            val newVal = (paddingVertical + (delta * ReaderPrefs.VERTICAL_PADDING_STEP_DP).dp).coerceIn(0.dp, ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp)
+            paddingVertical = newVal
+            scope.launch { appPreferences.updateReaderPrefs { copy(paddingVerticalDp = newVal.value) } }
         }
 
         Text(stringResource(R.string.reader_alignment), style = MaterialTheme.typography.titleMedium)

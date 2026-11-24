@@ -283,7 +283,8 @@
     <string name="reader_contents">Contents</string>
     <string name="reader_font_size">Font size</string>
     <string name="reader_line_height">Line height</string>
-    <string name="reader_padding">Padding</string>
+    <string name="reader_padding">Side margins</string>
+    <string name="reader_padding_vertical">Top and bottom margins</string>
     <string name="reader_alignment">Alignment</string>
     <string name="reader_font_family">Font family</string>
     <string name="reader_theme_header">Reader theme</string>

@@ -48,6 +48,8 @@ data class ReaderPrefs(
     val fontSize: Float = 18f,
     val lineHeight: Float = 1.4f,
     val paddingDp: Float = 5f,
+    /** Extra space above and below the text on every page, on top of the bars. */
+    val paddingVerticalDp: Float = 0f,
     val textAlign: TextAlign = TextAlign.Justify,
     val useSerif: Boolean = true,
     val fontFamily: String = DEFAULT_FONT_FAMILY,
@@ -68,6 +70,10 @@ data class ReaderPrefs(
 ) {
     companion object {
         const val DEFAULT_FONT_FAMILY = "literata"
+
+        /** Each tap on the top and bottom margin stepper moves it this many dp, up to [MAX_VERTICAL_PADDING_DP]. */
+        const val VERTICAL_PADDING_STEP_DP = 4
+        const val MAX_VERTICAL_PADDING_DP = 64f
         const val DEFAULT_IMAGE_PREFETCH_PAGES = 8
     }
 }
@@ -96,6 +102,7 @@ class AppPreferences(
         private val KEY_FONT_SIZE = floatPreferencesKey("reader_font_size")
         private val KEY_LINE_HEIGHT = floatPreferencesKey("reader_line_height")
         private val KEY_PADDING = floatPreferencesKey("reader_padding")
+        private val KEY_PADDING_VERTICAL = floatPreferencesKey("reader_padding_vertical")
         private val KEY_TEXT_ALIGN = stringPreferencesKey("reader_text_align")
         private val KEY_USE_SERIF = booleanPreferencesKey("reader_use_serif")
         private val KEY_FONT_FAMILY = stringPreferencesKey("reader_font_family")
@@ -211,6 +218,7 @@ class AppPreferences(
                 fontSize = prefs[KEY_FONT_SIZE] ?: 18f,
                 lineHeight = prefs[KEY_LINE_HEIGHT] ?: 1.4f,
                 paddingDp = prefs[KEY_PADDING] ?: 5f,
+                paddingVerticalDp = prefs[KEY_PADDING_VERTICAL] ?: 0f,
                 textAlign = prefs.toTextAlign(),
                 useSerif = prefs[KEY_USE_SERIF] ?: true,
                 fontFamily =
@@ -446,6 +454,7 @@ class AppPreferences(
                     fontSize = prefs[KEY_FONT_SIZE] ?: 18f,
                     lineHeight = prefs[KEY_LINE_HEIGHT] ?: 1.4f,
                     paddingDp = prefs[KEY_PADDING] ?: 5f,
+                    paddingVerticalDp = prefs[KEY_PADDING_VERTICAL] ?: 0f,
                     textAlign = prefs.toTextAlign(),
                     useSerif = prefs[KEY_USE_SERIF] ?: true,
                     fontFamily =
@@ -465,6 +474,7 @@ class AppPreferences(
             prefs[KEY_FONT_SIZE] = next.fontSize
             prefs[KEY_LINE_HEIGHT] = next.lineHeight
             prefs[KEY_PADDING] = next.paddingDp
+            prefs[KEY_PADDING_VERTICAL] = next.paddingVerticalDp
             prefs[KEY_TEXT_ALIGN] = encodeTextAlign(next.textAlign)
             prefs[KEY_USE_SERIF] = next.useSerif
             prefs[KEY_FONT_FAMILY] = next.fontFamily

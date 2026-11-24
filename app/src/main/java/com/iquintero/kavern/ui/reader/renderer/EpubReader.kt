@@ -41,6 +41,7 @@ object EpubReader : BaseReader {
             fontSize = params.fontSize,
             lineHeight = params.lineHeight,
             paddingPx = with(LocalDensity.current) { params.padding.toPx() },
+            verticalPaddingPx = with(LocalDensity.current) { params.paddingVertical.toPx() },
             fontOption = params.fontOption,
             textAlignCss =
                 when (params.textAlign) {
