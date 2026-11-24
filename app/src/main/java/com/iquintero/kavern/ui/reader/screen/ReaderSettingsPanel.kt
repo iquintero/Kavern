@@ -18,6 +18,7 @@ import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,10 +30,13 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.FormatAlignCenter
@@ -58,8 +62,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -125,6 +136,8 @@ import com.iquintero.kavern.ui.reader.viewmodel.BaseReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ImageReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.PdfReaderViewModel
 import com.iquintero.kavern.ui.reader.viewmodel.ReaderUiState
+import com.iquintero.kavern.ui.theme.LocalEinkMode
+import com.iquintero.kavern.ui.theme.einkBorder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -164,6 +177,7 @@ data class ReaderSettingsCallbacks(
     val onEpubPagedChange: (Boolean) -> Unit = {},
 )
 
+@Suppress("LongParameterList")
 @Composable
 internal fun SettingsPanel(
     selectedTab: ReaderSettingsTab,
@@ -185,61 +199,12 @@ internal fun SettingsPanel(
     onFontFamilyChange: (ReaderFontOption) -> Unit,
     epubPaged: Boolean,
     onEpubPagedChange: (Boolean) -> Unit,
+    onClose: () -> Unit,
 ) {
-    val tabs =
-        listOf(
-            ReaderSettingsTab.Font to Icons.Filled.FormatSize,
-            ReaderSettingsTab.Theme to Icons.Filled.Palette,
-            ReaderSettingsTab.Navigation to Icons.Filled.SwapHoriz,
-        )
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
-                ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ReaderSettingsSheet(
+        onClose = onClose,
+        tabs = { ReaderSettingsTabs(selectedTab, onSelectTab) },
     ) {
-        Text(
-            stringResource(R.string.reader_reader_settings),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            tabs.forEach { (tab, icon) ->
-                val selected = tab == selectedTab
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier =
-                        Modifier
-                            .padding(horizontal = 8.dp)
-                            .clickable { onSelectTab(tab) },
-                ) {
-                    Icon(
-                        icon,
-                        contentDescription = tab.label,
-                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    )
-                    Box(
-                        modifier =
-                            Modifier
-                                .padding(top = 4.dp)
-                                .height(2.dp)
-                                .width(32.dp)
-                                .background(
-                                    if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                    shape = RoundedCornerShape(1.dp),
-                                ),
-                    )
-                }
-            }
-        }
         when (selectedTab) {
             ReaderSettingsTab.Font ->
                 FontSettings(
@@ -282,6 +247,79 @@ internal fun SettingsPanel(
     }
 }
 
+/**
+ * The frame every reader settings panel shares: a card with a title and an explicit close button, optional pinned
+ * tabs, and content that scrolls when it is taller than half the screen so the book stays visible above it.
+ */
+@Composable
+internal fun ReaderSettingsSheet(
+    onClose: () -> Unit,
+    tabs: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val eink = LocalEinkMode.current
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * SHEET_CONTENT_SCREEN_FRACTION).dp
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = if (eink) 0.dp else 8.dp,
+        border = einkBorder() ?: BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(modifier = Modifier.padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.reader_reader_settings),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.general_close))
+                }
+            }
+            Column(
+                modifier = Modifier.padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                tabs?.invoke()
+                Column(
+                    modifier = Modifier.heightIn(max = maxContentHeight).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+private const val SHEET_CONTENT_SCREEN_FRACTION = 0.5f
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ReaderSettingsTabs(
+    selected: ReaderSettingsTab,
+    onSelect: (ReaderSettingsTab) -> Unit,
+) {
+    val tabs =
+        listOf(
+            Triple(ReaderSettingsTab.Font, Icons.Filled.FormatSize, R.string.reader_tab_text),
+            Triple(ReaderSettingsTab.Theme, Icons.Filled.Palette, R.string.reader_tab_theme),
+            Triple(ReaderSettingsTab.Navigation, Icons.Filled.SwapHoriz, R.string.reader_tab_paging),
+        )
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        tabs.forEachIndexed { index, (tab, icon, label) ->
+            SegmentedButton(
+                selected = tab == selected,
+                onClick = { onSelect(tab) },
+                shape = SegmentedButtonDefaults.itemShape(index, tabs.size),
+                icon = { Icon(icon, contentDescription = null, modifier = Modifier.size(SegmentedButtonDefaults.IconSize)) },
+                label = { Text(stringResource(label)) },
+            )
+        }
+    }
+}
+
 public enum class ReaderSettingsTab(
     val label: String,
 ) {
@@ -310,9 +348,8 @@ private fun FontSettings(
     var fontMenuExpanded by remember { mutableStateOf(false) }
     val selectedFontLabel = fontOptions.firstOrNull { it.id == fontFamilyId }?.label ?: stringResource(R.string.reader_font_selection)
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(stringResource(R.string.reader_text_settings), style = MaterialTheme.typography.titleSmall)
         StepperRow(stringResource(R.string.reader_font_size), valueText = "${fontSize.toInt()}") {
             onFontSizeChange((fontSize + it))
         }
@@ -327,7 +364,7 @@ private fun FontSettings(
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(stringResource(R.string.reader_alignment), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             val alignItems =
@@ -338,9 +375,16 @@ private fun FontSettings(
                     Triple(TextAlign.Justify, Icons.Filled.FormatAlignJustify, R.string.reader_align_justify),
                 )
             alignItems.forEach { (align, icon, label) ->
-                val tint = if (align == textAlign) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                IconButton(onClick = { onTextAlignChange(align) }) {
-                    Icon(icon, contentDescription = stringResource(label), tint = tint)
+                IconToggleButton(
+                    checked = align == textAlign,
+                    onCheckedChange = { onTextAlignChange(align) },
+                    colors =
+                        IconButtonDefaults.iconToggleButtonColors(
+                            checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                ) {
+                    Icon(icon, contentDescription = stringResource(label))
                 }
             }
         }
@@ -389,7 +433,6 @@ private fun ThemeSettings(
     onThemeChange: (ReaderThemeMode) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.reader_theme_header), style = MaterialTheme.typography.titleSmall)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             readerThemeOptions.forEach { option ->
                 FilterChip(
@@ -409,24 +452,11 @@ private fun ThemeSettings(
 }
 
 @Composable
-internal fun ReaderSettingsPanel(content: @Composable () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
-                ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            stringResource(R.string.reader_reader_settings),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
-        content()
-    }
+internal fun ReaderSettingsPanel(
+    onClose: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    ReaderSettingsSheet(onClose = onClose, content = content)
 }
 
 @Composable
@@ -498,13 +528,21 @@ private fun StepperRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(
-                onClick = { onDelta(-1f) },
-            ) { Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.general_decrease)) }
-            Text(valueText, style = MaterialTheme.typography.bodyMedium)
-            IconButton(onClick = { onDelta(1f) }) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.general_increase)) }
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        OutlinedIconButton(onClick = { onDelta(-1f) }) {
+            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.general_decrease))
+        }
+        // A fixed width keeps the buttons in the same place whatever the value reads.
+        Text(
+            valueText,
+            style = MaterialTheme.typography.titleSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(STEPPER_VALUE_WIDTH),
+        )
+        OutlinedIconButton(onClick = { onDelta(1f) }) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.general_increase))
         }
     }
 }
+
+private val STEPPER_VALUE_WIDTH = 64.dp

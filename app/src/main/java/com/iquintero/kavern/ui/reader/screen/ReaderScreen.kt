@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -215,6 +216,8 @@ internal fun BaseReaderScreen(
     val activity = LocalView.current.context as? Activity
     var showOverlay by remember { mutableStateOf(true) }
     var showSettingsPanel by remember { mutableStateOf(false) }
+    // Back closes the settings first; it used to leave the book with the panel still open.
+    BackHandler(enabled = showSettingsPanel) { showSettingsPanel = false }
     var showToc by remember { mutableStateOf(false) }
     var lookup by remember { mutableStateOf<LookupRequest?>(null) }
     // Last measured overlay bar heights; kept while the bars are hidden so paged layout stays stable.
@@ -413,6 +416,8 @@ internal fun BaseReaderScreen(
     }
     DisposableEffect(Unit) {
         ReaderKeyEvents.onKey = onKey@{ keyCode, isNewPress ->
+            // With the settings open the keys must not turn pages behind them.
+            if (showSettingsPanel) return@onKey false
             val forward = pageTurnForKey(keyCode, volumeKeysTurnPages, volumeKeysReversed) ?: return@onKey false
             if (isNewPress) turnPageByKey(forward)
             true
@@ -717,6 +722,24 @@ internal fun BaseReaderScreen(
                 }
             }
 
+            if (supportsReaderSettings && showSettingsPanel) {
+                // Catches taps outside the settings so they close it instead of turning the page underneath.
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource =
+                                    remember {
+                                        androidx.compose.foundation.interaction
+                                            .MutableInteractionSource()
+                                    },
+                                indication = null,
+                                onClickLabel = stringResource(R.string.general_close),
+                            ) { showSettingsPanel = false },
+                )
+            }
+
             AnimatedVisibility(
                 visible = supportsReaderSettings && showSettingsPanel,
                 modifier =
@@ -798,14 +821,14 @@ internal fun BaseReaderScreen(
                 if (settingsContent != null) {
                     settingsContent(settingsState, settingsCallbacks)
                 } else if (isImageReader) {
-                    ReaderSettingsPanel {
+                    ReaderSettingsPanel(onClose = { showSettingsPanel = false }) {
                         ImageReadingModeSettings(
                             mode = settingsState.imageReaderMode,
                             onModeChange = settingsCallbacks.onImageReaderModeChange,
                         )
                     }
                 } else if (isPdfReader) {
-                    ReaderSettingsPanel {
+                    ReaderSettingsPanel(onClose = { showSettingsPanel = false }) {
                         PdfReadingDirectionSettings(
                             rightToLeft = readerPrefs.pdfRightToLeft,
                             onChange = { rightToLeft ->
@@ -834,6 +857,7 @@ internal fun BaseReaderScreen(
                         onFontFamilyChange = settingsCallbacks.onFontFamilyChange,
                         epubPaged = settingsState.epubPaged,
                         onEpubPagedChange = settingsCallbacks.onEpubPagedChange,
+                        onClose = { showSettingsPanel = false },
                     )
                 }
             }

@@ -1,5 +1,10 @@
 ## Unreleased
 
+### Changed
+
+- The reader settings are redesigned: a Close button, labelled Text, Theme and Paging tabs, clearer plus and minus buttons with a steady value between them, and a highlighted choice for text alignment. Long settings scroll inside the panel so the book stays visible above it.
+- Closing the reader settings is no longer easy to get wrong. Tapping outside the panel closes it without turning the page, the Back button closes it instead of leaving the book, and the page and volume keys do not turn pages while it is open.
+
 ### Added
 
 - A "Top and bottom margins" reader setting (Reader settings > Text, and Settings > Reader) that adds space above and below the text on every page. It goes from 0 to 64 dp in steps of 4 and starts at 0, so pages look as before until you change it. The existing "Padding" setting is now called "Side margins".

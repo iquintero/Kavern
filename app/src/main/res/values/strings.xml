@@ -241,6 +241,9 @@
     <string name="reader_prev_chapter">Prev chapter</string>
     <string name="reader_jump_to_start">Jump to start</string>
     <string name="reader_prev_page">Prev page</string>
+    <string name="reader_tab_text">Text</string>
+    <string name="reader_tab_theme">Theme</string>
+    <string name="reader_tab_paging">Paging</string>
     <string name="reader_reader_settings">Reader settings</string>
     <string name="reader_next_page">Next Page</string>
     <string name="reader_jump_to_end">Jump to end</string>
