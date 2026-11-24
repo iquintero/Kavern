@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fixed
+
+- A series page no longer fails to open with "Required value 'id' missing at $.recommendations.ownedSeries" when the server sends a recommendation without an id (Kavita 0.9.1). Kavita+ extras that cannot be read are now skipped instead of blocking the page.
+
 # Changelog
 
 All notable changes to this project will be documented here.

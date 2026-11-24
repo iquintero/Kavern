@@ -8,8 +8,24 @@ data class SeriesDetailPlusDto(
 )
 
 data class RecommendationDto(
-    val ownedSeries: List<SeriesDto>? = null,
+    val ownedSeries: List<RecommendedSeriesDto>? = null,
     val externalSeries: List<ExternalSeriesDto>? = null,
+)
+
+/**
+ * A series Kavita+ recommends that the library already owns. Some servers send entries without an `id` (seen on Kavita
+ * 0.9.1), and a strict [SeriesDto] made that one entry fail the whole series page.
+ */
+data class RecommendedSeriesDto(
+    val id: Int? = null,
+    val name: String? = null,
+    val originalName: String? = null,
+    val localizedName: String? = null,
+    val libraryId: Int? = null,
+    val libraryName: String? = null,
+    val format: Int? = null,
+    val pages: Int? = null,
+    val coverImage: String? = null,
 )
 
 data class ExternalSeriesDto(

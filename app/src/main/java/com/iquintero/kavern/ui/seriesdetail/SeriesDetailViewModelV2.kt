@@ -19,6 +19,7 @@ import com.iquintero.kavern.data.api.dto.SeriesDetailDto
 import com.iquintero.kavern.data.api.dto.SeriesDto
 import com.iquintero.kavern.data.mapper.toDomain
 import com.iquintero.kavern.data.mapper.toDto
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -404,7 +405,15 @@ class SeriesDetailViewModelV2(
                             }
                         val seriesDetailPlus =
                             if (libraryType != null) {
-                                api.getSeriesDetailPlus(seriesId, libraryType).extract("seriesDetailPlus", errors)
+                                // Kavita+ extras only: a response this app cannot read must not take the page down.
+                                try {
+                                    api.getSeriesDetailPlus(seriesId, libraryType).extract("seriesDetailPlus", errors)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    LoggingManager.w("SeriesDetailV2", "Skipping series-detail-plus for series=$seriesId", e)
+                                    null
+                                }
                             } else {
                                 null
                             }
