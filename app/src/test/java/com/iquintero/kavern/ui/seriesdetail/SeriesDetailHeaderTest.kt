@@ -59,4 +59,25 @@ class SeriesDetailHeaderTest {
         assertEquals(null, hoursLeftToRead(null, null))
         assertEquals(null, hoursLeftToRead(null, 0f))
     }
+
+    @Test
+    fun aHalfReadOneChapterBookIsInProgressNotUnread() {
+        assertEquals(ReadStatus.InProgress, readStatus(unreadCount = 1, totalCount = 1, hasProgress = true))
+        assertEquals(ReadStatus.Unread, readStatus(unreadCount = 1, totalCount = 1, hasProgress = false))
+        assertEquals(ReadStatus.Unread, readStatus(unreadCount = 1, totalCount = 1, hasProgress = null))
+    }
+
+    @Test
+    fun finishedAndPartlyReadSeriesAreReportedByChapterCounts() {
+        assertEquals(ReadStatus.Completed, readStatus(unreadCount = 0, totalCount = 5, hasProgress = true))
+        assertEquals(ReadStatus.InProgress, readStatus(unreadCount = 2, totalCount = 5, hasProgress = false))
+        assertEquals(null, readStatus(unreadCount = 0, totalCount = 0, hasProgress = true))
+    }
+
+    @Test
+    fun withoutChapterCountsProgressDecides() {
+        assertEquals(ReadStatus.InProgress, readStatus(null, null, true))
+        assertEquals(ReadStatus.Unread, readStatus(null, null, false))
+        assertEquals(null, readStatus(null, null, null))
+    }
 }

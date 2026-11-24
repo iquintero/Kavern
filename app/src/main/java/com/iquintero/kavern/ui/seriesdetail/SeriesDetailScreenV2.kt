@@ -2319,20 +2319,10 @@ private fun readStateLabel(
     unreadCount: Int?,
     totalCount: Int?,
     hasProgress: Boolean?,
-): String? {
-    if (unreadCount == null || totalCount == null) {
-        return when (hasProgress) {
-            true -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_in_progress)
-            false -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_unread)
-            null -> null
-        }
+): String? =
+    when (readStatus(unreadCount, totalCount, hasProgress)) {
+        ReadStatus.Completed -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_completed)
+        ReadStatus.Unread -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_unread)
+        ReadStatus.InProgress -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_in_progress)
+        null -> null
     }
-    if (totalCount <= 0) {
-        return null
-    }
-    return when {
-        unreadCount <= 0 -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_completed)
-        unreadCount >= totalCount -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_unread)
-        else -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_in_progress)
-    }
-}

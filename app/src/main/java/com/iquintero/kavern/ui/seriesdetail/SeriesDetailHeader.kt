@@ -51,6 +51,32 @@ import java.time.ZoneId
 private val HeroCoverWidth = 124.dp
 private const val DISABLED_ALPHA = 0.38f
 
+enum class ReadStatus { Unread, InProgress, Completed }
+
+/**
+ * Where a series stands, from how many of its chapters are unread. Counting chapters alone calls a one-chapter book
+ * "unread" until the last page, so a book you are halfway through also needs [hasProgress] to be called in progress.
+ */
+internal fun readStatus(
+    unreadCount: Int?,
+    totalCount: Int?,
+    hasProgress: Boolean?,
+): ReadStatus? {
+    if (unreadCount == null || totalCount == null) {
+        return when (hasProgress) {
+            true -> ReadStatus.InProgress
+            false -> ReadStatus.Unread
+            null -> null
+        }
+    }
+    if (totalCount <= 0) return null
+    return when {
+        unreadCount <= 0 -> ReadStatus.Completed
+        unreadCount >= totalCount -> if (hasProgress == true) ReadStatus.InProgress else ReadStatus.Unread
+        else -> ReadStatus.InProgress
+    }
+}
+
 /** Kavita sends year 0001 or a 1970 epoch for "never", so anything before this is not a real date. */
 private const val FIRST_REAL_YEAR = 1971
 

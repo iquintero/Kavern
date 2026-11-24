@@ -37,6 +37,7 @@ First release of Kavern, a fork of [Inkita](https://github.com/dom-53/Inkita) fo
 
 ### Fixed
 
+- The series page no longer calls a one-chapter book "Unread" while you are partway through it; it shows In progress.
 - A new install no longer opens with an "Important update" dialog full of Inkita's pre-fork notes.
 - EPUB reader: your Reader settings (alignment, font size, line height, font) apply to body text again; a book's own stylesheet was overriding them. Titles keep their centering and larger sizes, code keeps its monospace font, and the book's paragraph indents are kept.
 - EPUB reader: books apply their own styles, fonts and images (Kavita's styles, embedded fonts and pictures were blocked or ignored before), paged reading no longer skips text or lets a finger drag the page, and code blocks wrap instead of running off the screen.
