@@ -13,6 +13,27 @@
 
 ---
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="./.github/assets/screenshots/home_light.png" width="200" alt="Home"/><br/><sub>Home</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/library_light.png" width="200" alt="Library"/><br/><sub>Library</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/series_light.png" width="200" alt="Series page"/><br/><sub>Series page</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/reader_light.png" width="200" alt="EPUB reader"/><br/><sub>EPUB reader, paged</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./.github/assets/screenshots/downloads_light.png" width="200" alt="Downloads"/><br/><sub>Downloads</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/home_dark.png" width="200" alt="Home, dark theme"/><br/><sub>Dark theme</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/home_eink.png" width="200" alt="Home, E-reader mode"/><br/><sub>E-reader mode</sub></td>
+    <td align="center"><img src="./.github/assets/screenshots/series_eink.png" width="200" alt="Series page, E-reader mode"/><br/><sub>E-reader mode</sub></td>
+  </tr>
+</table>
+
+The screenshots use public-domain books from [Project Gutenberg](https://www.gutenberg.org/) on a test Kavita server.
+
+---
+
 ## Overview
 
 Kavern is a Kotlin/Jetpack Compose Android app to browse and read from your Kavita server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata).
@@ -21,20 +42,31 @@ Kavern is a fork of [Inkita](https://github.com/dom-53/Inkita) by [dom-53](https
 
 **Tech:** Kotlin, Jetpack Compose (Material 3), Retrofit/OkHttp, WorkManager, Room/DataStore.
 **Formats:** EPUB (primary), comics/images and PDF.
-**Status:** Preview (0.x); APIs and UI may change.
+**Status:** Early release (v0.1); APIs and UI may change.
 
 ---
 
 ## Features
 
-- Browse libraries, collections, tags, genres with filters.
-- Home screen showing your series sorted by last read, with reading progress on every cover.
-- Series detail with covers, metadata, tags, related items, specials.
-- EPUB reader with paged reading, word lookup (Define), progress sync, offline mode, downloaded page handling, “delete after reading” depth.
-- E-ink mode that turns off page-turn and screen animations.
-- Optional hardware page buttons and volume keys for turning pages.
-- Downloads: queue, per-volume/page downloads; foreground notifications via a shared manager.
-- Network-aware: connectivity monitor, offline toggle, WorkManager constraints.
+- **E-reader mode** (Settings → Appearance), switched on automatically on e-ink devices such as Boox readers: black and white with outlines instead of gray fills, no animations, a still loading mark, and page-by-page scrolling of long lists with on-screen buttons or the hardware page keys.
+- Page-by-page EPUB reading like an e-reader (the default), or scrolling. Book styles, fonts and images are applied, while your own font, size, line height and alignment win over the book's.
+- Hardware page buttons turn pages in the reader; optional volume keys, with a setting to reverse them.
+- Word lookup (Define) for selected text, a table of contents, and "keep screen on".
+- Home with a Continue reading card, series in progress, want to read and recently added, with reading progress on every cover.
+- Library with live search, filters, collections, reading lists and people. Comics (CBZ, CBR, image folders) and PDF are listed too.
+- Series pages with covers, metadata, tags, related items and specials.
+- Downloads: one row per book with its cover and size, pause, cancel and retry, and per-chapter removal. Downloaded books open offline.
+- Reading progress syncs to your server, also after reading offline.
+- Network-aware: connectivity monitor, offline mode, and cached lists you can browse without a connection.
+- Light, dark and system themes, with a softer light theme that is easier on the eyes.
+
+---
+
+## Install
+
+Download the latest APK from the [Releases page](https://github.com/iquintero/Kavern/releases/latest) and open it on your device (Android 9 or newer). Android will ask you to allow installing from your browser or file manager the first time. Check the SHA-256 listed with each release if you want to verify the download.
+
+Kavern has no built-in updater: to update, install the newer APK over the old one. Your login, downloads and settings are kept. It uses its own app ID, so it installs next to Inkita if you have that.
 
 ---
 
@@ -50,7 +82,7 @@ Without these details the app cannot reach your server, so make sure to keep the
 
 ---
 
-## Getting Started (dev)
+## Building from source
 
 1. **Prereqs:** Android Studio Giraffe+, JDK 17.
 2. **Configure Kavita:** In-app settings → set server URL and API key.
@@ -58,7 +90,6 @@ Without these details the app cannot reach your server, so make sure to keep the
 
 > Requires your own Kavita server; no content is bundled.
 
-Kavern has no built-in updater and no prebuilt releases; build the APK yourself.
 
 ---
 
