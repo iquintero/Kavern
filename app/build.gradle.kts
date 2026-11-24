@@ -19,12 +19,12 @@ android {
         applicationId = "com.iquintero.kavern"
         minSdk = 28
         targetSdk = 36
-        versionCode = 12
+        versionCode = 13
 
         // Allow CI to override version/channel (falls back to local defaults).
         val versionNameOverride = project.findProperty("versionNameOverride") as? String
         val releaseChannel = project.findProperty("releaseChannel") as? String ?: "preview"
-        versionName = versionNameOverride ?: "0.1.0"
+        versionName = versionNameOverride ?: "0.1.1"
         buildConfigField("String", "RELEASE_CHANNEL", "\"$releaseChannel\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
