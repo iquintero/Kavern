@@ -182,11 +182,17 @@ private val IMPORTANT_INFO_FIXED =
 private const val FORCE_SHOW_IMPORTANT_INFO = false
 
 /**
- * The version of the "important info" notes above. The dialog shows once to anyone who has not seen this version, so
- * raise it only when the notes change. It used to follow the app's version code, which would show the same old
- * notes again after every release.
+ * The version of the "important info" notes above. The dialog shows once to anyone who has not yet seen a version this
+ * high, so raise it (and write new notes) only when there is something to tell. It is 0 because the notes above are
+ * Inkita's, from before the fork, and nobody should see them; a new install starts at 0 and so sees nothing.
  */
-private const val IMPORTANT_INFO_VERSION = 11
+internal const val IMPORTANT_INFO_VERSION = 0
+
+/** Whether to show the important-info dialog to someone who last saw [lastSeen]. */
+internal fun shouldShowImportantInfo(
+    current: Int,
+    lastSeen: Int,
+): Boolean = current > lastSeen
 
 private fun applyLocale(languageTag: String) {
     val locales =
@@ -285,7 +291,7 @@ fun KavernApp(
             return@LaunchedEffect
         }
         if (lastImportantInfoVersion < 0) return@LaunchedEffect
-        showImportantInfoDialog.value = IMPORTANT_INFO_VERSION > lastImportantInfoVersion
+        showImportantInfoDialog.value = shouldShowImportantInfo(IMPORTANT_INFO_VERSION, lastImportantInfoVersion)
     }
 
     LaunchedEffect(appLanguage) {
