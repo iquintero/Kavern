@@ -393,7 +393,7 @@
     <string name="stats_words_per_year">Words per year</string>
     <!-- Update -->
     <string name="notifications_prompt_title">Enable notifications</string>
-    <string name="notifications_prompt_body">Please allow notifications so we can alert you about updates and downloads.</string>
+    <string name="notifications_prompt_body">Please allow notifications so we can alert you about downloads.</string>
     <string name="notifications_prompt_accept">Enable</string>
     <string name="notifications_prompt_dismiss">Not now</string>
     <string name="settings_about_kavita_version">Tested with Kavita</string>
