@@ -74,6 +74,9 @@ data class ReaderPrefs(
         /** Each tap on the top and bottom margin stepper moves it this many dp, up to [MAX_VERTICAL_PADDING_DP]. */
         const val VERTICAL_PADDING_STEP_DP = 4
         const val MAX_VERTICAL_PADDING_DP = 64f
+
+        /** Below zero the text goes under the top and bottom bars, which win the few dp they cover while shown. */
+        const val MIN_VERTICAL_PADDING_DP = -12f
         const val DEFAULT_IMAGE_PREFETCH_PAGES = 8
     }
 }

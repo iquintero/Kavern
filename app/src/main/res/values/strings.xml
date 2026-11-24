@@ -288,6 +288,7 @@
     <string name="reader_line_height">Line height</string>
     <string name="reader_padding">Side margins</string>
     <string name="reader_padding_vertical">Top and bottom margins</string>
+    <string name="reader_padding_vertical_hint">Below 0 the text runs under the top and bottom bars while they are shown. Tap the middle of the page to hide them.</string>
     <string name="reader_alignment">Alignment</string>
     <string name="reader_font_family">Font family</string>
     <string name="reader_theme_header">Reader theme</string>

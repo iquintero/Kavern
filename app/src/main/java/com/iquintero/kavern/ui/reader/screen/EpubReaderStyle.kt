@@ -32,7 +32,7 @@ internal data class ReaderCssSettings(
 
 /** The stylesheet the reader appends to a book page, so the reader's settings win over the book's own CSS. */
 internal fun readerCss(settings: ReaderCssSettings): String {
-    val paddingTopPx = settings.paddingPx / 2f + if (settings.paged) 0f else settings.verticalPaddingPx
+    val paddingTopPx = (settings.paddingPx / 2f + if (settings.paged) 0f else settings.verticalPaddingPx).coerceAtLeast(0f)
     val themeCss =
         """
         html, body {

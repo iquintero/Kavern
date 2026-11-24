@@ -227,7 +227,11 @@ fun SettingsReaderScreen(
             scope.launch { appPreferences.updateReaderPrefs { copy(paddingDp = newVal.value) } }
         }
         StepperRow(stringResource(R.string.reader_padding_vertical), "${paddingVertical.value.toInt()} dp") { delta ->
-            val newVal = (paddingVertical + (delta * ReaderPrefs.VERTICAL_PADDING_STEP_DP).dp).coerceIn(0.dp, ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp)
+            val newVal =
+                (paddingVertical + (delta * ReaderPrefs.VERTICAL_PADDING_STEP_DP).dp).coerceIn(
+                    ReaderPrefs.MIN_VERTICAL_PADDING_DP.dp,
+                    ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp,
+                )
             paddingVertical = newVal
             scope.launch { appPreferences.updateReaderPrefs { copy(paddingVerticalDp = newVal.value) } }
         }

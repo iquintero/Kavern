@@ -294,8 +294,8 @@ internal fun ReaderWebView(
                                             },
                                         )
                                 }.padding(
-                                    top = with(density) { (insetTopPx + verticalPaddingPx).toDp() },
-                                    bottom = with(density) { (insetBottomPx + verticalPaddingPx).toDp() },
+                                    top = with(density) { (insetTopPx + verticalPaddingPx).coerceAtLeast(0f).toDp() },
+                                    bottom = with(density) { (insetBottomPx + verticalPaddingPx).coerceAtLeast(0f).toDp() },
                                 )
                         } else {
                             Modifier

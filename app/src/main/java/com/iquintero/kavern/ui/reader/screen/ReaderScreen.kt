@@ -786,7 +786,7 @@ internal fun BaseReaderScreen(
                         },
                         onPaddingVerticalChange = {
                             pendingScrollY = webViewRef.value?.scrollY ?: 0
-                            val new = it.coerceIn(0.dp, ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp)
+                            val new = it.coerceIn(ReaderPrefs.MIN_VERTICAL_PADDING_DP.dp, ReaderPrefs.MAX_VERTICAL_PADDING_DP.dp)
                             paddingVertical = new
                             scope.launch { appPreferences.updateReaderPrefs { copy(paddingVerticalDp = new.value) } }
                         },

@@ -1,3 +1,9 @@
+## Unreleased
+
+### Changed
+
+- The "Top and bottom margins" reader setting now goes below 0, down to -12 dp. Below 0 the text runs under the top and bottom bars while they are shown, which fits more lines on a page; hide the bars with a tap in the middle to see all of it. The default is still 0, so pages look as before until you change it.
+
 ## v0.1.2
 
 ### Added

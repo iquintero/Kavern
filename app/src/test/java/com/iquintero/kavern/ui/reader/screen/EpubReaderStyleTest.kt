@@ -114,4 +114,13 @@ class EpubReaderStyleTest {
 
         assertTrue(css.contains("padding-top: 20.0px !important"))
     }
+
+    @Test
+    fun `a negative margin never makes the css padding negative`() {
+        val css = readerCss(settings.copy(verticalPaddingPx = -30f))
+
+        // Half the side padding is 20, so 20 - 30 would be below zero.
+        assertTrue(css.contains("padding-top: 0.0px !important"))
+        assertTrue(css.contains("padding-bottom: 0.0px !important"))
+    }
 }

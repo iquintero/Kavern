@@ -362,6 +362,12 @@ private fun FontSettings(
         StepperRow(stringResource(R.string.reader_padding_vertical), valueText = "${paddingVertical.value.toInt()} dp") {
             onPaddingVerticalChange((paddingVertical + (it * ReaderPrefs.VERTICAL_PADDING_STEP_DP).dp))
         }
+        // Always shown: a line that appears at 0 would push the buttons up from under a finger that is still tapping.
+        Text(
+            stringResource(R.string.reader_padding_vertical_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
