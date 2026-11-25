@@ -11,7 +11,9 @@ import com.iquintero.kavern.domain.model.ReaderTimeLeft
 import com.iquintero.kavern.domain.model.ReaderTocItem
 import com.iquintero.kavern.domain.reader.BaseReader
 import com.iquintero.kavern.domain.reader.ReaderLoadResult
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -56,6 +58,9 @@ data class WebtoonChapterUiState(
     val hasNextChapter: Boolean? = null,
 )
 
+/** How long after a page is shown the anchors it reports are still taken to be the page settling. */
+private const val SETTLE_MS = 3_000L
+
 /** How long opening a book waits for server metadata before using what is stored on the device. */
 private const val METADATA_WAIT_MS = 1_500L
 
@@ -67,9 +72,18 @@ abstract class BaseReaderViewModel(
     protected val seriesId: Int?,
     protected val volumeId: Int?,
     private val anonymous: Boolean = false,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
     protected val _state = MutableStateFlow(ReaderUiState(pageIndex = initialPage))
     val state: StateFlow<ReaderUiState> = _state
+
+    /** The last position the server was told about (or, until something is sent, the one the book was opened at). */
+    private var sentPosition: ReadPosition? = null
+    private var lastSendAtMs = clock()
+    private var pendingSend: Job? = null
+
+    /** Until this time the anchors reported for a freshly shown page are the page settling, not reading. */
+    private var settleUntilMs = 0L
 
     init {
         loadInitial()
@@ -110,6 +124,15 @@ abstract class BaseReaderViewModel(
                 } else {
                     initialPage
                 }
+            // Opening a book is not progress: only a position that differs from this one is worth telling the server.
+            if (sentPosition == null) {
+                sentPosition =
+                    if (savedProgress != null && savedProgress.page == pageToOpen) {
+                        ReadPosition(chapterId, savedProgress.page, savedProgress.bookScrollId)
+                    } else {
+                        ReadPosition(chapterId, pageToOpen)
+                    }
+            }
             _state.update {
                 it.copy(
                     isPdf = reader.format == Format.Pdf,
@@ -181,6 +204,7 @@ abstract class BaseReaderViewModel(
                     // A new page must not inherit the previous page's scroll position.
                     _state.update { it.copy(bookScrollId = scrollId, openAtEnd = openAtEnd) }
                     updateProgress(index)
+                    settleUntilMs = clock() + SETTLE_MS
                     if (_state.value.bookInfo?.pages == null) {
                         val info = runCatchingCancellable { reader.getBookInfo(chapterId) }.getOrNull()
                         if (info != null) {
@@ -211,23 +235,88 @@ abstract class BaseReaderViewModel(
         totalPagesOverride: Int? = null,
     ) {
         if (anonymous) return
+        val position = ReadPosition(_state.value.activeChapterId ?: chapterId, pageIndex, bookScrollId)
+        if (bookScrollId != null && clock() < settleUntilMs) {
+            val sent = sentPosition
+            if (sent != null && sent.chapterId == position.chapterId && sent.page == position.page) {
+                // A page re-flows when it opens and reports the nearest screen start as an anchor, sometimes more
+                // than once, which is not the reader moving. Take it as where the reader is, so opening a book
+                // and leaving it sends nothing.
+                sentPosition = position
+                cancelPendingSend()
+                _state.update { it.copy(bookScrollId = bookScrollId) }
+                return
+            }
+        }
+        val decision =
+            ProgressSendPolicy.decide(
+                sent = sentPosition,
+                next = position,
+                sinceLastSendMs = clock() - lastSendAtMs,
+                pageTurnsAreChapters = reader.format == Format.Epub,
+            )
+        when (decision) {
+            ProgressDecision.Ignore -> Unit
+            ProgressDecision.DropPending -> cancelPendingSend()
+            ProgressDecision.SendNow -> sendProgress(position, totalPagesOverride)
+            is ProgressDecision.SendAfter -> {
+                cancelPendingSend()
+                pendingSend =
+                    viewModelScope.launch {
+                        delay(decision.delayMs)
+                        pendingSend = null
+                        sendProgress(position, totalPagesOverride)
+                    }
+            }
+        }
+        _state.update { it.copy(bookScrollId = bookScrollId ?: it.bookScrollId) }
+    }
+
+    private fun cancelPendingSend() {
+        pendingSend?.cancel()
+        pendingSend = null
+    }
+
+    private fun sendProgress(
+        position: ReadPosition,
+        totalPagesOverride: Int?,
+    ) {
+        cancelPendingSend()
+        sentPosition = position
+        lastSendAtMs = clock()
         viewModelScope.launch {
             val info = _state.value.bookInfo
-            val currentChapterId = _state.value.activeChapterId ?: chapterId
             val progress =
                 ReaderProgress(
-                    chapterId = currentChapterId,
-                    page = pageIndex,
-                    bookScrollId = bookScrollId,
+                    chapterId = position.chapterId,
+                    page = position.page,
+                    bookScrollId = position.scrollId,
                     seriesId = seriesId,
                     volumeId = info?.volumeId ?: volumeId,
                     libraryId = info?.libraryId,
                 )
             val totalPages = totalPagesOverride ?: info?.pages
             runCatchingCancellable { reader.setProgress(progress, totalPages = totalPages) }
-            _state.update { it.copy(bookScrollId = bookScrollId ?: it.bookScrollId) }
             loadTimeLeft()
         }
+    }
+
+    /** The screen is back after being away, and its page may settle again like a freshly opened one. */
+    fun onScreenResumed() {
+        settleUntilMs = clock() + SETTLE_MS
+    }
+
+    /**
+     * Sends a position that is still waiting for the reader to pause, e.g. because the app is going to the background
+     * and may not come back before the system ends it.
+     */
+    fun flushPendingProgress() {
+        if (pendingSend == null) return
+        val state = _state.value
+        sendProgress(
+            ReadPosition(state.activeChapterId ?: chapterId, state.pageIndex, state.bookScrollId),
+            state.pageCount.takeIf { it > 0 },
+        )
     }
 
     private fun loadTimeLeft() {
@@ -248,6 +337,7 @@ abstract class BaseReaderViewModel(
                     if (reader.format != Format.Pdf) {
                         updateProgress(pageIndex)
                     }
+                    settleUntilMs = clock() + SETTLE_MS
                     onPageLoaded(pageIndex)
                 }.onFailure { e ->
                     _state.update { it.copy(isLoading = false, error = e.message ?: "Error loading reader") }
@@ -308,6 +398,11 @@ abstract class BaseReaderViewModel(
         if (anonymous) return
         val state = _state.value
         val info = state.bookInfo
+        cancelPendingSend()
+        val position = ReadPosition(state.activeChapterId ?: chapterId, pageIndex, state.bookScrollId)
+        // Leaving a book exactly where the server already has it is not progress.
+        if (position == sentPosition) return
+        sentPosition = position
         val progress =
             ReaderProgress(
                 chapterId = state.activeChapterId ?: chapterId,
@@ -330,6 +425,8 @@ abstract class BaseReaderViewModel(
     }
 
     fun markChapterRead() {
+        // Marking read is an explicit request, so it goes out even when the server already has this position.
+        sentPosition = null
         val total = _state.value.pageCount
         val lastIndex = if (total > 0) total - 1 else _state.value.pageIndex
         updateProgress(lastIndex, totalPagesOverride = total.takeIf { it > 0 })

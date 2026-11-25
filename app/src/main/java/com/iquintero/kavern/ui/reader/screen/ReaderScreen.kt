@@ -46,6 +46,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.NetworkUtils
@@ -413,6 +416,20 @@ internal fun BaseReaderScreen(
         } else {
             goPrevPage()
         }
+    }
+    // Progress waiting for a pause in reading is sent when the app leaves the screen, which may be its last chance.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, readerViewModel) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> readerViewModel.flushPendingProgress()
+                    Lifecycle.Event.ON_START -> readerViewModel.onScreenResumed()
+                    else -> Unit
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     DisposableEffect(Unit) {
         ReaderKeyEvents.onKey = onKey@{ keyCode, isNewPress ->

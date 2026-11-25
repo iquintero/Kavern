@@ -2,6 +2,11 @@
 
 ### Changed
 
+- Reading progress is sent to the server far less often, so History is no longer filled with one-second visits:
+  - Opening a book and leaving it without reading sends nothing.
+  - A new chapter is sent at once. Turning pages in a comic or PDF, or moving within a chapter, is sent after 20 seconds without a change, and at most every 2 minutes while you keep reading.
+  - Whatever is waiting is sent when you leave the book or put the app in the background.
+
 - The "Top and bottom margins" reader setting now goes below 0, down to -12 dp. Below 0 the text runs under the top and bottom bars while they are shown, which fits more lines on a page; hide the bars with a tap in the middle to see all of it. The default is still 0, so pages look as before until you change it.
 
 ## v0.1.2

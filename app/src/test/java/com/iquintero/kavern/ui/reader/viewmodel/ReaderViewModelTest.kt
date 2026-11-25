@@ -10,6 +10,8 @@ import com.iquintero.kavern.domain.reader.ReaderLoadResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -47,7 +49,9 @@ private class FakeReader(
 
     override suspend fun getBookInfo(chapterId: Int) = ReaderBookInfo(pages = pages)
 
-    override suspend fun getProgress(chapterId: Int): ReaderProgress? = null
+    var serverProgress: ReaderProgress? = null
+
+    override suspend fun getProgress(chapterId: Int): ReaderProgress? = serverProgress
 
     override suspend fun setProgress(
         progress: ReaderProgress,
@@ -87,6 +91,7 @@ private class TestReaderViewModel(
     reader: BaseReader,
     initialPage: Int = 0,
     anonymous: Boolean = false,
+    clock: () -> Long = System::currentTimeMillis,
 ) : BaseReaderViewModel(
         chapterId = 7,
         initialPage = initialPage,
@@ -94,6 +99,7 @@ private class TestReaderViewModel(
         seriesId = null,
         volumeId = null,
         anonymous = anonymous,
+        clock = clock,
     )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -109,7 +115,7 @@ class ReaderViewModelTest {
     }
 
     @Test
-    fun `opening a book shows the first page, the page count and records progress`() =
+    fun `opening a book shows the first page and the page count but sends nothing`() =
         runTest {
             val reader = FakeReader()
             val state = TestReaderViewModel(reader, initialPage = 2).state.value
@@ -117,8 +123,139 @@ class ReaderViewModelTest {
             assertEquals(2, state.pageIndex)
             assertEquals(10, state.pageCount)
             assertEquals(false, state.isLoading)
+            assertTrue(reader.savedProgress.isEmpty())
+        }
+
+    @Test
+    fun `opening a book where the server has it and leaving sends and saves nothing`() =
+        runTest {
+            val reader = FakeReader().apply { serverProgress = ReaderProgress(chapterId = 7, page = 2, bookScrollId = "id(\"x\")") }
+            val vm = TestReaderViewModel(reader, initialPage = 2)
+            vm.markProgressAtCurrentPage("id(\"x\")")
+            vm.saveCurrentProgress()
+            assertTrue(reader.savedProgress.isEmpty())
+            assertTrue(reader.localProgress.isEmpty())
+        }
+
+    @Test
+    fun `the anchors a page reports as it settles on opening are not reading`() =
+        runTest {
+            val reader = FakeReader().apply { serverProgress = ReaderProgress(chapterId = 7, page = 0, bookScrollId = "idx:18") }
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            vm.markProgressAtCurrentPage("idx:19")
+            advanceTimeBy(500)
+            vm.markProgressAtCurrentPage("idx:12")
+            vm.saveCurrentProgress()
+            advanceTimeBy(60_000)
+            assertTrue(reader.savedProgress.isEmpty())
+            assertTrue(reader.localProgress.isEmpty())
+        }
+
+    @Test
+    fun `a spot reached after the page has settled is reading`() =
+        runTest {
+            val reader = FakeReader().apply { serverProgress = ReaderProgress(chapterId = 7, page = 0, bookScrollId = "idx:18") }
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            vm.markProgressAtCurrentPage("idx:19")
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("idx:20")
+            advanceTimeBy(20_001)
             assertEquals(
-                2,
+                "idx:20",
+                reader.savedProgress
+                    .single()
+                    .first.bookScrollId,
+            )
+        }
+
+    @Test
+    fun `a spot inside the page is sent after twenty quiet seconds and not before`() =
+        runTest {
+            val reader = FakeReader()
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("id(\"a\")")
+            advanceTimeBy(19_000)
+            assertTrue(reader.savedProgress.isEmpty())
+            advanceTimeBy(1_001)
+            assertEquals(
+                "id(\"a\")",
+                reader.savedProgress
+                    .single()
+                    .first.bookScrollId,
+            )
+        }
+
+    @Test
+    fun `scrolling on keeps pushing the send back but never past two minutes`() =
+        runTest {
+            val reader = FakeReader()
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            advanceTimeBy(5_000)
+            repeat(9) { step ->
+                vm.markProgressAtCurrentPage("id(\"s$step\")")
+                advanceTimeBy(15_000)
+            }
+            // 135 s of steady reading with a step every 15 s: nothing waited for 20 s, yet one send went out at the cap.
+            assertEquals(1, reader.savedProgress.size)
+            assertEquals(
+                "id(\"s7\")",
+                reader.savedProgress
+                    .single()
+                    .first.bookScrollId,
+            )
+        }
+
+    @Test
+    fun `going back to the sent spot cancels the send that was waiting`() =
+        runTest {
+            val reader = FakeReader().apply { serverProgress = ReaderProgress(chapterId = 7, page = 0, bookScrollId = "id(\"a\")") }
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("id(\"b\")")
+            vm.markProgressAtCurrentPage("id(\"a\")")
+            advanceTimeBy(60_000)
+            assertTrue(reader.savedProgress.isEmpty())
+        }
+
+    @Test
+    fun `leaving the reader with a spot still waiting saves it and nothing is sent twice`() =
+        runTest {
+            val reader = FakeReader()
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("id(\"a\")")
+            vm.saveCurrentProgress()
+            advanceTimeBy(60_000)
+            assertEquals("id(\"a\")", reader.localProgress.single().bookScrollId)
+            assertTrue(reader.savedProgress.isEmpty())
+        }
+
+    @Test
+    fun `going to the background sends what was waiting`() =
+        runTest {
+            val reader = FakeReader()
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("id(\"a\")")
+            vm.flushPendingProgress()
+            assertEquals(1, reader.savedProgress.size)
+            advanceTimeBy(60_000)
+            assertEquals(1, reader.savedProgress.size)
+        }
+
+    @Test
+    fun `comic pages are sent after a pause, not one by one`() =
+        runTest {
+            val reader = FakeReader(format = Format.Image)
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
+            vm.loadPage(1)
+            vm.loadPage(2)
+            vm.loadPage(3)
+            assertTrue(reader.savedProgress.isEmpty())
+            advanceTimeBy(20_001)
+            assertEquals(
+                3,
                 reader.savedProgress
                     .single()
                     .first.page,
@@ -215,11 +352,14 @@ class ReaderViewModelTest {
     fun `leaving the reader saves the current page locally`() =
         runTest {
             val reader = FakeReader()
-            val vm = TestReaderViewModel(reader)
+            val vm = TestReaderViewModel(reader, clock = { currentTime })
             vm.loadPage(4)
+            advanceTimeBy(5_000)
+            vm.markProgressAtCurrentPage("id(\"z\")")
             vm.saveCurrentProgress()
             val saved = reader.localProgress.single()
             assertEquals(4, saved.page)
+            assertEquals("id(\"z\")", saved.bookScrollId)
             assertNotNull(saved.lastModifiedUtcMillis)
         }
 }
