@@ -2,6 +2,8 @@
 
 ### Changed
 
+- **A new History page.** It starts with a summary for the last 7 days, 30 days or everything loaded: time read, pages, books and your day streak, with a bar for each day. Below it, each day lists one row per book with its chapters, time and pages, instead of one card per visit. Visits that read nothing (a book opened and left) no longer show up, a session that went backwards no longer shows negative pages, and "Show earlier history" loads more. Older Kavita servers that do not report reading time show days and chapters only.
+
 - Reading progress is sent to the server far less often, so History is no longer filled with one-second visits:
   - Opening a book and leaving it without reading sends nothing.
   - A new chapter is sent at once. Turning pages in a comic or PDF, or moving within a chapter, is sent after 20 seconds without a change, and at most every 2 minutes while you keep reading.

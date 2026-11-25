@@ -537,10 +537,24 @@
     <!-- History -->
     <string name="history_error_http">HTTP %1$d</string>
     <string name="history_no_cover">No cover</string>
-    <string name="history_entries_count">Entries: %1$d</string>
-    <string name="history_chapter_range">Ch. %1$s–%2$s</string>
     <string name="history_chapter_single">Ch. %1$s</string>
-    <string name="history_session_summary">%1$d pages · %2$d min</string>
+    <string name="history_period_week">7 days</string>
+    <string name="history_period_month">30 days</string>
+    <string name="history_period_all">All</string>
+    <string name="history_period_empty">Nothing read in this period.</string>
+    <string name="history_stat_time">Time read</string>
+    <string name="history_stat_pages">Pages</string>
+    <string name="history_stat_books">Books</string>
+    <string name="history_stat_streak">Day streak</string>
+    <string name="history_duration_min">%1$d min</string>
+    <string name="history_duration_h">%1$d h</string>
+    <string name="history_duration_h_min">%1$d h %2$d min</string>
+    <string name="history_chart_description">Minutes read each day for the last %1$d days</string>
+    <string name="history_load_earlier">Show earlier history</string>
+    <plurals name="history_pages">
+        <item quantity="one">%d page</item>
+        <item quantity="other">%d pages</item>
+    </plurals>
     <string name="server_status_connected">Connected to server</string>
     <string name="server_status_checking">Checking server connection</string>
     <string name="server_status_unknown">Server connection not checked yet</string>

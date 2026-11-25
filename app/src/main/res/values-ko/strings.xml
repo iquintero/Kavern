@@ -311,8 +311,6 @@
     <!-- History -->
     <string name="history_error_http">HTTP %1$d</string>
     <string name="history_no_cover">표지 없음</string>
-    <string name="history_entries_count">항목: %1$d</string>
-    <string name="history_chapter_range">챕터. %1$s–%2$s</string>
     <string name="history_chapter_single">챕터. %1$s</string>
     <string name="general_clear">삭제</string>
     <string name="settings_browse_page_size_title">탐색할 페이지 크기</string>

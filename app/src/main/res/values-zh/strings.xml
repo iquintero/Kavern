@@ -311,8 +311,6 @@
     <!-- History -->
     <string name="history_error_http">HTTP %1$d</string>
     <string name="history_no_cover">无封面</string>
-    <string name="history_entries_count">条目：%1$d</string>
-    <string name="history_chapter_range">章节 %1$s–%2$s</string>
     <string name="history_chapter_single">章节 %1$s</string>
     <string name="general_clear">清除</string>
     <string name="settings_browse_page_size_title">浏览页面大小</string>
