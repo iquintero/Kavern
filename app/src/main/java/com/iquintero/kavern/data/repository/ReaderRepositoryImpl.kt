@@ -61,6 +61,30 @@ internal fun classifyProgressStatus(status: Int): ProgressUploadResult =
         else -> ProgressUploadResult.Rejected
     }
 
+/** What a stored reading position needs once the server's own copy is known. */
+internal enum class ProgressSyncPlan {
+    /** The server is behind: this position has to be sent. */
+    SendLocal,
+
+    /** The server already has this position, so sending it again would only add an empty reading event. */
+    AlreadyOnServer,
+
+    /** The server has a different, more recent position (read elsewhere meanwhile), which is kept. */
+    ServerIsNewer,
+}
+
+internal fun planProgressSync(
+    local: ReaderProgress,
+    remote: ReaderProgress?,
+): ProgressSyncPlan =
+    when {
+        remote == null -> ProgressSyncPlan.SendLocal
+        remote.page == local.page && (local.bookScrollId == null || remote.bookScrollId == local.bookScrollId) ->
+            ProgressSyncPlan.AlreadyOnServer
+        local.lastModifiedUtcMillis > remote.lastModifiedUtcMillis -> ProgressSyncPlan.SendLocal
+        else -> ProgressSyncPlan.ServerIsNewer
+    }
+
 class ReaderRepositoryImpl(
     private val context: Context,
     private val appPreferences: AppPreferences,
@@ -257,7 +281,14 @@ class ReaderRepositoryImpl(
         }
 
         val result = sendProgress(progressWithTs)
-        readerDao.upsertLocalProgress(progressWithTs.toEntity())
+        if (result == ProgressUploadResult.Sent) {
+            // The server has it, so no copy is kept waiting; a newer one stored meanwhile stays.
+            readerDao.getLocalProgress(progressWithTs.chapterId)?.let {
+                if (it.lastModifiedUtc <= progressWithTs.lastModifiedUtcMillis) readerDao.clearLocalProgress(it.chapterId)
+            }
+        } else {
+            readerDao.upsertLocalProgress(progressWithTs.toEntity())
+        }
         if (result == ProgressUploadResult.RetryableFailure) {
             // The current worker may already have read its batch.
             ProgressSyncWorker.enqueue(context, appPreferences.profile, followUp = true)
@@ -614,78 +645,60 @@ class ReaderRepositoryImpl(
         if (locals.isEmpty()) return true
         val api = apiOrThrow()
         var needsRetry = false
-        locals.forEach { localEntity ->
+        for (localEntity in locals) {
             if (!appPreferences.isActiveSession()) return true
-            val local = localEntity.toDomain()
-            val remote =
-                runCatchingCancellable {
-                    val resp = api.getReaderProgress(local.chapterId)
-                    if (resp.isSuccessful) resp.body()?.toDomain() else null
-                }.getOrNull()
-            val latest =
-                when {
-                    remote == null -> local
-                    local.lastModifiedUtcMillis > remote.lastModifiedUtcMillis -> local
-                    else -> remote
-                }
-            val remoteAlreadyMatchesLocal =
-                remote != null &&
-                    remote.page == local.page &&
-                    (local.bookScrollId == null || remote.bookScrollId == local.bookScrollId)
-            if (!appPreferences.isActiveSession()) return true
-            when (sendProgress(latest, api)) {
-                ProgressUploadResult.Sent -> Unit
-                ProgressUploadResult.RetryableFailure -> {
-                    needsRetry = true
-                    return@forEach
-                }
-                ProgressUploadResult.Rejected -> {
-                    com.iquintero.kavern.core.logging.LoggingManager.w(
-                        "KavernProgress",
-                        "Dropping progress the server rejected chapter=${local.chapterId} page=${local.page}",
-                    )
-                    readerDao.finishProgressSync(localEntity, replacement = null)
-                    return@forEach
-                }
-            }
-            val continuePointConfirmed =
-                if (remoteAlreadyMatchesLocal && local.seriesId != null) {
-                    val continueResponse = runCatchingCancellable { api.getContinuePoint(local.seriesId) }.getOrNull()
-                    val continuePoint = continueResponse?.takeIf { it.isSuccessful }?.body()
-                    val samePosition =
-                        continuePoint?.id == local.chapterId &&
-                            continuePoint.pagesRead == local.page
-                    if (samePosition) {
-                        true
-                    } else {
-                        val pageCount =
-                            runCatchingCancellable { api.getBookInfo(local.chapterId) }
-                                .getOrNull()
-                                ?.takeIf { it.isSuccessful }
-                                ?.body()
-                                ?.pages
-                        val completed = pageCount != null && (local.page ?: 0) >= pageCount
-                        continueResponse?.isSuccessful == true && completed && continuePoint?.id != local.chapterId
-                    }
-                } else {
-                    false
-                }
-            if (com.iquintero.kavern.core.logging.LoggingManager
-                    .isDebugEnabled()
-            ) {
-                com.iquintero.kavern.core.logging.LoggingManager.d(
-                    "KavernProgress",
-                    "Sync chapter=${local.chapterId} page=${local.page} remotePage=${remote?.page} " +
-                        "remoteMatches=$remoteAlreadyMatchesLocal continueConfirmed=$continuePointConfirmed",
-                )
-            }
-            if (continuePointConfirmed) {
-                readerDao.finishProgressSync(localEntity, replacement = null)
-            } else {
-                readerDao.finishProgressSync(localEntity, replacement = latest.toEntity())
-            }
+            // Once the server is found unreachable (e.g. a home server on mobile data) every further row would only
+            // wait for the same timeout, so stop and leave them for the next attempt.
+            if (ServerReachability.isUnreachable()) return false
+            if (!syncStoredProgress(api, localEntity)) needsRetry = true
         }
         return !needsRetry
+    }
+
+    /** Brings the server up to date with one stored position. False means it must be tried again later. */
+    private suspend fun syncStoredProgress(
+        api: KavitaApi,
+        localEntity: LocalReaderProgressEntity,
+    ): Boolean {
+        val local = localEntity.toDomain()
+        val remote =
+            try {
+                val resp = api.getReaderProgress(local.chapterId)
+                if (resp.isSuccessful) resp.body()?.toDomain() else null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: IOException) {
+                // Without the server's copy there is no telling whether sending would overwrite newer reading.
+                return false
+            }
+        val plan = planProgressSync(local, remote)
+        if (com.iquintero.kavern.core.logging.LoggingManager
+                .isDebugEnabled()
+        ) {
+            com.iquintero.kavern.core.logging.LoggingManager.d(
+                "KavernProgress",
+                "Sync chapter=${local.chapterId} page=${local.page} remotePage=${remote?.page} plan=$plan",
+            )
+        }
+        if (plan != ProgressSyncPlan.SendLocal) {
+            readerDao.finishProgressSync(localEntity, replacement = null)
+            return true
+        }
+        return when (sendProgress(local, api)) {
+            ProgressUploadResult.Sent -> {
+                readerDao.finishProgressSync(localEntity, replacement = null)
+                true
+            }
+            ProgressUploadResult.RetryableFailure -> false
+            ProgressUploadResult.Rejected -> {
+                com.iquintero.kavern.core.logging.LoggingManager.w(
+                    "KavernProgress",
+                    "Dropping progress the server rejected chapter=${local.chapterId} page=${local.page}",
+                )
+                readerDao.finishProgressSync(localEntity, replacement = null)
+                true
+            }
+        }
     }
 
     override suspend fun getLatestLocalProgress(seriesId: Int): ReaderProgress? {

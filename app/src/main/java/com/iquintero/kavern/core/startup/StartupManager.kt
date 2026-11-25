@@ -14,6 +14,7 @@ import com.iquintero.kavern.core.downloadv2.DownloadManagerV2
 import com.iquintero.kavern.core.downloadv2.DownloadPaths
 import com.iquintero.kavern.core.logging.LoggingManager
 import com.iquintero.kavern.core.network.NetworkMonitor
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.notification.AppNotificationManager
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.sync.ProgressSyncWorker
@@ -110,11 +111,19 @@ object StartupManager {
                     )
                 }
                 if (status.isOnlineAllowed && session.config.isConfigured) {
-                    ProgressSyncWorker.enqueue(appContext, session.profile)
+                    // The network changed, e.g. back on the home wifi: do not wait out a retry delay.
+                    ProgressSyncWorker.enqueue(appContext, session.profile, retryNow = true)
                     if (KavernDatabase.getInstance(appContext, session.profile).downloadV2Dao().hasUnfinishedJobs()) {
                         DownloadManagerV2.enqueueWorker(AppPreferences(appContext, session))
                     }
                 }
+            }.launchIn(logScope)
+        // Reading done while the server could not be reached (e.g. away from the home network) is sent as soon as
+        // the server answers again, without waiting for a retry delay.
+        ServerReachability.recovered
+            .onEach {
+                val session = preferences.activeSessionFlow.first()
+                if (session.config.isConfigured) ProgressSyncWorker.enqueue(appContext, session.profile, retryNow = true)
             }.launchIn(logScope)
         appScope.launch(Dispatchers.IO) {
             val tempDir = DownloadPaths.pdfTempDir(appContext)
@@ -166,7 +175,7 @@ object StartupManager {
         val preferences = init(appContext)
         appScope.launch {
             val session = preferences.activeSessionFlow.first()
-            if (session.config.isConfigured) ProgressSyncWorker.enqueue(appContext, session.profile)
+            if (session.config.isConfigured) ProgressSyncWorker.enqueue(appContext, session.profile, retryNow = true)
         }
     }
 }

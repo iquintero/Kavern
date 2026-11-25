@@ -3,6 +3,8 @@ package com.iquintero.kavern
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.storage.AppConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -10,6 +12,7 @@ import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -47,6 +50,20 @@ class ServerReachabilityTest {
         .message("test")
         .body("".toResponseBody())
         .build()
+
+    @Test
+    fun theServerAnsweringAgainAfterAFailureIsAnnouncedOnce() =
+        runBlocking {
+            val announced = mutableListOf<Unit>()
+            val job = launch(Dispatchers.Unconfined) { ServerReachability.recovered.collect { announced += it } }
+            ServerReachability.markReachable()
+            assertEquals("an answer with no failure before it is nothing to announce", 0, announced.size)
+            ServerReachability.markUnreachable()
+            ServerReachability.markReachable()
+            ServerReachability.markReachable()
+            assertEquals(1, announced.size)
+            job.cancel()
+        }
 
     @Test
     fun probeMarksTheServerReachableOnAnyHealthyAnswer() {

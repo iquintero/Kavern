@@ -4,7 +4,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -62,10 +64,17 @@ object ServerReachability {
         }
     }
 
+    private val recoveredEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Emits when the server answers again after a failure to reach it, e.g. back on the home network. */
+    val recovered: SharedFlow<Unit> = recoveredEvents
+
     fun markReachable() {
+        val wasDown = failedAtMillis != NEVER
         verifiedState.value = true
         failedAtMillis = NEVER
         unreachableState.value = false
+        if (wasDown) recoveredEvents.tryEmit(Unit)
     }
 
     /**

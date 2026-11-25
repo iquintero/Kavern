@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.workDataOf
 import com.iquintero.kavern.core.di.KavernServices
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.KavitaProfile
@@ -133,7 +134,8 @@ class ReaderProgressRetryTest {
                 workers.singleOrNull()?.state == WorkInfo.State.SUCCEEDED
             }
             assertEquals(1, rejectedPosts.get())
-            assertEquals(PAGE, fixture.dao.getLocalProgress(FIRST_CHAPTER)?.page)
+            // A position the server will never accept is dropped, and the chapters after it are still sent.
+            assertNull(fixture.dao.getLocalProgress(FIRST_CHAPTER))
             assertNull(fixture.dao.getLocalProgress(SECOND_CHAPTER))
         }
 
@@ -144,7 +146,7 @@ class ReaderProgressRetryTest {
             fixture.server.dispatcher =
                 ProgressDispatcher(postStatus = {
                     rejectedPosts.incrementAndGet()
-                    403
+                    400
                 })
 
             fixture.repository.setProgress(ReaderProgress(chapterId = FIRST_CHAPTER, page = PAGE, seriesId = FIRST_CHAPTER))
@@ -153,6 +155,69 @@ class ReaderProgressRetryTest {
             assertTrue(workers.isEmpty())
             assertEquals(1, rejectedPosts.get())
             assertEquals(PAGE, fixture.dao.getLocalProgress(FIRST_CHAPTER)?.page)
+        }
+
+    @Test
+    fun workerDoesNotSendAPositionTheServerAlreadyHas() =
+        withProfile { fixture ->
+            val posts = AtomicInteger()
+            fixture.server.dispatcher =
+                ProgressDispatcher(serverPage = { PAGE }, postStatus = {
+                    posts.incrementAndGet()
+                    204
+                })
+            fixture.storeProgress(FIRST_CHAPTER)
+            fixture.storeProgress(SECOND_CHAPTER)
+            ProgressSyncWorker.enqueue(fixture.context, fixture.profile)
+
+            await {
+                val workers = fixture.workManager.getWorkInfosForUniqueWork(fixture.uniqueWork).get(5, TimeUnit.SECONDS)
+                workers.singleOrNull()?.state == WorkInfo.State.SUCCEEDED
+            }
+            assertEquals(0, posts.get())
+            assertNull(fixture.dao.getLocalProgress(FIRST_CHAPTER))
+            assertNull(fixture.dao.getLocalProgress(SECOND_CHAPTER))
+        }
+
+    @Test
+    fun positionsWaitOutAServerThatCannotBeReachedAndAreSentWhenItIsBack() =
+        withProfile { fixture ->
+            val port = fixture.server.port
+            // Reading offline across two chapters, then the app is closed: only the stored rows remain.
+            fixture.server.shutdown()
+            ServerReachability.reset()
+            fixture.storeProgress(FIRST_CHAPTER)
+            fixture.storeProgress(SECOND_CHAPTER)
+            ProgressSyncWorker.enqueue(fixture.context, fixture.profile)
+
+            await {
+                val work =
+                    fixture.workManager
+                        .getWorkInfosForUniqueWork(fixture.uniqueWork)
+                        .get(5, TimeUnit.SECONDS)
+                        .singleOrNull()
+                work?.state == WorkInfo.State.ENQUEUED && work.runAttemptCount == 1
+            }
+            assertEquals(PAGE, fixture.dao.getLocalProgress(FIRST_CHAPTER)?.page)
+            assertEquals(PAGE, fixture.dao.getLocalProgress(SECOND_CHAPTER)?.page)
+
+            // The server is reachable again (back on the home network) and the app comes to the front.
+            val posted = mutableListOf<Int>()
+            MockWebServer().use { returned ->
+                returned.dispatcher =
+                    ProgressDispatcher(postStatus = { chapterId ->
+                        synchronized(posted) { posted += chapterId }
+                        204
+                    })
+                returned.start(port)
+                ServerReachability.reset()
+                ProgressSyncWorker.enqueue(fixture.context, fixture.profile, retryNow = true)
+
+                await {
+                    fixture.dao.getLocalProgress(FIRST_CHAPTER) == null && fixture.dao.getLocalProgress(SECOND_CHAPTER) == null
+                }
+            }
+            assertEquals(listOf(FIRST_CHAPTER, SECOND_CHAPTER), synchronized(posted) { posted.sorted() })
         }
 
     private fun withProfile(block: suspend (Fixture) -> Unit) =
@@ -196,12 +261,15 @@ class ReaderProgressRetryTest {
         val repository = KavernServices.get(context, preferences).readerRepository
 
         suspend fun storeProgress(chapterId: Int) {
-            dao.upsertLocalProgress(LocalReaderProgressEntity(chapterId = chapterId, page = PAGE, seriesId = chapterId))
+            dao.upsertLocalProgress(
+                LocalReaderProgressEntity(chapterId = chapterId, page = PAGE, seriesId = chapterId, lastModifiedUtc = STORED_AT),
+            )
         }
     }
 
     private class ProgressDispatcher(
         private val beforeRead: (Int) -> Unit = {},
+        private val serverPage: (Int) -> Int = { PAGE - 1 },
         private val postStatus: (Int) -> Int,
     ) : Dispatcher() {
         override fun dispatch(request: RecordedRequest): MockResponse {
@@ -210,7 +278,7 @@ class ReaderProgressRetryTest {
                 "/api/reader/get-progress" -> {
                     val chapterId = checkNotNull(url.queryParameter("chapterId")).toInt()
                     beforeRead(chapterId)
-                    MockResponse().setBody("""{"chapterId":$chapterId,"seriesId":$chapterId,"pageNum":$PAGE}""")
+                    MockResponse().setBody("""{"chapterId":$chapterId,"seriesId":$chapterId,"pageNum":${serverPage(chapterId)}}""")
                 }
                 "/api/reader/progress" -> {
                     val chapterId = JSONObject(request.body.readUtf8()).getInt("chapterId")
@@ -235,5 +303,6 @@ class ReaderProgressRetryTest {
         const val FIRST_CHAPTER = 901
         const val SECOND_CHAPTER = 902
         const val PAGE = 5
+        const val STORED_AT = 1_000L
     }
 }

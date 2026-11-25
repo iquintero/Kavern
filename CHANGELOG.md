@@ -6,6 +6,11 @@
   - Opening a book and leaving it without reading sends nothing.
   - A new chapter is sent at once. Turning pages in a comic or PDF, or moving within a chapter, is sent after 20 seconds without a change, and at most every 2 minutes while you keep reading.
   - Whatever is waiting is sent when you leave the book or put the app in the background.
+- Reading done while the server cannot be reached is now sent reliably when it can:
+  - The send is queued even with no connection, so Android does it by itself once one is back, even if the app was closed. The same goes for a server on your home network that a phone on mobile data cannot reach.
+  - It is tried again as soon as the server answers, when the network changes and when you open the app, and otherwise every 10, 20, 30 minutes and so on, instead of waiting up to five hours.
+  - A position the server already has is no longer sent again, and one that was read elsewhere more recently is kept. Before, every stored position was sent again each time the app came to the front, which added empty reading events to History.
+  - Syncing a chapter takes one request, or two when something has to be sent, instead of three or four.
 
 - The "Top and bottom margins" reader setting now goes below 0, down to -12 dp. Below 0 the text runs under the top and bottom bars while they are shown, which fits more lines on a page; hide the bars with a tap in the middle to see all of it. The default is still 0, so pages look as before until you change it.
 
