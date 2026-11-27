@@ -262,12 +262,8 @@ abstract class BaseReaderViewModel(
         val currentChapter = _state.value.activeChapterId ?: chapterId
         val nextNav = runCatchingCancellable { reader.getNextChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
         val nextId = nextNav.chapterId ?: return null
-        // fetch fresh book info for next chapter to capture correct volume
+        // Book info only names the right volume: the reader stays on its own page until the move is confirmed.
         val nextInfo = runCatchingCancellable { reader.getBookInfo(nextId) }.getOrNull()
-        if (nextInfo != null) {
-            val pages = nextInfo.pages ?: 0
-            _state.update { it.copy(bookInfo = nextInfo, pageCount = pages, pageIndex = 0, content = null) }
-        }
         return ReaderChapterNav(
             seriesId = nextInfo?.seriesId ?: nextNav.seriesId ?: sid,
             volumeId = nextInfo?.volumeId ?: nextNav.volumeId ?: vid,
@@ -284,10 +280,6 @@ abstract class BaseReaderViewModel(
         val prevNav = runCatchingCancellable { reader.getPreviousChapter(sid, vid, currentChapter) }.getOrNull() ?: return null
         val prevId = prevNav.chapterId ?: return null
         val prevInfo = runCatchingCancellable { reader.getBookInfo(prevId) }.getOrNull()
-        if (prevInfo != null) {
-            val pages = prevInfo.pages ?: 0
-            _state.update { it.copy(bookInfo = prevInfo, pageCount = pages, pageIndex = 0, content = null) }
-        }
         return ReaderChapterNav(
             seriesId = prevInfo?.seriesId ?: prevNav.seriesId ?: sid,
             volumeId = prevInfo?.volumeId ?: prevNav.volumeId ?: vid,
