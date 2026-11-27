@@ -2207,7 +2207,12 @@ private fun VolumeGridRow(
                 Text(
                     text =
                         stringResource(
-                            id = com.iquintero.kavern.R.string.series_detail_vol_short,
+                            id =
+                                if (config.isGrimmory) {
+                                    com.iquintero.kavern.R.string.series_detail_book_short
+                                } else {
+                                    com.iquintero.kavern.R.string.series_detail_vol_short
+                                },
                             (index + 1).toString(),
                         ),
                     style = MaterialTheme.typography.labelSmall,

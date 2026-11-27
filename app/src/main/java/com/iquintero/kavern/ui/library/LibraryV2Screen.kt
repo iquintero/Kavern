@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.cache.CacheManager
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.domain.model.Library
@@ -133,13 +134,16 @@ fun LibraryV2Screen(
                 }
             },
         )
-        PrimaryScrollableTabRow(selectedTabIndex = uiState.selectedSection.ordinal, edgePadding = 16.dp) {
-            LibraryV2Section.entries.forEach { section ->
-                Tab(
-                    selected = uiState.selectedSection == section,
-                    onClick = { viewModel.selectSection(section) },
-                    text = { Text(stringResource(section.labelRes)) },
-                )
+        // Grimmory has books only: no collections, reading lists or people to switch to.
+        if (!config.isGrimmory) {
+            PrimaryScrollableTabRow(selectedTabIndex = uiState.selectedSection.ordinal, edgePadding = 16.dp) {
+                LibraryV2Section.entries.forEach { section ->
+                    Tab(
+                        selected = uiState.selectedSection == section,
+                        onClick = { viewModel.selectSection(section) },
+                        text = { Text(stringResource(section.labelRes)) },
+                    )
+                }
             }
         }
         val retry = { viewModel.selectSection(uiState.selectedSection) }
