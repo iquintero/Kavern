@@ -573,4 +573,7 @@
         <item quantity="other">%1$d items</item>
     </plurals>
     <string name="library_all_libraries">All</string>
+    <string name="settings_grimmory_switch">Grimmory server</string>
+    <string name="settings_grimmory_user">Username</string>
+    <string name="settings_grimmory_password">Password</string>
 </resources>
