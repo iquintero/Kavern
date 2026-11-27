@@ -42,8 +42,9 @@ internal object GrimmoryServers {
                         .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                         .build()
-                val calls = plain.forServerCa(config)
-                GrimmoryInterceptor(GrimmoryClient(calls, config.serverUrl.toHttpUrl(), credentials), credentials)
+                val once = plain.newBuilder().retryOnConnectionFailure(false).build()
+                val client = GrimmoryClient(plain.forServerCa(config), once.forServerCa(config), config.serverUrl.toHttpUrl(), credentials)
+                GrimmoryInterceptor(client, credentials)
             }
         val translating = app.newBuilder().addInterceptor(translator).build()
         return Call.Factory { translating.newCall(it) }
@@ -55,6 +56,7 @@ internal object GrimmoryServers {
         credentials: GrimmoryCredentials,
     ) {
         val plain = OkHttpClient.Builder().connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS).build()
-        GrimmoryClient(plain.forServerCa(config), config.serverUrl.toHttpUrl(), credentials).verifyLogin()
+        val calls = plain.forServerCa(config)
+        GrimmoryClient(calls, calls, config.serverUrl.toHttpUrl(), credentials).verifyLogin()
     }
 }

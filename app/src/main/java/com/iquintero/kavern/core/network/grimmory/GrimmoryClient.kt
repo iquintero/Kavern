@@ -50,6 +50,8 @@ internal fun Json.strings(key: String): List<String> = list(key).filterIsInstanc
  */
 internal class GrimmoryClient(
     private val calls: Call.Factory,
+    /** Makes calls that are never sent again after a lost connection, for requests that must not be doubled. */
+    private val onceCalls: Call.Factory,
     private val origin: HttpUrl,
     private val credentials: GrimmoryCredentials,
 ) {
@@ -108,15 +110,30 @@ internal class GrimmoryClient(
     fun putJson(
         path: String,
         body: Any?,
+    ) = write(path, body, put = true, retry = true)
+
+    /** Posts once: a request that was delivered but whose answer was lost must not be sent again behind the caller's back. */
+    fun postJson(
+        path: String,
+        body: Any?,
+    ) = write(path, body, put = false, retry = false)
+
+    private fun write(
+        path: String,
+        body: Any?,
+        put: Boolean,
+        retry: Boolean,
     ) {
+        val payload = GrimmoryJson.write(body).toRequestBody(jsonType)
         val request =
             Request
                 .Builder()
                 .url(url(path))
                 .header("Authorization", "Bearer ${accessToken()}")
-                .put(GrimmoryJson.write(body).toRequestBody(jsonType))
+                .method(if (put) "PUT" else "POST", payload)
                 .build()
-        calls.newCall(request).execute().use { response ->
+        val caller = if (retry) calls else onceCalls
+        caller.newCall(request).execute().use { response ->
             if (response.code == 401) synchronized(lock) { token = null }
             if (!response.isSuccessful) throw GrimmoryHttpException(response.code)
         }

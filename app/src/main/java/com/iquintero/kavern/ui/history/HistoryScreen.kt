@@ -42,6 +42,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.di.KavernServices
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.storage.AppConfig
@@ -90,6 +91,8 @@ fun HistoryScreen(
         isLoading.value = true
         error.value = null
         val api = KavitaApiFactory.createAuthenticated(config)
+        // Sessions that have finished but not yet been sent would otherwise be missing from the list.
+        runCatchingCancellable { KavernServices.get(context, appPreferences).readerRepository.uploadReadingSessions() }
         // Kavita 0.8.9 replaced the history route; older servers still use the original one.
         val libraryIds =
             runCatchingCancellable {
@@ -328,9 +331,11 @@ private fun HistoryRow(
                 Text(timeRange, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             val summary =
-                item.pagesRead?.let { pages ->
-                    stringResource(R.string.history_session_summary, pages, item.minutes ?: 0)
-                } ?: stringResource(R.string.history_entries_count, item.count)
+                when {
+                    item.percentRead != null -> stringResource(R.string.history_session_percent_summary, item.percentRead, item.minutes ?: 0)
+                    item.pagesRead != null -> stringResource(R.string.history_session_summary, item.pagesRead, item.minutes ?: 0)
+                    else -> stringResource(R.string.history_entries_count, item.count)
+                }
             Text(summary, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -379,6 +384,7 @@ private data class DaySeriesItem(
     val chapterText: String? = null,
     val timeText: String? = null,
     val pagesRead: Int? = null,
+    val percentRead: Int? = null,
     val minutes: Int? = null,
 )
 
@@ -409,6 +415,7 @@ private fun sessionsByDay(sessions: List<ReadingHistorySessionDto>): Map<LocalDa
                         },
                     timeText = localTimeRange(session.startTimeUtc, session.endTimeUtc),
                     pagesRead = session.pagesRead ?: 0,
+                    percentRead = session.percentRead,
                     minutes = maxOf(1, ((session.durationSeconds ?: 0) + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE),
                 )
             }

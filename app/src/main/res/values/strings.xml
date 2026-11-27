@@ -542,6 +542,7 @@
     <string name="history_chapter_range">Ch. %1$s–%2$s</string>
     <string name="history_chapter_single">Ch. %1$s</string>
     <string name="history_session_summary">%1$d pages · %2$d min</string>
+    <string name="history_session_percent_summary">+%1$d%% · %2$d min</string>
     <string name="server_status_connected">Connected to server</string>
     <string name="server_status_checking">Checking server connection</string>
     <string name="server_status_unknown">Server connection not checked yet</string>

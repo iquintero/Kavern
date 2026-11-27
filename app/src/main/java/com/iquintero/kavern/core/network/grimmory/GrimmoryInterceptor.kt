@@ -43,6 +43,7 @@ internal class GrimmoryInterceptor(
     private val catalog = GrimmoryCatalog(client)
     private val epubs = GrimmoryEpubs(client)
     private val reader = GrimmoryReader(client, catalog, epubs)
+    private val sessions = GrimmorySessions(client, catalog)
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     private val jsonType = "application/json".toMediaType()
 
@@ -92,11 +93,22 @@ internal class GrimmoryInterceptor(
             path == "/api/reader/continue-point" -> int("seriesId")?.let { continuePoint(request, it) }
             path == "/api/reader/time-left" -> json(request, TimeLeftDto())
             path == "/api/reader/has-progress" -> json(request, int("seriesId")?.let { catalog.book(it) }?.let { it.progress > 0 } == true)
+            path == "/api/stats/reading-history" -> json(request, sessions.history(q.queryParameter("TimeZoneId")))
+            path == "/api/stats/reading-session" -> recordSession(request)
             path == "/api/rating/overall-series" -> json(request, RatingDto())
             path == "/api/want-to-read" -> json(request, false)
             path in EMPTY_LISTS -> json(request, emptyList<Any>())
             else -> reader.answer(request, ::json, ::reply)
         }
+    }
+
+    private fun recordSession(request: Request): Response {
+        val buffer = Buffer().also { request.body?.writeTo(it) }
+
+        @Suppress("UNCHECKED_CAST")
+        val body = GrimmoryJson.parse(buffer.readUtf8()) as? Json ?: return reply(request, BAD_REQUEST, "")
+        sessions.record(body)
+        return reply(request, OK, "")
     }
 
     private fun accountId(): Int = (account.username.hashCode() and Int.MAX_VALUE).coerceAtLeast(1)
@@ -358,6 +370,7 @@ internal class GrimmoryInterceptor(
     private companion object {
         const val OK = 200
         const val NOT_FOUND = 404
+        const val BAD_REQUEST = 400
         const val BAD_GATEWAY = 502
         const val DEFAULT_PAGE = 50
         const val BOOK_LIBRARY = 2

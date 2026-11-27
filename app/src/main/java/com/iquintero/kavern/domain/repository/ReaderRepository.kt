@@ -84,6 +84,9 @@ interface ReaderRepository {
         volumeIds: List<Int>,
     )
 
+    /** Sends the reading sessions that have finished to servers that keep them as the app measured them. */
+    suspend fun uploadReadingSessions()
+
     /** Returns true when this sync attempt can finish without a retry. */
     suspend fun syncLocalProgress(): Boolean
 

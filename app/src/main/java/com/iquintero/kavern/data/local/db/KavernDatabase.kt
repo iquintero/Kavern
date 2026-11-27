@@ -53,8 +53,9 @@ import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
         DownloadJobV2Entity::class,
         DownloadedItemV2Entity::class,
         com.iquintero.kavern.data.local.db.entity.LocalReaderProgressEntity::class,
+        com.iquintero.kavern.data.local.db.entity.ReadingSessionEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = false,
 )
 abstract class KavernDatabase : RoomDatabase() {
@@ -573,6 +574,28 @@ abstract class KavernDatabase : RoomDatabase() {
                 }
             }
 
+        private val MIGRATION_22_23 =
+            object : Migration(22, 23) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS reading_sessions(
+                            id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            bookId INTEGER NOT NULL,
+                            seriesId INTEGER,
+                            startMs INTEGER NOT NULL,
+                            endMs INTEGER NOT NULL,
+                            startPage INTEGER,
+                            endPage INTEGER,
+                            pages INTEGER,
+                            uploaded INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS index_reading_sessions_bookId ON reading_sessions(bookId)")
+                }
+            }
+
         private val MIGRATION_21_22 =
             object : Migration(21, 22) {
                 override fun migrate(db: SupportSQLiteDatabase) {
@@ -624,6 +647,7 @@ abstract class KavernDatabase : RoomDatabase() {
                             MIGRATION_19_20,
                             MIGRATION_20_21,
                             MIGRATION_21_22,
+                            MIGRATION_22_23,
                         ).build()
                 }
             }
