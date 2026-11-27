@@ -531,19 +531,7 @@ fun KavernApp(
                         popExitTransition = { if (einkMode) ExitTransition.None else fadeOut(tween(SCREEN_FADE_MS)) },
                     ) {
                         if (mode == AppMode.Grimmory) {
-                            grimmoryGraph(
-                                navController,
-                                appPreferences,
-                                config,
-                                libraryRepository,
-                                authRepository,
-                                seriesRepository,
-                                collectionsRepository,
-                                readingListRepository,
-                                personRepository,
-                                readerRepository,
-                                cacheManager,
-                            )
+                            grimmoryGraph(navController, appPreferences, config, authRepository, readerRepository, cacheManager)
                         } else {
                             kavitaGraph(
                                 navController,

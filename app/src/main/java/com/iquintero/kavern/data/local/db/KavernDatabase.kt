@@ -55,7 +55,7 @@ import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
         com.iquintero.kavern.data.local.db.entity.LocalReaderProgressEntity::class,
         com.iquintero.kavern.data.local.db.entity.ReadingSessionEntity::class,
     ],
-    version = 23,
+    version = 24,
     exportSchema = false,
 )
 abstract class KavernDatabase : RoomDatabase() {
@@ -574,6 +574,13 @@ abstract class KavernDatabase : RoomDatabase() {
                 }
             }
 
+        private val MIGRATION_23_24 =
+            object : Migration(23, 24) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE reading_sessions ADD COLUMN closed INTEGER NOT NULL DEFAULT 0")
+                }
+            }
+
         private val MIGRATION_22_23 =
             object : Migration(22, 23) {
                 override fun migrate(db: SupportSQLiteDatabase) {
@@ -648,6 +655,7 @@ abstract class KavernDatabase : RoomDatabase() {
                             MIGRATION_20_21,
                             MIGRATION_21_22,
                             MIGRATION_22_23,
+                            MIGRATION_23_24,
                         ).build()
                 }
             }

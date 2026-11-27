@@ -3,6 +3,7 @@ package com.iquintero.kavern.grimmory
 import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
 import com.iquintero.kavern.core.network.grimmory.GrimmoryServer
 import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.GrimmorySession
 import com.iquintero.kavern.core.network.grimmory.num
 import com.iquintero.kavern.core.network.grimmory.str
 import com.iquintero.kavern.core.network.grimmory.strings
@@ -22,6 +23,8 @@ internal data class GrimmoryBookDetails(
     val publisher: String?,
     val year: String?,
     val language: String?,
+    /** The pages of the printed book, when the server knows them. */
+    val pageCount: Int?,
     val categories: List<String>,
     val readStatus: String?,
 )
@@ -65,6 +68,7 @@ internal class GrimmoryBooks(
                 publisher = body.str("publisher"),
                 year = body.str("publishedDate")?.take(YEAR_LENGTH) ?: body.num("publishedYear")?.toInt()?.toString(),
                 language = body.str("language"),
+                pageCount = body.num("pageCount")?.toInt()?.takeIf { it > 0 },
                 categories = body.strings("categories"),
                 readStatus = body.str("readStatus"),
             )
@@ -81,6 +85,9 @@ internal class GrimmoryBooks(
 
     /** How many parts [book] is downloaded in, or null when the server cannot read it (it is not an EPUB, or is broken). */
     suspend fun parts(book: GrimmoryBook): Int? = io { server.epubs.pagesOf(book) }
+
+    /** The reading sessions of the books that have been read, newest first. */
+    suspend fun sessions(): List<GrimmorySession> = io { server.sessions.history() }
 
     /** Starts the next load of the library from the server. */
     fun refresh() = server.catalog.forget()

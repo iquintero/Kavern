@@ -87,6 +87,34 @@ internal class GrimmoryClient(
         return response
     }
 
+    /** A GET of a path the app already built and encoded, returned unread. Used to hand covers and book files to image and web views. */
+    fun openEncoded(
+        encodedPath: String,
+        encodedQuery: String?,
+    ): Response {
+        val target =
+            origin
+                .newBuilder()
+                .addEncodedPathSegments(encodedPath.trimStart('/'))
+                .encodedQuery(encodedQuery)
+                .build()
+        var response = send(target, null)
+        if (response.code == 401) {
+            response.close()
+            synchronized(lock) { token = null }
+            response = send(target, null)
+        }
+        if (!response.isSuccessful) {
+            val code = response.code
+            response.close()
+            throw GrimmoryHttpException(code)
+        }
+        return response
+    }
+
+    /** The HTTP status the server answers a plain request with, to tell whether it can be reached at all. */
+    fun ping(): Int = calls.newCall(Request.Builder().url(url("api/health")).build()).execute().use { it.code }
+
     fun getJson(
         path: String,
         query: Map<String, String> = emptyMap(),

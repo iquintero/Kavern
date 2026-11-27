@@ -18,6 +18,12 @@ internal class ReadingSessionUploader(
     suspend fun upload(
         api: KavitaApi,
         now: Long = System.currentTimeMillis(),
+    ) = upload(now) { api.recordReadingSession(it).isSuccessful }
+
+    /** Sends each finished session with [send], which says whether the server took it. */
+    suspend fun upload(
+        now: Long = System.currentTimeMillis(),
+        send: suspend (RecordedReadingSessionDto) -> Boolean,
     ) = lock.withLock {
         // The list is read inside the lock: a session another upload has just sent is no longer in it.
         for (session in dao.finishedReadingSessions(endedBefore = now - SESSION_GAP_MS)) {
@@ -27,17 +33,16 @@ internal class ReadingSessionUploader(
             }
             val sent =
                 runCatchingCancellable {
-                    api
-                        .recordReadingSession(
-                            RecordedReadingSessionDto(
-                                bookId = session.bookId,
-                                startTimeUtc = Instant.ofEpochMilli(session.startMs).toString(),
-                                endTimeUtc = Instant.ofEpochMilli(session.endMs).toString(),
-                                durationSeconds = session.durationSeconds,
-                                startPercent = percentAt(session.startPage, session.pages),
-                                endPercent = percentAt(session.endPage, session.pages),
-                            ),
-                        ).isSuccessful
+                    send(
+                        RecordedReadingSessionDto(
+                            bookId = session.bookId,
+                            startTimeUtc = Instant.ofEpochMilli(session.startMs).toString(),
+                            endTimeUtc = Instant.ofEpochMilli(session.endMs).toString(),
+                            durationSeconds = session.durationSeconds,
+                            startPercent = percentAt(session.startPage, session.pages),
+                            endPercent = percentAt(session.endPage, session.pages),
+                        ),
+                    )
                 }.getOrDefault(false)
             if (!sent) return@withLock
             dao.markReadingSessionUploaded(session.id)

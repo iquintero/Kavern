@@ -24,6 +24,7 @@ import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
 import com.iquintero.kavern.data.local.db.entity.LocalReaderProgressEntity
 import com.iquintero.kavern.data.mapper.toDomain
 import com.iquintero.kavern.data.mapper.toDto
+import com.iquintero.kavern.data.mapper.toEntity
 import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.model.ReaderChapterNav
@@ -898,28 +899,6 @@ class ReaderRepositoryImpl(
             pageTitle = title,
         )
     }
-
-    private fun LocalReaderProgressEntity.toDomain(): ReaderProgress =
-        ReaderProgress(
-            chapterId = chapterId,
-            page = page,
-            bookScrollId = bookScrollId,
-            seriesId = seriesId,
-            volumeId = volumeId,
-            libraryId = libraryId,
-            lastModifiedUtcMillis = lastModifiedUtc,
-        )
-
-    private fun ReaderProgress.toEntity(): LocalReaderProgressEntity =
-        LocalReaderProgressEntity(
-            chapterId = chapterId,
-            page = page,
-            bookScrollId = bookScrollId,
-            seriesId = seriesId,
-            volumeId = volumeId,
-            libraryId = libraryId,
-            lastModifiedUtc = lastModifiedUtcMillis,
-        )
 
     /**
      * Apply delete-after-read preferences: keep at most `depth` recently marked read volumes.

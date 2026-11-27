@@ -39,9 +39,6 @@ internal data class GrimmoryBook(
         /** From this progress on a book counts as read. */
         const val FINISHED = 99f
 
-        /** The pages a series reports: its progress in hundredths. */
-        const val UNKNOWN_PAGES = 100
-
         fun from(json: Json): GrimmoryBook? {
             val id = json.int("id") ?: return null
             return GrimmoryBook(

@@ -94,3 +94,22 @@ internal fun String.asName(): String {
 }
 
 internal const val WHOLE = 100f
+
+/** A small cover with no progress or badges, for lists of things that are not the book itself. */
+@Composable
+internal fun CoverThumb(
+    coverUrl: String,
+    modifier: Modifier = Modifier,
+) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current).data(coverUrl).build(),
+        contentDescription = null,
+        modifier =
+            modifier
+                .aspectRatio(COVER_ASPECT_RATIO)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .einkOutline(MaterialTheme.shapes.small),
+        contentScale = ContentScale.Crop,
+    )
+}

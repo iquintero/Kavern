@@ -88,6 +88,9 @@ class AppPreferences(
     private val secureStorage by lazy { SecureStorage(appContext) }
     val profile: KavitaProfile = session?.profile ?: KavitaProfile.Guest
 
+    /** The connection this object was made for, when it was made for one. */
+    val sessionConfig: AppConfig? get() = session?.config
+
     companion object {
         private val authMutex = Mutex()
         private val KEY_CREDENTIALS_REF = stringPreferencesKey("kavita_credentials_ref")

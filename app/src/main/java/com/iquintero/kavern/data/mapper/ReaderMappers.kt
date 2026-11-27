@@ -4,6 +4,7 @@ import com.iquintero.kavern.data.api.dto.BookInfoDto
 import com.iquintero.kavern.data.api.dto.ReaderChapterNavDto
 import com.iquintero.kavern.data.api.dto.ReaderProgressDto
 import com.iquintero.kavern.data.api.dto.TimeLeftDto
+import com.iquintero.kavern.data.local.db.entity.LocalReaderProgressEntity
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.model.ReaderChapterNav
 import com.iquintero.kavern.domain.model.ReaderProgress
@@ -76,3 +77,25 @@ fun ReaderChapterNavDto.toDomain(): ReaderChapterNav {
         pagesRead = pagesRead,
     )
 }
+
+fun LocalReaderProgressEntity.toDomain(): ReaderProgress =
+    ReaderProgress(
+        chapterId = chapterId,
+        page = page,
+        bookScrollId = bookScrollId,
+        seriesId = seriesId,
+        volumeId = volumeId,
+        libraryId = libraryId,
+        lastModifiedUtcMillis = lastModifiedUtc,
+    )
+
+fun ReaderProgress.toEntity(): LocalReaderProgressEntity =
+    LocalReaderProgressEntity(
+        chapterId = chapterId,
+        page = page,
+        bookScrollId = bookScrollId,
+        seriesId = seriesId,
+        volumeId = volumeId,
+        libraryId = libraryId,
+        lastModifiedUtc = lastModifiedUtcMillis,
+    )

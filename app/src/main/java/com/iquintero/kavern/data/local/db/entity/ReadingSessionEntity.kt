@@ -19,4 +19,6 @@ data class ReadingSessionEntity(
     val endPage: Int? = null,
     val pages: Int? = null,
     val uploaded: Boolean = false,
+    /** Not used. A test build briefly set it, so the column stays for the devices that have it. */
+    val closed: Boolean = false,
 )

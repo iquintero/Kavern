@@ -17,6 +17,8 @@ internal class GrimmoryServer(
 ) {
     val catalog = GrimmoryCatalog(client, store)
     val epubs = GrimmoryEpubs(client)
+    val reading by lazy { GrimmoryReading(this) }
+    val sessions by lazy { GrimmorySessions(client, catalog) }
 }
 
 /**

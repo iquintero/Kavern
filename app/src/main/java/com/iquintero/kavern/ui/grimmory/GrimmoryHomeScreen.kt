@@ -39,8 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -95,6 +97,9 @@ internal class GrimmoryHomeViewModel(
         load()
     }
 
+    /** Looks again when the screen comes back, without forcing the server to be asked if the library was loaded just now. */
+    fun refreshQuietly() = load()
+
     private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, loadFailed = false) }
@@ -132,6 +137,7 @@ internal fun GrimmoryHomeScreen(
     val viewModel: GrimmoryHomeViewModel = viewModel(factory = GrimmoryHomeViewModel.factory(books, downloads))
     val state by viewModel.state.collectAsState()
     val downloadStates by viewModel.downloadStates.collectAsState()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshQuietly() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
