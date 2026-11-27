@@ -556,6 +556,8 @@
     <string name="home_in_progress">In progress</string>
     <string name="home_want_to_read">Want to read</string>
     <string name="home_recently_added">Recently added</string>
+    <string name="grimmory_home_empty">Nothing to show yet. Add books to your library and they will appear here.</string>
+    <string name="grimmory_offline_notice">The server cannot be reached. These are the books from the last time it answered.</string>
     <string name="home_empty">Nothing to show yet. Start a book or add one to Want to Read.</string>
     <string name="library_section_series">Series</string>
     <string name="library_section_collections">Collections</string>

@@ -9,9 +9,19 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
+/** Everything the app holds for one Grimmory server and login: the connection, the loaded library and what is known of its EPUBs. */
+internal class GrimmoryServer(
+    val client: GrimmoryClient,
+    val account: GrimmoryCredentials,
+    store: java.io.File? = null,
+) {
+    val catalog = GrimmoryCatalog(client, store)
+    val epubs = GrimmoryEpubs(client)
+}
+
 /**
- * Hands out the calls for a Grimmory server. One translator is kept per server and login, so that the sign-in and the
- * loaded library are shared by everything in the app that talks to it instead of starting over on every request.
+ * Hands out the servers and the calls for them. One [GrimmoryServer] is kept per server and login, so that the sign-in
+ * and the loaded library are shared by everything in the app that talks to it instead of starting over on every request.
  */
 internal object GrimmoryServers {
     private const val TIMEOUT_SECONDS = 30L
@@ -23,30 +33,39 @@ internal object GrimmoryServers {
         val ca: String?,
     )
 
-    private val servers = ConcurrentHashMap<Key, GrimmoryInterceptor>()
+    private val servers = ConcurrentHashMap<Key, GrimmoryServer>()
+
+    /** A folder the app can keep what it has learned of the servers in. Set when the app starts. */
+    @Volatile
+    var storage: java.io.File? = null
+
+    /** The server [config] points to, which must be a Grimmory one. */
+    fun serverFor(config: AppConfig): GrimmoryServer {
+        val credentials = requireNotNull(config.grimmory) { "Not a Grimmory server" }
+        return servers.getOrPut(Key(config.serverUrl, credentials, config.caCertificate)) {
+            // Grimmory is called with its own client, so nothing the app adds for Kavita (the API key header)
+            // is ever sent to it.
+            val plain =
+                OkHttpClient
+                    .Builder()
+                    .addInterceptor(NetworkLoggingInterceptor)
+                    .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .build()
+            val once = plain.newBuilder().retryOnConnectionFailure(false).build()
+            val client = GrimmoryClient(plain.forServerCa(config), once.forServerCa(config), config.serverUrl.toHttpUrl(), credentials)
+            val name = "books-" + Integer.toHexString((config.serverUrl + "|" + credentials.username).hashCode()) + ".json"
+            GrimmoryServer(client, credentials, storage?.resolve(name))
+        }
+    }
 
     fun callsFor(
         app: OkHttpClient,
         config: AppConfig,
         credentials: GrimmoryCredentials,
     ): Call.Factory {
-        val translator =
-            servers.getOrPut(Key(config.serverUrl, credentials, config.caCertificate)) {
-                // Grimmory is called with its own client, so nothing the app adds for Kavita (the API key header)
-                // is ever sent to it.
-                val plain =
-                    OkHttpClient
-                        .Builder()
-                        .addInterceptor(NetworkLoggingInterceptor)
-                        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                        .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                        .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                        .build()
-                val once = plain.newBuilder().retryOnConnectionFailure(false).build()
-                val client = GrimmoryClient(plain.forServerCa(config), once.forServerCa(config), config.serverUrl.toHttpUrl(), credentials)
-                GrimmoryInterceptor(client, credentials)
-            }
-        val translating = app.newBuilder().addInterceptor(translator).build()
+        val translating = app.newBuilder().addInterceptor(GrimmoryInterceptor(serverFor(config))).build()
         return Call.Factory { translating.newCall(it) }
     }
 

@@ -1,0 +1,98 @@
+package com.iquintero.kavern.grimmory
+
+import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServer
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.num
+import com.iquintero.kavern.core.network.grimmory.str
+import com.iquintero.kavern.core.network.grimmory.strings
+import com.iquintero.kavern.core.storage.AppConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/** A library on the server. */
+internal data class GrimmoryLibraryInfo(
+    val id: Int,
+    val name: String,
+)
+
+/** What the server knows about a book beyond what lists carry. */
+internal data class GrimmoryBookDetails(
+    val description: String?,
+    val publisher: String?,
+    val year: String?,
+    val language: String?,
+    val categories: List<String>,
+    val readStatus: String?,
+)
+
+/**
+ * The books on a Grimmory server, as the Grimmory screens use them. Books are what the app is about: there is no series,
+ * volume or chapter to go through to reach one.
+ */
+internal class GrimmoryBooks(
+    private val server: GrimmoryServer,
+    private val serverUrl: String,
+) {
+    /** True while the lists come from what was kept the last time the server answered, because it cannot be reached. */
+    val isOffline: Boolean get() = server.catalog.fromStore
+
+    suspend fun all(): List<GrimmoryBook> = io { server.catalog.books() }
+
+    /** The books that were started and not finished, the most recently read first. */
+    suspend fun inProgress(): List<GrimmoryBook> = all().filter { it.inProgress }.sortedByDescending { it.lastReadTime }
+
+    suspend fun recentlyAdded(limit: Int = RECENT): List<GrimmoryBook> = all().sortedByDescending { it.addedOn }.take(limit)
+
+    suspend fun book(id: Int): GrimmoryBook? = io { server.catalog.book(id) }
+
+    /** The books of the series [book] belongs to, in reading order; just itself when it has none. */
+    suspend fun siblings(book: GrimmoryBook): List<GrimmoryBook> = io { server.catalog.siblings(book) }
+
+    suspend fun libraries(): List<GrimmoryLibraryInfo> =
+        io {
+            server.catalog.libraries().mapNotNull { library ->
+                val id = library.num("id")?.toInt() ?: return@mapNotNull null
+                GrimmoryLibraryInfo(id, library.str("name") ?: "Library $id")
+            }
+        }
+
+    suspend fun details(id: Int): GrimmoryBookDetails =
+        io {
+            val body = server.client.getObject("api/v1/app/books/$id")
+            GrimmoryBookDetails(
+                description = body.str("description"),
+                publisher = body.str("publisher"),
+                year = body.str("publishedDate")?.take(YEAR_LENGTH) ?: body.num("publishedYear")?.toInt()?.toString(),
+                language = body.str("language"),
+                categories = body.strings("categories"),
+                readStatus = body.str("readStatus"),
+            )
+        }
+
+    /** Marks the book read or unread on the server. */
+    suspend fun setRead(
+        id: Int,
+        read: Boolean,
+    ) = io {
+        server.client.putJson("api/v1/app/books/$id/status", mapOf("status" to if (read) "READ" else "UNREAD"))
+        server.catalog.forget()
+    }
+
+    /** How many parts [book] is downloaded in, or null when the server cannot read it (it is not an EPUB, or is broken). */
+    suspend fun parts(book: GrimmoryBook): Int? = io { server.epubs.pagesOf(book) }
+
+    /** Starts the next load of the library from the server. */
+    fun refresh() = server.catalog.forget()
+
+    fun coverUrl(id: Int): String = "${serverUrl.trimEnd('/')}/api/v1/media/book/$id/cover"
+
+    private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
+
+    companion object {
+        private const val RECENT = 20
+        private const val YEAR_LENGTH = 4
+
+        fun of(config: AppConfig): GrimmoryBooks = GrimmoryBooks(GrimmoryServers.serverFor(config), config.serverUrl)
+    }
+}

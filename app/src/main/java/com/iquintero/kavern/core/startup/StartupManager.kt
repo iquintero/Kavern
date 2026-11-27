@@ -74,6 +74,7 @@ object StartupManager {
         val appContext = context.applicationContext
         val preferences = AppPreferences(appContext)
         LoggingManager.init(appContext)
+        com.iquintero.kavern.core.network.grimmory.GrimmoryServers.storage = appContext.filesDir.resolve("grimmory")
         // Migrate legacy API key storage into encrypted prefs.
         runCatchingCancellable { kotlinx.coroutines.runBlocking { preferences.migrateSensitiveIfNeeded() } }
         AppNotificationManager.init(appContext)

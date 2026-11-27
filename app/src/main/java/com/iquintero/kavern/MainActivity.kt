@@ -142,6 +142,7 @@ class MainActivity : AppCompatActivity() {
                 val components = remember { StartupManager.components(AppPreferences(applicationContext, current)) }
                 KavernApp(
                     mode = AppMode.of(current.config),
+                    initialConfig = current.config,
                     initialLanguage = initialLanguage,
                     appPreferences = components.preferences,
                     libraryRepository = components.libraryRepository,
@@ -254,6 +255,7 @@ private const val COVER_CACHE_BYTES = 64L * 1024 * 1024
 @Composable
 fun KavernApp(
     mode: AppMode,
+    initialConfig: AppConfig,
     initialLanguage: String,
     appPreferences: AppPreferences,
     libraryRepository: LibraryRepository,
@@ -319,9 +321,7 @@ fun KavernApp(
     val currentRoute = backStackEntry?.destination?.route
     val mainRoutes = MainScreen.items.map { it.route }
     val isMainRoute = MainScreen.items.any { item -> currentRoute?.startsWith(item.route) == true }
-    val config by appPreferences.configFlow.collectAsState(
-        initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
-    )
+    val config by appPreferences.configFlow.collectAsState(initial = initialConfig)
     val networkStatus by NetworkMonitor.getInstance(context, appPreferences).status.collectAsState()
 
     // The phone can have internet while a home-only server is out of reach, so ask the server directly

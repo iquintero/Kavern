@@ -37,11 +37,12 @@ import java.io.IOException
  * and resumes. The books of a Grimmory series are only shown as context on each book's page.
  */
 internal class GrimmoryInterceptor(
-    private val client: GrimmoryClient,
-    private val account: GrimmoryCredentials,
+    server: GrimmoryServer,
 ) : Interceptor {
-    private val catalog = GrimmoryCatalog(client)
-    private val epubs = GrimmoryEpubs(client)
+    private val client = server.client
+    private val account = server.account
+    private val catalog = server.catalog
+    private val epubs = server.epubs
     private val reader = GrimmoryReader(client, catalog, epubs)
     private val sessions = GrimmorySessions(client, catalog)
     private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
@@ -74,6 +75,7 @@ internal class GrimmoryInterceptor(
         val page = ((int("PageNumber") ?: 1) - 1).coerceAtLeast(0)
         val size = int("PageSize") ?: DEFAULT_PAGE
         return when {
+            path.startsWith("/api/v1/media/") -> media(request, path.removePrefix("/"))
             path == "/api/account" -> json(request, UserDto(id = accountId(), username = account.username, email = null))
             path == "/api/library" || path == "/api/library/libraries" -> json(request, libraries())
             path == "/api/users/has-library-access" -> json(request, true)
@@ -306,8 +308,14 @@ internal class GrimmoryInterceptor(
     private fun cover(
         request: Request,
         bookId: Int,
+    ): Response? = media(request, "api/v1/media/book/$bookId/cover")
+
+    /** An image from the server, fetched with the login the app holds for it. */
+    private fun media(
+        request: Request,
+        path: String,
     ): Response? {
-        val upstream = client.open("api/v1/media/book/$bookId/cover")
+        val upstream = client.open(path)
         val body = upstream.body ?: return null
         return Response
             .Builder()

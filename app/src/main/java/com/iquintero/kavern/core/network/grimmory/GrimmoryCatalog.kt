@@ -1,5 +1,8 @@
 package com.iquintero.kavern.core.network.grimmory
 
+import java.io.File
+import java.io.IOException
+
 /** One Grimmory book, as the app lists it. */
 internal data class GrimmoryBook(
     val id: Int,
@@ -63,9 +66,16 @@ internal data class GrimmoryBook(
  */
 internal class GrimmoryCatalog(
     private val client: GrimmoryClient,
+    /** Where the last answer is kept, so that the books can still be listed without the server. */
+    private val store: File? = null,
 ) {
     private var cached: List<GrimmoryBook> = emptyList()
     private var loadedAt = 0L
+
+    /** True while the books shown are the ones kept from the last time the server answered. */
+    @Volatile
+    var fromStore: Boolean = false
+        private set
 
     @Synchronized
     fun books(): List<GrimmoryBook> {
@@ -95,17 +105,34 @@ internal class GrimmoryCatalog(
 
     fun libraries(): List<Json> = client.getList("api/v1/libraries")
 
-    private fun loadAll(): List<GrimmoryBook> {
-        val result = mutableListOf<GrimmoryBook>()
-        var page = 0
-        while (true) {
-            val body = client.getObject("api/v1/app/books", mapOf("page" to page.toString(), "size" to PAGE_SIZE.toString()))
-            body.objects("content").mapNotNullTo(result) { GrimmoryBook.from(it) }
-            if (body["hasNext"] != true || page >= MAX_PAGES) break
-            page++
+    private fun loadAll(): List<GrimmoryBook> =
+        try {
+            val raw = mutableListOf<Json>()
+            var page = 0
+            while (true) {
+                val body = client.getObject("api/v1/app/books", mapOf("page" to page.toString(), "size" to PAGE_SIZE.toString()))
+                raw += body.objects("content")
+                if (body["hasNext"] != true || page >= MAX_PAGES) break
+                page++
+            }
+            fromStore = false
+            runCatching { store?.also { it.parentFile?.mkdirs() }?.writeText(GrimmoryJson.write(raw)) }
+            raw.mapNotNull { GrimmoryBook.from(it) }
+        } catch (e: GrimmoryHttpException) {
+            // A server that answers with an error is not one the app is offline from: only a lost connection falls back.
+            throw e
+        } catch (e: IOException) {
+            val kept = readStore() ?: throw e
+            fromStore = true
+            kept
         }
-        return result
-    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun readStore(): List<GrimmoryBook>? =
+        runCatching {
+            val text = store?.takeIf { it.isFile }?.readText() ?: return null
+            (GrimmoryJson.parse(text) as? List<Any?>).orEmpty().filterIsInstance<Map<String, Any?>>().mapNotNull { GrimmoryBook.from(it) }
+        }.getOrNull()?.takeIf { it.isNotEmpty() }
 
     private companion object {
         const val PAGE_SIZE = 50
