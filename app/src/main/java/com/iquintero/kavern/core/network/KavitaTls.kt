@@ -1,5 +1,7 @@
 package com.iquintero.kavern.core.network
 
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.grimmory
 import com.iquintero.kavern.core.storage.AppConfig
 import okhttp3.Call
 import okhttp3.HttpUrl
@@ -37,6 +39,12 @@ private fun readCaCertificate(bytes: ByteArray): X509Certificate {
 internal fun HttpUrl.isSameOrigin(other: HttpUrl): Boolean = scheme == other.scheme && host == other.host && port == other.port
 
 internal fun OkHttpClient.forKavita(config: AppConfig): Call.Factory {
+    config.grimmory?.let { return GrimmoryServers.callsFor(this, config, it) }
+    return forServerCa(config)
+}
+
+/** Calls to the configured server, trusting its own certificate authority when one was chosen. */
+internal fun OkHttpClient.forServerCa(config: AppConfig): Call.Factory {
     val encodedCa = config.caCertificate ?: return this
     val origin = requireNotNull(config.serverUrl.toHttpUrlOrNull())
     require(origin.isHttps)
