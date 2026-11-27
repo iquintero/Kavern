@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.cache.CacheManager
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.domain.repository.AuthRepository
 import com.iquintero.kavern.ui.settings.screens.SettingsAboutScreen
@@ -88,6 +89,7 @@ fun SettingsScreen(
     var selected by remember { mutableStateOf<SettingsCategory?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val isGrimmory = appPreferences.sessionConfig?.isGrimmory == true
     val categories =
         listOf(
             SettingsCategory.General,
@@ -99,7 +101,8 @@ fun SettingsScreen(
             SettingsCategory.Advanced,
             SettingsCategory.Stats,
             SettingsCategory.About,
-        )
+            // Kavita's reading statistics are not something a Grimmory server has.
+        ).filter { !(isGrimmory && it == SettingsCategory.Stats) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -137,7 +140,7 @@ fun SettingsScreen(
                             item {
                                 SettingRow(
                                     icon = item.icon,
-                                    title = stringResource(item.titleRes),
+                                    title = stringResource(if (isGrimmory && item == SettingsCategory.Kavita) R.string.settings_item_server else item.titleRes),
                                     onClick = {
                                         if (item is SettingsCategory.About) {
                                             onOpenAbout()
