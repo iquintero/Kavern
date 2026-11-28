@@ -22,7 +22,13 @@ internal class GrimmoryInterceptor(
         val request = chain.request()
         return try {
             when {
-                request.url.encodedPath.startsWith("/api/v1/") -> passThrough(request)
+                request.url.encodedPath.startsWith("/api/v1/") ->
+                    if (servesToViews(request.method, request.url.encodedPath)) {
+                        passThrough(request)
+                    } else {
+                        LoggingManager.w("Grimmory", "Not passed on: ${request.method} ${request.url.encodedPath}")
+                        reply(request, NOT_FOUND)
+                    }
                 // Whether the server can be reached is asked of the server itself.
                 request.url.encodedPath == "/api/health" -> reply(request, client.ping())
                 else -> reply(request, NOT_FOUND)
@@ -72,9 +78,28 @@ internal class GrimmoryInterceptor(
             .body("".toResponseBody())
             .build()
 
-    private companion object {
-        const val OK = 200
-        const val NOT_FOUND = 404
-        const val BAD_GATEWAY = 502
+    internal companion object {
+        private val SERVED =
+            listOf(
+                Regex("^/api/v1/media/book/\\d+/(cover|thumbnail)$"),
+                Regex("^/api/v1/epub/\\d+/file/.+$"),
+            )
+        private val DOT_SEGMENT = Regex("^(\\.|%2e){1,2}$", RegexOption.IGNORE_CASE)
+
+        /**
+         * Whether a request from an image or a book page may be answered with the user's login: only the covers and the files
+         * of a book. What a book's own markup asks for must not reach the rest of the server's API as the user.
+         */
+        fun servesToViews(
+            method: String,
+            encodedPath: String,
+        ): Boolean =
+            method == "GET" &&
+                encodedPath.split('/').none { DOT_SEGMENT.matches(it) } &&
+                SERVED.any { it.matches(encodedPath) }
+
+        private const val OK = 200
+        private const val NOT_FOUND = 404
+        private const val BAD_GATEWAY = 502
     }
 }
