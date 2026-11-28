@@ -168,6 +168,7 @@ private fun reportPagedHeight(
 }
 
 private const val PAGED_DIAG_DELAY_MS = 3000L
+private const val PAGED_HEIGHT_SETTLE_MS = 100L
 private const val PAGED_ANCHOR_JS = "(window.__ik ? window.__ik.anchorToken() : null);"
 
 @Suppress("LongParameterList")
@@ -452,8 +453,14 @@ internal fun ReaderWebView(
                         // scrollable by touch (see ik.start), so it will not move under the finger.
                         false
                     }
+                    var heightReport: Runnable? = null
                     addOnLayoutChangeListener { view, _, top, _, bottom, _, oldTop, _, oldBottom ->
-                        if (currentPaged && bottom - top != oldBottom - oldTop) reportPagedHeight(view as WebView, density)
+                        if (currentPaged && bottom - top != oldBottom - oldTop) {
+                            // A window that keeps changing size (system bars, rotation) can report dozens of heights a second,
+                            // each one a script run on the main thread. Only the height it settles on is passed on.
+                            heightReport?.let { view.removeCallbacks(it) }
+                            heightReport = Runnable { reportPagedHeight(view as WebView, density) }.also { view.postDelayed(it, PAGED_HEIGHT_SETTLE_MS) }
+                        }
                     }
                     setOnScrollChangeListener { _, _, _, _, _ ->
                         scrollRunnable?.let { scrollHandler.removeCallbacks(it) }
