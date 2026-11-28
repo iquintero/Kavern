@@ -18,6 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -62,12 +65,12 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 @Composable
-fun SettingsKavitaScreen(
+fun SettingsServerScreen(
     appPreferences: AppPreferences,
     authRepository: AuthRepository,
     onBack: () -> Unit,
 ) {
-    SettingsKavitaScreen(
+    SettingsServerScreen(
         configFlow = appPreferences.configFlow,
         authRepository = authRepository,
         onBack = onBack,
@@ -76,7 +79,7 @@ fun SettingsKavitaScreen(
 }
 
 @Composable
-internal fun SettingsKavitaScreen(
+internal fun SettingsServerScreen(
     configFlow: Flow<AppConfig>,
     authRepository: AuthRepository,
     onBack: () -> Unit,
@@ -91,6 +94,7 @@ internal fun SettingsKavitaScreen(
     var savedServerUrl by remember { mutableStateOf("") }
     var apiKeyInput by remember { mutableStateOf("") }
     var grimmoryMode by remember { mutableStateOf(false) }
+    var savedGrimmory by remember { mutableStateOf(false) }
     var grimmoryUser by remember { mutableStateOf("") }
     var grimmoryPassword by remember { mutableStateOf("") }
     var storedApiKey by remember { mutableStateOf("") }
@@ -107,6 +111,8 @@ internal fun SettingsKavitaScreen(
     var caCertificate by remember { mutableStateOf<String?>(null) }
     var importingCertificate by remember { mutableStateOf(false) }
     val busy = isSaving || importingCertificate
+    // A saved key is only a Kavita key when what is saved is a Kavita server; a Grimmory login is kept in the same place.
+    val hasKavitaKey = isConfigured && !savedGrimmory && storedApiKey.isNotBlank()
     val certificatePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -136,6 +142,7 @@ internal fun SettingsKavitaScreen(
         useHttps = !config.serverUrl.startsWith("http://", ignoreCase = true)
         storedApiKey = config.apiKey
         grimmoryMode = config.grimmory != null
+        savedGrimmory = config.grimmory != null
         grimmoryUser = config.grimmory?.username.orEmpty()
         grimmoryPassword = ""
         storedImageApiKey = config.imageApiKey
@@ -157,7 +164,7 @@ internal fun SettingsKavitaScreen(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                saveError = context.connectionErrorMessage(e)
+                saveError = context.connectionErrorMessage(e, grimmoryMode)
                 return@launch
             } finally {
                 isSaving = false
@@ -181,11 +188,30 @@ internal fun SettingsKavitaScreen(
         IconButton(onClick = onBack) {
             Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back))
         }
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.settings_item_server), style = MaterialTheme.typography.headlineSmall)
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text(stringResource(R.string.settings_server_type), style = MaterialTheme.typography.titleSmall)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                listOf(false to R.string.settings_server_type_kavita, true to R.string.settings_server_type_grimmory).forEachIndexed { index, (grimmory, label) ->
+                    SegmentedButton(
+                        selected = grimmoryMode == grimmory,
+                        onClick = {
+                            grimmoryMode = grimmory
+                            saveError = null
+                        },
+                        enabled = !busy,
+                        shape = SegmentedButtonDefaults.itemShape(index, 2),
+                    ) { Text(stringResource(label)) }
+                }
+            }
+            Text(
+                text = stringResource(if (grimmoryMode) R.string.settings_server_grimmory_help else R.string.settings_server_kavita_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             OutlinedTextField(
                 value = serverUrl,
                 onValueChange = { new ->
@@ -197,7 +223,7 @@ internal fun SettingsKavitaScreen(
                     serverUrl = new
                 },
                 label = { Text(stringResource(R.string.settings_kavita_server)) },
-                placeholder = { Text("kavita.myserver.com") },
+                placeholder = { Text(if (grimmoryMode) "grimmory.myserver.com" else "kavita.myserver.com") },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !busy,
                 singleLine = true,
@@ -221,14 +247,6 @@ internal fun SettingsKavitaScreen(
                     },
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(stringResource(R.string.settings_grimmory_switch))
-                Switch(checked = grimmoryMode, enabled = !busy, onCheckedChange = { grimmoryMode = it })
-            }
             if (grimmoryMode) {
                 OutlinedTextField(
                     value = grimmoryUser,
@@ -251,7 +269,7 @@ internal fun SettingsKavitaScreen(
             } else {
                 OutlinedTextField(
                     value =
-                        if (!isEditingApiKey && isConfigured && storedApiKey.isNotBlank()) {
+                        if (!isEditingApiKey && hasKavitaKey) {
                             "********"
                         } else {
                             apiKeyInput
@@ -262,7 +280,7 @@ internal fun SettingsKavitaScreen(
                     },
                     label = { Text(stringResource(R.string.settings_kavita_api_key)) },
                     visualTransformation =
-                        if (isConfigured && !isEditingApiKey && storedApiKey.isNotBlank()) {
+                        if (!isEditingApiKey && hasKavitaKey) {
                             PasswordVisualTransformation()
                         } else {
                             VisualTransformation.None
@@ -281,7 +299,7 @@ internal fun SettingsKavitaScreen(
                 )
                 OutlinedTextField(
                     value =
-                        if (!isEditingImageApiKey && isConfigured && storedImageApiKey.isNotBlank()) {
+                        if (!isEditingImageApiKey && hasKavitaKey && storedImageApiKey.isNotBlank()) {
                             "********"
                         } else {
                             imageApiKeyInput
@@ -292,7 +310,7 @@ internal fun SettingsKavitaScreen(
                     },
                     label = { Text(stringResource(R.string.settings_kavita_image_api_key)) },
                     visualTransformation =
-                        if (isConfigured && !isEditingImageApiKey && storedImageApiKey.isNotBlank()) {
+                        if (!isEditingImageApiKey && hasKavitaKey && storedImageApiKey.isNotBlank()) {
                             PasswordVisualTransformation()
                         } else {
                             VisualTransformation.None
@@ -319,10 +337,12 @@ internal fun SettingsKavitaScreen(
                     text =
                         if (isConfigured) {
                             stringResource(
-                                R.string.settings_kavita_status_in,
+                                R.string.settings_server_status_in,
+                                stringResource(if (savedGrimmory) R.string.settings_server_type_grimmory else R.string.settings_server_type_kavita),
+                                savedServerUrl.withoutHttpScheme(),
                             )
                         } else {
-                            stringResource(R.string.settings_kavita_status_out)
+                            stringResource(R.string.settings_server_status_out)
                         },
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -367,10 +387,10 @@ internal fun SettingsKavitaScreen(
                             val password = grimmoryPassword.ifEmpty { kept.orEmpty() }
                             if (user.isBlank() || password.isEmpty()) "" else grimmorySecret(user, password)
                         } else {
-                            apiKeyInput.trim().ifBlank { if (sameServer) storedApiKey else "" }
+                            apiKeyInput.trim().ifBlank { if (sameServer && hasKavitaKey) storedApiKey else "" }
                         }
                     if (host.isBlank() || apiKey.isBlank()) {
-                        saveError = context.getString(R.string.settings_kavita_login_toast)
+                        saveError = context.getString(if (grimmoryMode) R.string.settings_grimmory_login_toast else R.string.settings_kavita_login_toast)
                         return@Button
                     }
                     val imageKey =
@@ -457,11 +477,14 @@ private val httpScheme = Regex("^https?://", RegexOption.IGNORE_CASE)
 
 private fun String.withoutHttpScheme(): String = trim().replaceFirst(httpScheme, "").trimEnd('/')
 
-private fun Context.connectionErrorMessage(error: Exception): String {
+private fun Context.connectionErrorMessage(
+    error: Exception,
+    grimmory: Boolean,
+): String {
     val connectionError = error as? KavitaConnectionException
     return when (connectionError?.problem) {
         Problem.InvalidUrl -> getString(R.string.settings_kavita_invalid_url)
-        Problem.RejectedKey -> getString(R.string.settings_kavita_rejected_key)
+        Problem.RejectedKey -> getString(if (grimmory) R.string.settings_grimmory_rejected_login else R.string.settings_kavita_rejected_key)
         Problem.Unreachable -> getString(R.string.settings_kavita_unreachable)
         Problem.Tls -> getString(R.string.settings_kavita_tls_failed)
         Problem.UnexpectedResponse ->

@@ -309,7 +309,6 @@
     <string name="settings_item_reader">Reader</string>
     <string name="settings_item_downloads">Downloads</string>
     <string name="settings_item_security">Security</string>
-    <string name="settings_item_kavita">Kavita</string>
     <string name="settings_item_advanced">Advanced</string>
     <string name="settings_advanced_section_global_cache">Global cache</string>
     <string name="settings_advanced_section_library_cache">Library cache</string>
@@ -344,12 +343,10 @@
     <string name="settings_item_stats">My Statistics</string>
     <string name="settings_item_about">About</string>
     <!-- Kavita  -->
-    <string name="settings_kavita_server">Kavita server URL</string>
+    <string name="settings_kavita_server">Server address</string>
     <string name="settings_kavita_use_https">Use HTTPS</string>
     <string name="settings_kavita_api_key">API key</string>
     <string name="settings_kavita_image_api_key">Images API key</string>
-    <string name="settings_kavita_status_in">Status: configured (API key saved)</string>
-    <string name="settings_kavita_status_out">Status: not configured</string>
     <string name="settings_kavita_button_login">Save</string>
     <string name="settings_kavita_logout">Sign out</string>
     <string name="settings_kavita_logged_out">Configuration cleared.</string>
@@ -359,17 +356,17 @@
     <string name="settings_kavita_saved_toast">Configuration saved. Please restart the app.</string>
     <string name="settings_kavita_save_failed">Save failed: %1$s</string>
     <string name="settings_kavita_checking_connection">Checking connection…</string>
-    <string name="settings_kavita_invalid_url">Enter a valid Kavita server address.</string>
+    <string name="settings_kavita_invalid_url">Enter a valid server address.</string>
     <string name="settings_kavita_rejected_key">Kavita rejected the API key or denied access. Check your key and permissions.</string>
-    <string name="settings_kavita_unreachable">Could not reach Kavita. Check the server address and your network connection.</string>
+    <string name="settings_kavita_unreachable">Could not reach the server. Check the address and your network connection.</string>
     <string name="settings_kavita_tls_failed">Could not establish a secure connection. Check the server’s HTTPS certificate.</string>
-    <string name="settings_kavita_ca_help">If your Kavita server uses a private certificate authority, import its root CA certificate (PEM or DER), then save the connection.</string>
-    <string name="settings_kavita_ca_selected">A custom CA is selected for this Kavita server.</string>
+    <string name="settings_kavita_ca_help">If your server uses a private certificate authority, import its root CA certificate (PEM or DER), then save the connection.</string>
+    <string name="settings_kavita_ca_selected">A custom CA is selected for this server.</string>
     <string name="settings_kavita_ca_import">Import CA certificate</string>
     <string name="settings_kavita_ca_remove">Remove</string>
     <string name="settings_kavita_ca_invalid">Could not import the file. Choose a valid root CA certificate in PEM or DER format.</string>
-    <string name="settings_kavita_http_error">The server returned HTTP %1$d. Check the Kavita address and try again.</string>
-    <string name="settings_kavita_unexpected_response">The server returned an unexpected response. Check the Kavita address.</string>
+    <string name="settings_kavita_http_error">The server returned HTTP %1$d. Check the address and try again.</string>
+    <string name="settings_kavita_unexpected_response">The server returned an unexpected response. Check the address.</string>
     <!-- About Kavern  -->
     <string name="settings_about_version">Version</string>
     <string name="settings_about_build_time">Build time</string>
@@ -384,7 +381,7 @@
     <!-- Others  -->
     <string name="settings_about_title">About Kavern</string>
     <string name="settings_about_website">Kavita Website</string>
-    <string name="settings_kavita_login_toast">Fill URL and API key.</string>
+    <string name="settings_kavita_login_toast">Fill in the address and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
     <string name="settings_appearance_dark">Dark</string>
     <string name="settings_appearance_eink">E-reader mode</string>
@@ -616,7 +613,15 @@
         <item quantity="other">%1$d items</item>
     </plurals>
     <string name="library_all_libraries">All</string>
-    <string name="settings_grimmory_switch">Grimmory server</string>
+    <string name="settings_server_type">Server type</string>
+    <string name="settings_server_type_kavita">Kavita</string>
+    <string name="settings_server_type_grimmory">Grimmory</string>
+    <string name="settings_server_kavita_help">Sign in with the API key from your Kavita user settings.</string>
+    <string name="settings_server_grimmory_help">Sign in with your Grimmory username and password.</string>
+    <string name="settings_server_status_in">Signed in to %1$s · %2$s</string>
+    <string name="settings_server_status_out">Not signed in</string>
+    <string name="settings_grimmory_login_toast">Fill in the address, username and password.</string>
+    <string name="settings_grimmory_rejected_login">Grimmory rejected the username or password. Check them and the account\'s permissions.</string>
     <string name="settings_grimmory_user">Username</string>
     <string name="settings_grimmory_password">Password</string>
 </resources>

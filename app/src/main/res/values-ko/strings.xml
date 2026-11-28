@@ -198,17 +198,13 @@
     <string name="settings_item_reader">리더</string>
     <string name="settings_item_downloads">다운로드</string>
     <string name="settings_item_security">보안</string>
-    <string name="settings_item_kavita">Kavita</string>
     <string name="settings_item_advanced">고급</string>
     <string name="settings_item_stats">내 통계</string>
     <string name="settings_item_about">앱 정보</string>
 
     <!-- Kavita -->
-    <string name="settings_kavita_server">Kavita 서버 URL</string>
     <string name="settings_kavita_use_https">HTTPS 사용</string>
     <string name="settings_kavita_api_key">API 키</string>
-    <string name="settings_kavita_status_in">상태: 설정됨 (API 키 저장됨)</string>
-    <string name="settings_kavita_status_out">상태: 설정되지 않음</string>
     <string name="settings_kavita_button_login">저장</string>
     <string name="settings_kavita_logout">로그아웃</string>
     <string name="settings_kavita_logged_out">설정이 초기화되었습니다.</string>
@@ -233,7 +229,6 @@
     <!-- Others -->
     <string name="settings_about_title">Kavern에 대하여</string>
     <string name="settings_about_website">Kavita 웹사이트</string>
-    <string name="settings_kavita_login_toast">URL과 API 키를 입력하십시오.</string>
     <string name="settings_appearance_by_system">시스템 설정</string>
     <string name="settings_appearance_dark">다크</string>
     <string name="settings_appearance_light">라이트</string>

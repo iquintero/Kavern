@@ -49,9 +49,9 @@ import com.iquintero.kavern.ui.settings.screens.SettingsAdvancedScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsAppearanceScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsDownloadScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsGeneralScreen
-import com.iquintero.kavern.ui.settings.screens.SettingsKavitaScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsPlaceholderScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsReaderScreen
+import com.iquintero.kavern.ui.settings.screens.SettingsServerScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsStatsScreen
 
 private sealed class SettingsCategory(
@@ -68,7 +68,7 @@ private sealed class SettingsCategory(
 
     object Security : SettingsCategory(R.string.settings_item_security, Icons.Filled.Security)
 
-    object Kavita : SettingsCategory(R.string.settings_item_kavita, Icons.Filled.Tune)
+    object Server : SettingsCategory(R.string.settings_item_server, Icons.Filled.Tune)
 
     object Advanced : SettingsCategory(R.string.settings_item_advanced, Icons.Filled.Lock)
 
@@ -97,7 +97,7 @@ fun SettingsScreen(
             SettingsCategory.Reader,
             SettingsCategory.Downloads,
             SettingsCategory.Security,
-            SettingsCategory.Kavita,
+            SettingsCategory.Server,
             SettingsCategory.Advanced,
             SettingsCategory.Stats,
             SettingsCategory.About,
@@ -140,7 +140,7 @@ fun SettingsScreen(
                             item {
                                 SettingRow(
                                     icon = item.icon,
-                                    title = stringResource(if (isGrimmory && item == SettingsCategory.Kavita) R.string.settings_item_server else item.titleRes),
+                                    title = stringResource(item.titleRes),
                                     onClick = {
                                         if (item is SettingsCategory.About) {
                                             onOpenAbout()
@@ -154,8 +154,8 @@ fun SettingsScreen(
                     }
                 }
             }
-            SettingsCategory.Kavita ->
-                SettingsKavitaScreen(
+            SettingsCategory.Server ->
+                SettingsServerScreen(
                     appPreferences = appPreferences,
                     authRepository = authRepository,
                     onBack = { selected = null },
