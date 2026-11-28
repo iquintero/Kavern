@@ -1,5 +1,6 @@
 package com.iquintero.kavern.core.network.grimmory
 
+import com.iquintero.kavern.core.network.ServerReachability
 import java.io.File
 import java.io.IOException
 
@@ -77,12 +78,23 @@ internal class GrimmoryCatalog(
     @Synchronized
     fun books(): List<GrimmoryBook> {
         val now = System.currentTimeMillis()
-        if (cached.isEmpty() || now - loadedAt > CACHE_MS) {
+        if (cached.isEmpty() || now - loadedAt > refreshAfter()) {
             cached = loadAll()
             loadedAt = now
         }
         return cached
     }
+
+    /**
+     * How long the books last. The kept copy is tried again soon, but not while the server is known to be out of reach,
+     * since each try would wait for a connection that is not there while every other call waits behind it.
+     */
+    private fun refreshAfter(): Long =
+        when {
+            !fromStore -> CACHE_MS
+            ServerReachability.isUnreachable() -> CACHE_MS
+            else -> RETRY_MS
+        }
 
     @Synchronized
     fun forget() {
@@ -135,5 +147,8 @@ internal class GrimmoryCatalog(
         const val PAGE_SIZE = 50
         const val MAX_PAGES = 200
         const val CACHE_MS = 60_000L
+
+        /** How soon the server is asked again while the books shown are only the ones kept from before. */
+        const val RETRY_MS = 5_000L
     }
 }

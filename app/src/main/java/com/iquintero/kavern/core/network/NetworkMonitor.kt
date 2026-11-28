@@ -69,7 +69,10 @@ class NetworkMonitor private constructor(
                     }
 
                     override fun onLost(network: Network) {
-                        trySend(snapshot())
+                        // The system may still name the network that was just lost as the active one, and says nothing more
+                        // once the last one is gone, so a lost active network has to count as no connection right away.
+                        val active = cm.activeNetwork
+                        trySend(if (active == null || active == network) OFFLINE else snapshot())
                     }
 
                     override fun onCapabilitiesChanged(
@@ -167,6 +170,7 @@ class NetworkMonitor private constructor(
     }
 
     companion object {
+        private val OFFLINE = NetworkStatus(false, ConnectionType.None, true, false, offlineMode = false)
         private val cached = AtomicReference<NetworkMonitor?>()
 
         fun getInstance(

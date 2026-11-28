@@ -82,12 +82,19 @@ object ServerReachability {
         // Routine re-checks of a verified connection stay silent so the status does not keep flashing.
         checkingState.value = !verifiedState.value
         try {
-            val code = calls.newCall(request).awaitStatusCode()
-            if (code != null && code < SERVER_ERROR_MIN_CODE) markReachable() else markUnreachable()
+            var healthy = calls.newCall(request).awaitStatusCode().isHealthy()
+            if (!healthy) {
+                // A single slow or dropped answer is common on mobile data; only a second miss counts.
+                delay(RECHECK_DELAY_MS)
+                healthy = calls.newCall(request).awaitStatusCode().isHealthy()
+            }
+            if (healthy) markReachable() else markUnreachable()
         } finally {
             checkingState.value = false
         }
     }
+
+    private fun Int?.isHealthy() = this != null && this < SERVER_ERROR_MIN_CODE
 
     /** The HTTP status, or null when no response arrived. Cancelling the coroutine cancels the call. */
     private suspend fun Call.awaitStatusCode(): Int? =
@@ -142,4 +149,5 @@ object ServerReachability {
 
     private const val NEVER = Long.MIN_VALUE
     private const val SERVER_ERROR_MIN_CODE = 500
+    private const val RECHECK_DELAY_MS = 2_000L
 }

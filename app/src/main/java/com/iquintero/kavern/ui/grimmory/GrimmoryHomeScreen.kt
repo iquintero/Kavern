@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
 import com.iquintero.kavern.grimmory.GrimmoryBooks
 import com.iquintero.kavern.grimmory.GrimmoryDownloads
@@ -138,6 +140,9 @@ internal fun GrimmoryHomeScreen(
     val state by viewModel.state.collectAsState()
     val downloadStates by viewModel.downloadStates.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshQuietly() }
+    // The lists are the server's or the kept copy; when the verdict on the server changes, ask again.
+    val unreachable by ServerReachability.unreachable.collectAsState()
+    LaunchedEffect(unreachable) { viewModel.refreshQuietly() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(

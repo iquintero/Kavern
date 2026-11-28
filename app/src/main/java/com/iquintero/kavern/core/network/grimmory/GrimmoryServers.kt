@@ -1,11 +1,14 @@
 package com.iquintero.kavern.core.network.grimmory
 
 import com.iquintero.kavern.core.network.NetworkLoggingInterceptor
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.forServerCa
 import com.iquintero.kavern.core.storage.AppConfig
 import okhttp3.Call
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -29,6 +32,17 @@ internal object GrimmoryServers {
     private const val TIMEOUT_SECONDS = 30L
     private const val CONNECT_TIMEOUT_SECONDS = 8L
 
+    /** What every call to the server shows about whether it can be reached, so the icon and the lists agree with the calls. */
+    private val ReportReachability =
+        Interceptor { chain ->
+            try {
+                chain.proceed(chain.request()).also { ServerReachability.markReachable() }
+            } catch (error: IOException) {
+                if (ServerReachability.isConnectFailure(error)) ServerReachability.markUnreachable()
+                throw error
+            }
+        }
+
     private data class Key(
         val url: String,
         val login: GrimmoryCredentials,
@@ -50,6 +64,7 @@ internal object GrimmoryServers {
             val plain =
                 OkHttpClient
                     .Builder()
+                    .addInterceptor(ReportReachability)
                     .addInterceptor(NetworkLoggingInterceptor)
                     .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)

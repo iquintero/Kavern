@@ -106,9 +106,9 @@ internal class GrimmoryBookViewModel(
             launch { runCatching { books.siblings(book) }.onSuccess { list -> _state.update { it.copy(series = list) } } }
             launch { runCatching { books.details(bookId) }.onSuccess { d -> _state.update { it.copy(details = d) } } }
             launch {
-                // Without the server the parts of a downloaded copy are what there is to read.
-                val parts = runCatching { books.parts(book) }.getOrNull() ?: downloads.downloadedParts(bookId)
-                _state.update { it.copy(parts = parts) }
+                // A downloaded copy can be read at once; the server, when it answers, has the full count.
+                downloads.downloadedParts(bookId)?.let { local -> _state.update { it.copy(parts = it.parts ?: local) } }
+                runCatching { books.parts(book) }.getOrNull()?.let { full -> _state.update { it.copy(parts = full) } }
             }
         }
     }

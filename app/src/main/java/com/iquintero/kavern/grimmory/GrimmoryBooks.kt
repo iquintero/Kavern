@@ -1,5 +1,6 @@
 package com.iquintero.kavern.grimmory
 
+import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
 import com.iquintero.kavern.core.network.grimmory.GrimmoryServer
 import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
@@ -38,7 +39,7 @@ internal class GrimmoryBooks(
     private val serverUrl: String,
 ) {
     /** True while the lists come from what was kept the last time the server answered, because it cannot be reached. */
-    val isOffline: Boolean get() = server.catalog.fromStore
+    val isOffline: Boolean get() = server.catalog.fromStore || ServerReachability.isUnreachable()
 
     suspend fun all(): List<GrimmoryBook> = io { server.catalog.books() }
 
