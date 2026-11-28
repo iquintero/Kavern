@@ -52,6 +52,9 @@ internal class GrimmoryBooks(
     /** The books of the series [book] belongs to, in reading order; just itself when it has none. */
     suspend fun siblings(book: GrimmoryBook): List<GrimmoryBook> = io { server.catalog.siblings(book) }
 
+    /** The books of the series called [name], in reading order. */
+    suspend fun inSeries(name: String): List<GrimmoryBook> = all().filter { it.seriesName == name }.sortedBy { it.seriesNumber ?: Float.MAX_VALUE }
+
     suspend fun libraries(): List<GrimmoryLibraryInfo> =
         io {
             server.catalog.libraries().mapNotNull { library ->

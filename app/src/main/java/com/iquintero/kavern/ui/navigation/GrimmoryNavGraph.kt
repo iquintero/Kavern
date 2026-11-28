@@ -1,5 +1,6 @@
 package com.iquintero.kavern.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.remember
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -18,12 +19,14 @@ import com.iquintero.kavern.ui.grimmory.GrimmoryDownloadsScreen
 import com.iquintero.kavern.ui.grimmory.GrimmoryHistoryScreen
 import com.iquintero.kavern.ui.grimmory.GrimmoryHomeScreen
 import com.iquintero.kavern.ui.grimmory.GrimmoryLibraryScreen
+import com.iquintero.kavern.ui.grimmory.GrimmorySeriesScreen
 import com.iquintero.kavern.ui.reader.screen.ReaderScreen
 import com.iquintero.kavern.ui.settings.SettingsScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsAboutScreen
 
 private const val BOOK_ROUTE = "book"
 private const val READER_ROUTE = "reader"
+private const val SERIES_ROUTE = "series"
 
 /** The format id of an EPUB, the only kind of book the reader opens from Grimmory so far. */
 private const val EPUB_FORMAT = 3
@@ -55,7 +58,13 @@ internal fun NavGraphBuilder.grimmoryGraph(
     composable(MainScreen.LibraryV2.route) {
         val books = remember(config) { GrimmoryBooks.of(config) }
         val downloads = remember(appPreferences) { GrimmoryDownloads(appPreferences) }
-        GrimmoryLibraryScreen(books = books, downloads = downloads, onOpenBook = openBook, onOpenSettings = openSettings)
+        GrimmoryLibraryScreen(
+            books = books,
+            downloads = downloads,
+            onOpenBook = openBook,
+            onOpenSeries = { name -> navController.navigate("$SERIES_ROUTE/${Uri.encode(name)}") },
+            onOpenSettings = openSettings,
+        )
     }
     composable(MainScreen.History.route) {
         val books = remember(config) { GrimmoryBooks.of(config) }
@@ -65,6 +74,15 @@ internal fun NavGraphBuilder.grimmoryGraph(
         val books = remember(config) { GrimmoryBooks.of(config) }
         val downloads = remember(appPreferences) { GrimmoryDownloads(appPreferences) }
         GrimmoryDownloadsScreen(books = books, downloads = downloads, onOpenBook = openBook)
+    }
+    composable(
+        route = "$SERIES_ROUTE/{name}",
+        arguments = listOf(navArgument("name") { type = NavType.StringType }),
+    ) { entry ->
+        val name = entry.arguments?.getString("name") ?: return@composable
+        val books = remember(config) { GrimmoryBooks.of(config) }
+        val downloads = remember(appPreferences) { GrimmoryDownloads(appPreferences) }
+        GrimmorySeriesScreen(name = name, books = books, downloads = downloads, onOpenBook = openBook, onBack = { navController.popBackStack() })
     }
     composable(
         route = "$BOOK_ROUTE/{bookId}",

@@ -577,6 +577,15 @@
     <string name="grimmory_filter_reading">Reading</string>
     <string name="grimmory_filter_unread">Unread</string>
     <string name="grimmory_filter_finished">Finished</string>
+    <string name="grimmory_view_books">Books</string>
+    <string name="grimmory_view_series">Series</string>
+    <plurals name="grimmory_series_books">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <string name="grimmory_book_number">Book %s</string>
+    <string name="grimmory_series_finished">%1$d of %2$d finished</string>
+    <string name="grimmory_series_continue">Continue with %s</string>
     <string name="grimmory_library_empty">No books match.</string>
     <plurals name="grimmory_downloads_summary">
         <item quantity="one">%1$d book · %2$s on this device</item>

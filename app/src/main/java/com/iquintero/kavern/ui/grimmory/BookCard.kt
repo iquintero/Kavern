@@ -17,10 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
 import com.iquintero.kavern.ui.common.COVER_ASPECT_RATIO
 import com.iquintero.kavern.ui.common.CoverProgressBar
@@ -84,6 +86,28 @@ internal fun BookCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+/** A series in a grid: the cover of its first book, its name, and how many of its books are read. */
+@Composable
+internal fun SeriesCard(
+    group: BookGroup,
+    name: String,
+    coverUrl: String,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onOpen)) {
+        BookCover(group.first.copy(progress = group.progress), coverUrl, DownloadState.None)
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(text = name, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            text = pluralStringResource(R.plurals.grimmory_series_books, group.books.size, group.books.size),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 

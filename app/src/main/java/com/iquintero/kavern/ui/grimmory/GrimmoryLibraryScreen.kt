@@ -25,6 +25,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -80,6 +83,25 @@ internal enum class BookStatus(
     Finished(R.string.grimmory_filter_finished),
 }
 
+internal enum class LibraryView(
+    val label: Int,
+) {
+    Books(R.string.grimmory_view_books),
+    Series(R.string.grimmory_view_series),
+}
+
+/** Books that belong together: a series, or a lone book that has none. */
+internal data class BookGroup(
+    val series: String?,
+    val books: List<GrimmoryBook>,
+) {
+    val first: GrimmoryBook get() = books.first()
+    val finished: Int get() = books.count { it.progress >= GrimmoryBook.FINISHED }
+
+    /** How far along the whole series is, 0 to 100. */
+    val progress: Float get() = books.sumOf { it.progress.toDouble() }.toFloat() / books.size
+}
+
 internal data class GrimmoryLibraryState(
     val isLoading: Boolean = true,
     val loadFailed: Boolean = false,
@@ -90,27 +112,62 @@ internal data class GrimmoryLibraryState(
     val sort: BookSort = BookSort.Title,
     val status: BookStatus = BookStatus.All,
     val library: Int? = null,
+    val view: LibraryView = LibraryView.Books,
 ) {
+    private val matching: List<GrimmoryBook>
+        get() {
+            val text = query.trim()
+            return books.filter { book ->
+                (library == null || book.libraryId == library) &&
+                    when (status) {
+                        BookStatus.All -> true
+                        BookStatus.Reading -> book.inProgress
+                        BookStatus.Unread -> book.progress <= 0f
+                        BookStatus.Finished -> book.progress >= GrimmoryBook.FINISHED
+                    } &&
+                    (text.isEmpty() || book.matches(text))
+            }
+        }
+
     /** The books to show: the ones that match what was asked for, in the order chosen. */
     val visible: List<GrimmoryBook>
         get() {
-            val text = query.trim()
-            val matching =
-                books.filter { book ->
-                    (library == null || book.libraryId == library) &&
-                        when (status) {
-                            BookStatus.All -> true
-                            BookStatus.Reading -> book.inProgress
-                            BookStatus.Unread -> book.progress <= 0f
-                            BookStatus.Finished -> book.progress >= GrimmoryBook.FINISHED
-                        } &&
-                        (text.isEmpty() || book.matches(text))
-                }
+            val matching = matching
             return when (sort) {
                 BookSort.Title -> matching.sortedBy { it.title.lowercase() }
                 BookSort.LastRead -> matching.sortedByDescending { it.lastReadTime.orEmpty() }
                 BookSort.Added -> matching.sortedByDescending { it.addedOn.orEmpty() }
                 BookSort.Progress -> matching.sortedByDescending { it.progress }
+            }
+        }
+
+    /** The same books gathered by series, ordered by the series as a whole. */
+    val groups: List<BookGroup>
+        get() {
+            val bySeries = matching.groupBy { it.seriesName }
+            val grouped =
+                bySeries
+                    .filterKeys { it != null }
+                    .map { (name, list) -> BookGroup(name, list.sortedBy { it.seriesNumber ?: Float.MAX_VALUE }) }
+            val single = bySeries[null].orEmpty().map { BookGroup(null, listOf(it)) }
+            val all = grouped + single
+            return when (sort) {
+                BookSort.Title -> all.sortedBy { (it.series ?: it.first.title).lowercase() }
+                BookSort.LastRead ->
+                    all.sortedByDescending { group ->
+                        group.books
+                            .mapNotNull { it.lastReadTime }
+                            .maxOrNull()
+                            .orEmpty()
+                    }
+                BookSort.Added ->
+                    all.sortedByDescending { group ->
+                        group.books
+                            .mapNotNull { it.addedOn }
+                            .maxOrNull()
+                            .orEmpty()
+                    }
+                BookSort.Progress -> all.sortedByDescending { it.progress }
             }
         }
 }
@@ -156,6 +213,8 @@ internal class GrimmoryLibraryViewModel(
 
     fun filterBy(status: BookStatus) = _state.update { it.copy(status = status) }
 
+    fun show(view: LibraryView) = _state.update { it.copy(view = view) }
+
     fun inLibrary(id: Int?) = _state.update { it.copy(library = id) }
 
     companion object {
@@ -171,6 +230,7 @@ internal fun GrimmoryLibraryScreen(
     books: GrimmoryBooks,
     downloads: GrimmoryDownloads,
     onOpenBook: (Int) -> Unit,
+    onOpenSeries: (String) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val viewModel: GrimmoryLibraryViewModel = viewModel(factory = GrimmoryLibraryViewModel.factory(books, downloads))
@@ -200,6 +260,15 @@ internal fun GrimmoryLibraryScreen(
                 IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) }
             },
         )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            LibraryView.entries.forEachIndexed { index, view ->
+                SegmentedButton(
+                    selected = state.view == view,
+                    onClick = { viewModel.show(view) },
+                    shape = SegmentedButtonDefaults.itemShape(index, LibraryView.entries.size),
+                ) { Text(stringResource(view.label)) }
+            }
+        }
         OutlinedTextField(
             value = state.query,
             onValueChange = viewModel::search,
@@ -231,6 +300,7 @@ internal fun GrimmoryLibraryScreen(
             }
         }
         val visible = state.visible
+        val groups = state.groups
         when {
             state.books.isEmpty() && state.isLoading -> Unit
 
@@ -260,8 +330,19 @@ internal fun GrimmoryLibraryScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        items(visible, key = { it.id }) { book ->
-                            BookCard(book, books.coverUrl(book.id), downloadStates[book.id] ?: DownloadState.None, onOpenBook)
+                        if (state.view == LibraryView.Books) {
+                            items(visible, key = { "book-${it.id}" }) { book ->
+                                BookCard(book, books.coverUrl(book.id), downloadStates[book.id] ?: DownloadState.None, onOpenBook)
+                            }
+                        } else {
+                            items(groups, key = { group -> group.series?.let { "series-$it" } ?: "book-${group.first.id}" }) { group ->
+                                val series = group.series
+                                if (series == null) {
+                                    BookCard(group.first, books.coverUrl(group.first.id), downloadStates[group.first.id] ?: DownloadState.None, onOpenBook)
+                                } else {
+                                    SeriesCard(group, series, books.coverUrl(group.first.id), onOpen = { onOpenSeries(series) })
+                                }
+                            }
                         }
                     }
                 }
