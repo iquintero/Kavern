@@ -98,6 +98,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
         Text(stringResource(R.string.settings_about_version) + ": $versionName")
         Text(stringResource(R.string.settings_about_build_time) + ": $buildTime")
         Text(stringResource(R.string.settings_about_kavita_version) + ": $kavitaTarget")
+        Text(stringResource(R.string.settings_about_grimmory_version) + ": $GRIMMORY_TESTED")
 
         Text(stringResource(R.string.settings_about_label_whats_new), style = MaterialTheme.typography.titleMedium)
         ListItem(
@@ -185,3 +186,5 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
         }
     }
 }
+
+private const val GRIMMORY_TESTED = "3.5.1"

@@ -1,4 +1,19 @@
-## Unreleased
+## v0.2.0
+
+Kavern now works with Grimmory as well as Kavita. The two are kept apart: a Kavita server keeps every screen and feature it had, and a Grimmory server gets its own screens built around books.
+
+### Added
+
+- **Grimmory support.** In Settings > Server, choose Kavita or Grimmory and sign in. For Grimmory that is the server address and your username and password. It was tested with Grimmory 3.5.1.
+  - **Home** has Continue reading, the books you have started, and recently added.
+  - **Library** switches between Books and Series, searches as you type, filters by Reading, Unread or Finished and by library, and sorts by title, last read, date added or progress. A series has its own page with its books in order and a button that continues with the one you read last.
+  - Every **book** has a page with its cover, description, progress, Resume or Start, download, and mark as read or unread.
+  - Books are the top level here: there are no volumes or chapters, and progress is shown as a percentage instead of pages.
+  - **EPUB** books open in the same reader as Kavita's, can be downloaded, and open from the downloaded copy with no connection. PDF, AZW3 and comics are not supported for Grimmory yet.
+  - **Downloads** lists the books on the device.
+- **Reading sessions for Grimmory.** What you read is kept with its real start and end times, and is sent to the server once ten minutes pass without reading, even if the app is closed or you were offline. So reading done on a train still lands on the day you did it, and a short break does not split a session in two. The new **History** page lists the sessions by day with how far you got.
+- A **Sign in again** box appears if Grimmory stops accepting the saved sign-in, for example after about 30 days away or a changed password. Reading what is on the device carries on, and what you read in the meantime is sent once you sign in.
+- **Settings > Server** is rebuilt around the choice of Kavita or Grimmory, with the fields and messages for each.
 
 ### Changed
 
@@ -15,6 +30,17 @@
   - Syncing a chapter takes one request, or two when something has to be sent, instead of three or four.
 
 - The "Top and bottom margins" reader setting now goes below 0, down to -12 dp. Below 0 the text runs under the top and bottom bars while they are shown, which fits more lines on a page; hide the bars with a tap in the middle to see all of it. The default is still 0, so pages look as before until you change it.
+
+### Fixed
+
+- The app could keep believing it was online after the connection dropped, so the cloud icon and the "reading offline" notice lagged behind. A lost connection is now noticed at once, and a single dropped answer from the server no longer marks it unreachable.
+
+### Security
+
+- **Your Grimmory password is not kept.** It is used once to sign in. After that the app keeps only a pair of tokens, in encrypted storage, apart from the saved connection: a short one for requests, and a long one that gets a new pair when it runs out.
+- A refused login is not retried over and over. Grimmory locks a user name for 15 minutes after five failed attempts, which would also have shut you out of its own web page.
+- Your login and tokens are never sent to where a redirect points, and a redirect to another address or to plain HTTP is refused.
+- Pictures and book pages can only reach a book's cover and its files with your login, not the rest of the server's API.
 
 ## v0.1.2
 

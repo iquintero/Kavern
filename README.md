@@ -4,10 +4,11 @@
 
 # Kavern
 
- Unofficial Android reader for your self-hosted **Kavita** library.
+ Unofficial Android reader for your self-hosted **Kavita** or **Grimmory** library.
 
 ![Platform](https://img.shields.io/badge/platform-Android-blue)
 ![Kavita](https://img.shields.io/badge/Kavita-nightly_0.9.1.20-orange)
+![Grimmory](https://img.shields.io/badge/Grimmory-3.5.1-blueviolet)
 
 </div>
 
@@ -30,23 +31,32 @@
   </tr>
 </table>
 
-The screenshots use public-domain books from [Project Gutenberg](https://www.gutenberg.org/) on a test Kavita server.
+The screenshots use public-domain books from [Project Gutenberg](https://www.gutenberg.org/) on a test Kavita server. Grimmory has its own screens, built around books.
 
 ---
 
 ## Overview
 
-Kavern is a Kotlin/Jetpack Compose Android app to browse and read from your Kavita server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata).
+Kavern is a Kotlin/Jetpack Compose Android app to browse and read from your own Kavita or Grimmory server. It aims for fast navigation, a clean reader, and tight API integration (collections, progress, metadata). The two servers are kept apart: Kavita keeps its series, volumes and chapters, and Grimmory gets screens built around books, so each can grow on its own.
 
 Kavern is a fork of [Inkita](https://github.com/dom-53/Inkita) by [dom-53](https://github.com/dom-53). This project would not exist without their work. Thank you!
 
 **Tech:** Kotlin, Jetpack Compose (Material 3), Retrofit/OkHttp, WorkManager, Room/DataStore.
-**Formats:** EPUB (primary), comics/images and PDF.
-**Status:** Early release (v0.1); APIs and UI may change.
+**Formats:** EPUB (primary), comics/images and PDF with Kavita; EPUB with Grimmory (PDF, AZW3 and comics are not supported there yet).
+**Status:** Early release (v0.2); APIs and UI may change.
 
 ---
 
 ## Features
+
+**With Grimmory**
+
+- Home with Continue reading, the books in progress and recently added. A Library that switches between Books and Series, with search, status and library filters, and sorting. A page for each book and for each series.
+- Progress shown as a percentage, not pages or chapters, and reading sessions kept with their real times, so reading done offline lands on the day it happened. A History page lists them by day.
+- Books download one at a time and open offline. With no connection, the last book list the server sent is shown.
+- Sign in with your username and password. The password is not stored: the app keeps only tokens, in encrypted storage, and asks you to sign in again if the server stops accepting them (about 30 days away, or a changed password).
+
+**With Kavita**
 
 - **E-reader mode** (Settings → Appearance), switched on automatically on e-ink devices such as Boox readers: black and white with outlines instead of gray fills, no animations, a still loading mark, and page-by-page scrolling of long lists with on-screen buttons or the hardware page keys.
 - Page-by-page EPUB reading like an e-reader (the default), or scrolling. Book styles, fonts and images are applied, while your own font, size, line height and alignment win over the book's.
@@ -70,25 +80,25 @@ Kavern has no built-in updater: to update, install the newer APK over the old on
 
 ---
 
-## Connecting to your Kavita server
+## Connecting to your server
 
 Kavern ships without any preset server configuration. After the first launch:
 
-1. Open **Settings → Kavita**.
-2. Fill in your server URL credentials and your Kavita API key.
-3. Save the configuration and restart app; the app will then authenticate and sync your libraries.
+1. Open **Settings → Server** and choose **Kavita** or **Grimmory**.
+2. Fill in your server address. For Kavita add your API key (and an images key if you use one); for Grimmory add your username and password.
+3. Save the configuration and restart the app; it will then sign in and load your libraries.
 
-Without these details the app cannot reach your server, so make sure to keep them up to date (especially when rotating API keys).
+Without these details the app cannot reach your server, so keep them up to date (for Kavita, when rotating API keys; for Grimmory, if you change your password the app asks you to sign in again). If your server uses a private certificate authority, import its root certificate in the same screen.
 
 ---
 
 ## Building from source
 
 1. **Prereqs:** Android Studio Giraffe+, JDK 17.
-2. **Configure Kavita:** In-app settings → set server URL and API key.
+2. **Configure a server:** In-app settings → Server → choose Kavita or Grimmory and sign in.
 3. **Run:** `./gradlew assembleDebug` or launch from Android Studio (preview/release buildTypes available).
 
-> Requires your own Kavita server; no content is bundled.
+> Requires your own Kavita or Grimmory server; no content is bundled.
 
 
 ---
@@ -104,11 +114,11 @@ Contributions are welcome (bugfixes, UX polish, docs). Please:
 
 ## Logs / Debug
 - You can export or save anonymized logs from **Settings → Advanced → Logs**; saved zips are written to `Documents/Kavern/logs`.
-- Sensitive data (host/IP/API key) is anonymized in log files and exports.
+- Sensitive data (host/IP/API key/tokens) is anonymized in log files and exports.
 - For bug reports: enable **Verbose logging**, reproduce the issue, then attach the exported ZIP to your issue/report.
 
 ---
 
 ## Disclaimer
 
-Kavern is an unofficial community project, not affiliated with the Kavita team or the original Inkita project. Use at your own risk; APIs and behavior may change in 0.x releases.
+Kavern is an unofficial community project, not affiliated with the Kavita or Grimmory teams or the original Inkita project. Use at your own risk; APIs and behavior may change in 0.x releases.

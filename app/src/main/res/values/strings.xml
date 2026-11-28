@@ -401,6 +401,7 @@
     <string name="notifications_prompt_accept">Enable</string>
     <string name="notifications_prompt_dismiss">Not now</string>
     <string name="settings_about_kavita_version">Tested with Kavita</string>
+    <string name="settings_about_grimmory_version">Tested with Grimmory</string>
     <!-- Series detail actions -->
     <string name="series_download_all">Download all</string>
     <string name="series_clear_downloads">Clear downloads</string>
