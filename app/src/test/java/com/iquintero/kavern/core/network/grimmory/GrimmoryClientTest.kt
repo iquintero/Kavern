@@ -119,6 +119,60 @@ class GrimmoryClientTest {
         assertTrue(server.requests.filter { !it.url.encodedPath.endsWith("/login") }.all { it.header("Authorization") == "Bearer abc" })
     }
 
+    private fun redirecting(location: String?): FakeServer =
+        FakeServer { request ->
+            when {
+                request.url.encodedPath.endsWith("/login") -> Triple(200, """{"accessToken":"abc"}""", emptyMap())
+                request.url.encodedPath == "/api/v1/app/books" -> Triple(302, "", location?.let { mapOf("Location" to it) } ?: emptyMap())
+                else -> Triple(200, "{}", emptyMap())
+            }
+        }
+
+    @Test
+    fun `a redirect within the server is followed`() {
+        val server = redirecting("https://books.test/api/v1/elsewhere")
+        clientOn(server).getObject("api/v1/app/books")
+        assertEquals(
+            "/api/v1/elsewhere",
+            server.requests
+                .last()
+                .url.encodedPath,
+        )
+    }
+
+    @Test
+    fun `a redirect to another address is refused before anything is sent there`() {
+        for (target in listOf("https://other.test/steal", "http://books.test/api/v1/downgrade", "https://books.test:8443/x")) {
+            val server = redirecting(target)
+            assertEquals(302, clientOn(server).tryBooks())
+            assertTrue("nothing went to $target", server.requests.none { it.url.toString() == target })
+        }
+    }
+
+    @Test
+    fun `a redirect without a place to go is refused`() {
+        assertEquals(302, clientOn(redirecting(null)).tryBooks())
+    }
+
+    @Test
+    fun `a redirect that never ends is given up on`() {
+        val server = redirecting("https://books.test/api/v1/app/books")
+        assertEquals(508, clientOn(server).tryBooks())
+    }
+
+    @Test
+    fun `the login is never sent on to where it is redirected`() {
+        val server = FakeServer { Triple(307, "", mapOf("Location" to "http://evil.test/collect")) }
+        assertEquals(307, clientOn(server).tryBooks())
+        assertEquals(1, server.requests.size)
+        assertEquals(
+            "/api/v1/auth/login",
+            server.requests
+                .single()
+                .url.encodedPath,
+        )
+    }
+
     @Test
     fun `a wrong login throws the server's answer`() {
         val server = FakeServer { Triple(401, "{}", emptyMap()) }

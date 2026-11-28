@@ -1,5 +1,6 @@
 package com.iquintero.kavern.core.network.grimmory
 
+import com.iquintero.kavern.core.network.isSameOrigin
 import com.squareup.moshi.Moshi
 import okhttp3.Call
 import okhttp3.HttpUrl
@@ -179,18 +180,29 @@ internal class GrimmoryClient(
         synchronized(lock) { token = login() }
     }
 
+    /** A GET with the token. A redirect is followed only to the same address, so the token never goes anywhere else. */
     private fun send(
         target: HttpUrl,
         accept: String?,
     ): Response {
-        val request =
-            Request
-                .Builder()
-                .url(target)
-                .header("Authorization", "Bearer ${accessToken()}")
-                .apply { if (accept != null) header("Accept", accept) }
-                .build()
-        return calls.newCall(request).execute()
+        var url = target
+        repeat(MAX_REDIRECTS + 1) {
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer ${accessToken()}")
+                    .apply { if (accept != null) header("Accept", accept) }
+                    .build()
+            val response = calls.newCall(request).execute()
+            if (!response.isRedirect) return response
+            val next = response.header("Location")?.let(request.url::resolve)
+            val code = response.code
+            response.close()
+            if (next == null || !next.isSameOrigin(origin)) throw GrimmoryHttpException(code)
+            url = next
+        }
+        throw GrimmoryHttpException(HTTP_LOOP_DETECTED)
     }
 
     private fun accessToken(): String = token ?: synchronized(lock) { token ?: login().also { token = it } }
@@ -240,6 +252,8 @@ internal class GrimmoryClient(
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403
         const val HTTP_TOO_MANY_REQUESTS = 429
+        const val HTTP_LOOP_DETECTED = 508
+        const val MAX_REDIRECTS = 3
         const val MS_PER_SECOND = 1000L
 
         /** Two tries in the server's fifteen minutes of counting, so a wrong password cannot use up its five. */

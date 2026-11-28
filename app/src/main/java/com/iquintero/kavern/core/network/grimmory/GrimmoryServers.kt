@@ -55,21 +55,27 @@ internal object GrimmoryServers {
     @Volatile
     var storage: java.io.File? = null
 
+    /** The client every call to a Grimmory server is made with. */
+    internal fun plainClient(): OkHttpClient =
+        OkHttpClient
+            .Builder()
+            .addInterceptor(ReportReachability)
+            .addInterceptor(NetworkLoggingInterceptor)
+            // A redirect is never followed by the client itself: the login and the files carry the user's credentials.
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+
     /** The server [config] points to, which must be a Grimmory one. */
     fun serverFor(config: AppConfig): GrimmoryServer {
         val credentials = requireNotNull(config.grimmory) { "Not a Grimmory server" }
         return servers.getOrPut(Key(config.serverUrl, credentials, config.caCertificate)) {
             // Grimmory is called with its own client, so nothing the app adds for Kavita (the API key header)
             // is ever sent to it.
-            val plain =
-                OkHttpClient
-                    .Builder()
-                    .addInterceptor(ReportReachability)
-                    .addInterceptor(NetworkLoggingInterceptor)
-                    .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .callTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .build()
+            val plain = plainClient()
             val once = plain.newBuilder().retryOnConnectionFailure(false).build()
             val client = GrimmoryClient(plain.forServerCa(config), once.forServerCa(config), config.serverUrl.toHttpUrl(), credentials)
             val name = "books-" + Integer.toHexString((config.serverUrl + "|" + credentials.username).hashCode()) + ".json"
@@ -91,7 +97,13 @@ internal object GrimmoryServers {
         config: AppConfig,
         credentials: GrimmoryCredentials,
     ) {
-        val plain = OkHttpClient.Builder().connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS).build()
+        val plain =
+            OkHttpClient
+                .Builder()
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
         val calls = plain.forServerCa(config)
         GrimmoryClient(calls, calls, config.serverUrl.toHttpUrl(), credentials).verifyLogin()
     }
