@@ -11,6 +11,8 @@ import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkLoggingInterceptor
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.forKavita
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.network.guardApiKey
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
@@ -172,7 +174,7 @@ class EpubDownloadStrategyV2(
             )
         }
 
-        val api = KavitaApiFactory.createAuthenticated(config)
+        val pages = bookPages(config)
         val (finishedItems, pendingItems) =
             downloadDao.getItemsForJob(jobId).partition { it.status == DownloadedItemV2Entity.STATUS_COMPLETED }
         var completed = finishedItems.size
@@ -182,10 +184,8 @@ class EpubDownloadStrategyV2(
                 if (downloadDao.getJob(jobId)?.status != DownloadJobV2Entity.STATUS_RUNNING) return
                 currentItem = item
                 val page = requireNotNull(item.page)
-                val htmlResp = api.getBookPage(chapterId, page)
-                if (!htmlResp.isSuccessful) throw HttpException(htmlResp)
+                val htmlRaw = pages(chapterId, page)
                 if (downloadDao.getJob(jobId)?.status != DownloadJobV2Entity.STATUS_RUNNING) return
-                val htmlRaw = htmlResp.body() ?: ""
                 val htmlPath = DownloadPaths.epubPageRelativePath(seriesId, volumeId, chapterId, page)
                 val saved =
                     storageManager.saveDownload {
@@ -255,6 +255,20 @@ class EpubDownloadStrategyV2(
                 error = error,
             )
         downloadDao.updateRunningJob(updated)
+    }
+
+    /** Where the pages of a book come from: the Kavita server's book pages, or the parts of a book on a Grimmory server. */
+    private fun bookPages(config: AppConfig): suspend (Int, Int) -> String {
+        if (config.isGrimmory) {
+            val reading = GrimmoryServers.serverFor(config).reading
+            return { book, page -> withContext(Dispatchers.IO) { reading.page(book, page) } }
+        }
+        val api = KavitaApiFactory.createAuthenticated(config)
+        return { chapter, page ->
+            val response = api.getBookPage(chapter, page)
+            if (!response.isSuccessful) throw HttpException(response)
+            response.body() ?: ""
+        }
     }
 
     @Suppress("LoopWithTooManyJumpStatements", "MagicNumber")

@@ -1,6 +1,12 @@
 package com.iquintero.kavern.data.repository
 
 import com.iquintero.kavern.core.network.KavitaApiFactory
+import com.iquintero.kavern.core.network.grimmory.GrimmoryAccount
+import com.iquintero.kavern.core.network.grimmory.GrimmoryHttpException
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.grimmory
+import com.iquintero.kavern.core.network.grimmory.grimmorySecret
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.data.api.dto.UserDto
@@ -9,6 +15,8 @@ import com.iquintero.kavern.domain.repository.KavitaConnectionException
 import com.iquintero.kavern.domain.repository.KavitaConnectionException.Problem
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import retrofit2.Response
 import java.io.EOFException
@@ -23,7 +31,9 @@ class AuthRepositoryImpl internal constructor(
 
     override suspend fun configure(config: AppConfig): AppConfig {
         val accountId = verifyConnection(config)
-        val verified = config.copy(userId = accountId)
+        // Whatever password was typed has been used to sign in; what is saved is only who is signed in.
+        val kept = config.grimmory?.let { grimmorySecret(it.username) } ?: config.apiKey
+        val verified = config.copy(userId = accountId, apiKey = kept, imageApiKey = if (config.isGrimmory) kept else config.imageApiKey)
         saveConfig(verified)
         return verified
     }
@@ -37,7 +47,28 @@ class AuthRepositoryImpl internal constructor(
         if (config.apiKey.isBlank() || config.apiKey.any { it !in ' '..'~' }) {
             throw KavitaConnectionException(Problem.RejectedKey)
         }
-        return requireAccountId(requestAccount(config.copy(serverUrl = url.toString())))
+        val checked = config.copy(serverUrl = url.toString())
+        config.grimmory?.let { return withContext(Dispatchers.IO) { verifyGrimmory(checked, it) } }
+        return requireAccountId(requestAccount(checked))
+    }
+
+    @Suppress("ThrowsCount")
+    private fun verifyGrimmory(
+        config: AppConfig,
+        account: GrimmoryAccount,
+    ): Int {
+        try {
+            // A typed password signs in and its tokens are kept; with none, what is already saved has to still be accepted.
+            account.password?.let { GrimmoryServers.signIn(config, account.username, it) } ?: GrimmoryServers.checkSignedIn(config)
+        } catch (e: IOException) {
+            throw grimmoryFailure(e)
+        } catch (e: GeneralSecurityException) {
+            throw grimmoryFailure(e)
+        } catch (e: JsonDataException) {
+            throw grimmoryFailure(e)
+        }
+        // Grimmory does not number its users in what the app can read, so the login name stands in for an account id.
+        return (account.username.hashCode() and Int.MAX_VALUE).coerceAtLeast(1)
     }
 
     private suspend fun requestAccount(config: AppConfig): Response<UserDto> {
@@ -64,5 +95,21 @@ class AuthRepositoryImpl internal constructor(
             throw KavitaConnectionException(problem, status)
         }
         return response.body()?.id?.takeIf { it > 0 } ?: throw KavitaConnectionException(Problem.UnexpectedResponse)
+    }
+
+    private fun grimmoryFailure(error: Exception): KavitaConnectionException = KavitaConnectionException(grimmoryProblem(error), (error as? GrimmoryHttpException)?.code)
+
+    private fun grimmoryProblem(error: Exception): Problem =
+        when {
+            error is GrimmoryHttpException && error.code in REJECTED -> Problem.RejectedKey
+            error is GrimmoryHttpException && error.code == TOO_MANY_REQUESTS -> Problem.RateLimited
+            error is GrimmoryHttpException || error is JsonDataException -> Problem.UnexpectedResponse
+            error is SSLException || error is GeneralSecurityException -> Problem.Tls
+            else -> Problem.Unreachable
+        }
+
+    private companion object {
+        val REJECTED = setOf(400, 401, 403)
+        const val TOO_MANY_REQUESTS = 429
     }
 }

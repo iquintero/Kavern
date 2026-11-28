@@ -324,6 +324,12 @@ interface KavitaApi {
         @Query("chapterId") chapterId: Int,
     ): Response<com.iquintero.kavern.data.api.dto.ReaderProgressDto>
 
+    /** Not a Kavita route, which builds sessions itself from progress: servers that take a session as told, like Grimmory. */
+    @POST("api/Stats/reading-session")
+    suspend fun recordReadingSession(
+        @Body body: com.iquintero.kavern.data.api.dto.RecordedReadingSessionDto,
+    ): Response<Unit>
+
     @POST("api/reader/progress")
     suspend fun setReaderProgress(
         @Body body: com.iquintero.kavern.data.api.dto.ReaderProgressDto,

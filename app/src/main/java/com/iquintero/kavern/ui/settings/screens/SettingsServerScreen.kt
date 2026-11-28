@@ -18,6 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -25,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +47,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.grimmory
+import com.iquintero.kavern.core.network.grimmory.grimmoryLogin
+import com.iquintero.kavern.core.network.grimmory.grimmoryPasswordSecret
 import com.iquintero.kavern.core.network.isSameOrigin
 import com.iquintero.kavern.core.network.readKavitaCaCertificate
 import com.iquintero.kavern.core.storage.AppConfig
@@ -59,12 +67,12 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 @Composable
-fun SettingsKavitaScreen(
+fun SettingsServerScreen(
     appPreferences: AppPreferences,
     authRepository: AuthRepository,
     onBack: () -> Unit,
 ) {
-    SettingsKavitaScreen(
+    SettingsServerScreen(
         configFlow = appPreferences.configFlow,
         authRepository = authRepository,
         onBack = onBack,
@@ -73,7 +81,7 @@ fun SettingsKavitaScreen(
 }
 
 @Composable
-internal fun SettingsKavitaScreen(
+internal fun SettingsServerScreen(
     configFlow: Flow<AppConfig>,
     authRepository: AuthRepository,
     onBack: () -> Unit,
@@ -87,6 +95,10 @@ internal fun SettingsKavitaScreen(
     var serverUrl by remember { mutableStateOf("") }
     var savedServerUrl by remember { mutableStateOf("") }
     var apiKeyInput by remember { mutableStateOf("") }
+    var grimmoryMode by remember { mutableStateOf(false) }
+    var savedGrimmory by remember { mutableStateOf(false) }
+    var grimmoryUser by remember { mutableStateOf("") }
+    var grimmoryPassword by remember { mutableStateOf("") }
     var storedApiKey by remember { mutableStateOf("") }
     var imageApiKeyInput by remember { mutableStateOf("") }
     var storedImageApiKey by remember { mutableStateOf("") }
@@ -101,6 +113,9 @@ internal fun SettingsKavitaScreen(
     var caCertificate by remember { mutableStateOf<String?>(null) }
     var importingCertificate by remember { mutableStateOf(false) }
     val busy = isSaving || importingCertificate
+    val signInRequired by GrimmoryServers.signInRequired.collectAsState()
+    // A saved key is only a Kavita key when what is saved is a Kavita server; a Grimmory login is kept in the same place.
+    val hasKavitaKey = isConfigured && !savedGrimmory && storedApiKey.isNotBlank()
     val certificatePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -129,6 +144,10 @@ internal fun SettingsKavitaScreen(
         savedServerUrl = config.serverUrl
         useHttps = !config.serverUrl.startsWith("http://", ignoreCase = true)
         storedApiKey = config.apiKey
+        grimmoryMode = config.grimmory != null
+        savedGrimmory = config.grimmory != null
+        grimmoryUser = config.grimmory?.username.orEmpty()
+        grimmoryPassword = ""
         storedImageApiKey = config.imageApiKey
         caCertificate = config.caCertificate
         isConfigured = config.isConfigured
@@ -148,7 +167,7 @@ internal fun SettingsKavitaScreen(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                saveError = context.connectionErrorMessage(e)
+                saveError = context.connectionErrorMessage(e, grimmoryMode)
                 return@launch
             } finally {
                 isSaving = false
@@ -172,11 +191,30 @@ internal fun SettingsKavitaScreen(
         IconButton(onClick = onBack) {
             Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back))
         }
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.settings_item_server), style = MaterialTheme.typography.headlineSmall)
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text(stringResource(R.string.settings_server_type), style = MaterialTheme.typography.titleSmall)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                listOf(false to R.string.settings_server_type_kavita, true to R.string.settings_server_type_grimmory).forEachIndexed { index, (grimmory, label) ->
+                    SegmentedButton(
+                        selected = grimmoryMode == grimmory,
+                        onClick = {
+                            grimmoryMode = grimmory
+                            saveError = null
+                        },
+                        enabled = !busy,
+                        shape = SegmentedButtonDefaults.itemShape(index, 2),
+                    ) { Text(stringResource(label)) }
+                }
+            }
+            Text(
+                text = stringResource(if (grimmoryMode) R.string.settings_server_grimmory_help else R.string.settings_server_kavita_help),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             OutlinedTextField(
                 value = serverUrl,
                 onValueChange = { new ->
@@ -188,7 +226,7 @@ internal fun SettingsKavitaScreen(
                     serverUrl = new
                 },
                 label = { Text(stringResource(R.string.settings_kavita_server)) },
-                placeholder = { Text("kavita.myserver.com") },
+                placeholder = { Text(if (grimmoryMode) "grimmory.myserver.com" else "kavita.myserver.com") },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !busy,
                 singleLine = true,
@@ -212,66 +250,87 @@ internal fun SettingsKavitaScreen(
                     },
                 )
             }
-            OutlinedTextField(
-                value =
-                    if (!isEditingApiKey && isConfigured && storedApiKey.isNotBlank()) {
-                        "********"
-                    } else {
-                        apiKeyInput
-                    },
-                onValueChange = { new ->
-                    apiKeyInput = new
-                    isEditingApiKey = true
-                },
-                label = { Text(stringResource(R.string.settings_kavita_api_key)) },
-                visualTransformation =
-                    if (isConfigured && !isEditingApiKey && storedApiKey.isNotBlank()) {
-                        PasswordVisualTransformation()
-                    } else {
-                        VisualTransformation.None
-                    },
-                singleLine = true,
-                enabled = !busy,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focus ->
-                            if (focus.isFocused && !isEditingApiKey) {
-                                apiKeyInput = ""
-                                isEditingApiKey = true
-                            }
+            if (grimmoryMode) {
+                OutlinedTextField(
+                    value = grimmoryUser,
+                    onValueChange = { grimmoryUser = it },
+                    label = { Text(stringResource(R.string.settings_grimmory_user)) },
+                    singleLine = true,
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = grimmoryPassword,
+                    onValueChange = { grimmoryPassword = it },
+                    label = { Text(stringResource(R.string.settings_grimmory_password)) },
+                    placeholder = { if (isConfigured && savedGrimmory) Text(stringResource(R.string.settings_grimmory_password_kept)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                OutlinedTextField(
+                    value =
+                        if (!isEditingApiKey && hasKavitaKey) {
+                            "********"
+                        } else {
+                            apiKeyInput
                         },
-            )
-            OutlinedTextField(
-                value =
-                    if (!isEditingImageApiKey && isConfigured && storedImageApiKey.isNotBlank()) {
-                        "********"
-                    } else {
-                        imageApiKeyInput
+                    onValueChange = { new ->
+                        apiKeyInput = new
+                        isEditingApiKey = true
                     },
-                onValueChange = { new ->
-                    imageApiKeyInput = new
-                    isEditingImageApiKey = true
-                },
-                label = { Text(stringResource(R.string.settings_kavita_image_api_key)) },
-                visualTransformation =
-                    if (isConfigured && !isEditingImageApiKey && storedImageApiKey.isNotBlank()) {
-                        PasswordVisualTransformation()
-                    } else {
-                        VisualTransformation.None
-                    },
-                singleLine = true,
-                enabled = !busy,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focus ->
-                            if (focus.isFocused && !isEditingImageApiKey) {
-                                imageApiKeyInput = ""
-                                isEditingImageApiKey = true
-                            }
+                    label = { Text(stringResource(R.string.settings_kavita_api_key)) },
+                    visualTransformation =
+                        if (!isEditingApiKey && hasKavitaKey) {
+                            PasswordVisualTransformation()
+                        } else {
+                            VisualTransformation.None
                         },
-            )
+                    singleLine = true,
+                    enabled = !busy,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focus ->
+                                if (focus.isFocused && !isEditingApiKey) {
+                                    apiKeyInput = ""
+                                    isEditingApiKey = true
+                                }
+                            },
+                )
+                OutlinedTextField(
+                    value =
+                        if (!isEditingImageApiKey && hasKavitaKey && storedImageApiKey.isNotBlank()) {
+                            "********"
+                        } else {
+                            imageApiKeyInput
+                        },
+                    onValueChange = { new ->
+                        imageApiKeyInput = new
+                        isEditingImageApiKey = true
+                    },
+                    label = { Text(stringResource(R.string.settings_kavita_image_api_key)) },
+                    visualTransformation =
+                        if (!isEditingImageApiKey && hasKavitaKey && storedImageApiKey.isNotBlank()) {
+                            PasswordVisualTransformation()
+                        } else {
+                            VisualTransformation.None
+                        },
+                    singleLine = true,
+                    enabled = !busy,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focus ->
+                                if (focus.isFocused && !isEditingImageApiKey) {
+                                    imageApiKeyInput = ""
+                                    isEditingImageApiKey = true
+                                }
+                            },
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -281,10 +340,12 @@ internal fun SettingsKavitaScreen(
                     text =
                         if (isConfigured) {
                             stringResource(
-                                R.string.settings_kavita_status_in,
+                                R.string.settings_server_status_in,
+                                stringResource(if (savedGrimmory) R.string.settings_server_type_grimmory else R.string.settings_server_type_kavita),
+                                savedServerUrl.withoutHttpScheme(),
                             )
                         } else {
-                            stringResource(R.string.settings_kavita_status_out)
+                            stringResource(R.string.settings_server_status_out)
                         },
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -304,6 +365,13 @@ internal fun SettingsKavitaScreen(
                     }
                 }
             }
+            if (signInRequired != null && grimmoryMode) {
+                Text(
+                    text = stringResource(R.string.settings_grimmory_sign_in_again),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             saveError?.let { message ->
                 Text(
                     text = message,
@@ -322,14 +390,32 @@ internal fun SettingsKavitaScreen(
                     val url = (if (useHttps) "https://" else "http://") + host
                     val savedUrl = savedServerUrl.toHttpUrlOrNull()?.toString()?.removeSuffix("/")
                     val sameServer = savedUrl != null && savedUrl == url.toHttpUrlOrNull()?.toString()?.removeSuffix("/")
-                    val apiKey = apiKeyInput.trim().ifBlank { if (sameServer) storedApiKey else "" }
+                    val apiKey =
+                        if (grimmoryMode) {
+                            val user = grimmoryUser.trim()
+                            val signedInAsUser = savedGrimmory && sameServer && storedApiKey.grimmoryLogin()?.first == user
+                            when {
+                                user.isBlank() -> ""
+                                // A typed password signs in once; it is not saved.
+                                grimmoryPassword.isNotEmpty() -> grimmoryPasswordSecret(user, grimmoryPassword)
+                                // With none, the sign-in that is already saved is kept.
+                                signedInAsUser -> storedApiKey
+                                else -> ""
+                            }
+                        } else {
+                            apiKeyInput.trim().ifBlank { if (sameServer && hasKavitaKey) storedApiKey else "" }
+                        }
                     if (host.isBlank() || apiKey.isBlank()) {
-                        saveError = context.getString(R.string.settings_kavita_login_toast)
+                        saveError = context.getString(if (grimmoryMode) R.string.settings_grimmory_login_toast else R.string.settings_kavita_login_toast)
                         return@Button
                     }
                     val imageKey =
-                        imageApiKeyInput.trim().ifBlank {
-                            if (sameServer && apiKey == storedApiKey) storedImageApiKey.ifBlank { apiKey } else apiKey
+                        if (grimmoryMode) {
+                            apiKey
+                        } else {
+                            imageApiKeyInput.trim().ifBlank {
+                                if (sameServer && apiKey == storedApiKey) storedImageApiKey.ifBlank { apiKey } else apiKey
+                            }
                         }
                     val config = AppConfig(url, apiKey, imageKey, 0, caCertificate.takeIf { useHttps })
                     if (useHttps) {
@@ -407,13 +493,17 @@ private val httpScheme = Regex("^https?://", RegexOption.IGNORE_CASE)
 
 private fun String.withoutHttpScheme(): String = trim().replaceFirst(httpScheme, "").trimEnd('/')
 
-private fun Context.connectionErrorMessage(error: Exception): String {
+private fun Context.connectionErrorMessage(
+    error: Exception,
+    grimmory: Boolean,
+): String {
     val connectionError = error as? KavitaConnectionException
     return when (connectionError?.problem) {
         Problem.InvalidUrl -> getString(R.string.settings_kavita_invalid_url)
-        Problem.RejectedKey -> getString(R.string.settings_kavita_rejected_key)
+        Problem.RejectedKey -> getString(if (grimmory) R.string.settings_grimmory_rejected_login else R.string.settings_kavita_rejected_key)
         Problem.Unreachable -> getString(R.string.settings_kavita_unreachable)
         Problem.Tls -> getString(R.string.settings_kavita_tls_failed)
+        Problem.RateLimited -> getString(R.string.settings_server_rate_limited)
         Problem.UnexpectedResponse ->
             connectionError.statusCode?.let { getString(R.string.settings_kavita_http_error, it) }
                 ?: getString(R.string.settings_kavita_unexpected_response)

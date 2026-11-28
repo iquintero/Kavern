@@ -11,6 +11,8 @@ data class ReadingHistorySessionDto(
     val seriesName: String? = null,
     val chapters: List<ReadingHistoryChapterDto>? = null,
     val pagesRead: Int? = null,
+    /** Servers that measure reading as a share of the book rather than in pages report this instead of [pagesRead]. */
+    val percentRead: Int? = null,
     val durationSeconds: Int? = null,
 )
 

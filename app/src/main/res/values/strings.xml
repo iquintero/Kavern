@@ -96,6 +96,7 @@
     <string name="series_detail_volume_fallback">Volume %1$d</string>
     <string name="series_detail_vol_short">Vol. %1$s</string>
     <string name="series_detail_vol_short_plain">Vol.</string>
+    <string name="series_detail_book_short">Book %1$s</string>
     <string name="series_detail_continue_vol_ch">Continue Vol. %1$s Pg. %2$d</string>
     <string name="series_detail_continue_epub_chapter">Continue Ch. %1$d</string>
     <string name="series_detail_continue_ch">Continue Pg. %1$d</string>
@@ -122,6 +123,7 @@
     <string name="series_detail_remove_chapter_title">Remove downloads</string>
     <string name="series_detail_remove_chapter_body">Remove downloads for %1$s?</string>
     <string name="series_detail_remove_chapter_confirm">Remove</string>
+    <string name="series_detail_book_downloaded">This book is downloaded</string>
     <string name="download_queued">Download queued</string>
     <string name="series_detail_related_sequels">Sequels</string>
     <string name="series_detail_related_prequels">Prequels</string>
@@ -308,7 +310,6 @@
     <string name="settings_item_reader">Reader</string>
     <string name="settings_item_downloads">Downloads</string>
     <string name="settings_item_security">Security</string>
-    <string name="settings_item_kavita">Kavita</string>
     <string name="settings_item_advanced">Advanced</string>
     <string name="settings_advanced_section_global_cache">Global cache</string>
     <string name="settings_advanced_section_library_cache">Library cache</string>
@@ -343,12 +344,10 @@
     <string name="settings_item_stats">My Statistics</string>
     <string name="settings_item_about">About</string>
     <!-- Kavita  -->
-    <string name="settings_kavita_server">Kavita server URL</string>
+    <string name="settings_kavita_server">Server address</string>
     <string name="settings_kavita_use_https">Use HTTPS</string>
     <string name="settings_kavita_api_key">API key</string>
     <string name="settings_kavita_image_api_key">Images API key</string>
-    <string name="settings_kavita_status_in">Status: configured (API key saved)</string>
-    <string name="settings_kavita_status_out">Status: not configured</string>
     <string name="settings_kavita_button_login">Save</string>
     <string name="settings_kavita_logout">Sign out</string>
     <string name="settings_kavita_logged_out">Configuration cleared.</string>
@@ -358,17 +357,17 @@
     <string name="settings_kavita_saved_toast">Configuration saved. Please restart the app.</string>
     <string name="settings_kavita_save_failed">Save failed: %1$s</string>
     <string name="settings_kavita_checking_connection">Checking connection…</string>
-    <string name="settings_kavita_invalid_url">Enter a valid Kavita server address.</string>
+    <string name="settings_kavita_invalid_url">Enter a valid server address.</string>
     <string name="settings_kavita_rejected_key">Kavita rejected the API key or denied access. Check your key and permissions.</string>
-    <string name="settings_kavita_unreachable">Could not reach Kavita. Check the server address and your network connection.</string>
+    <string name="settings_kavita_unreachable">Could not reach the server. Check the address and your network connection.</string>
     <string name="settings_kavita_tls_failed">Could not establish a secure connection. Check the server’s HTTPS certificate.</string>
-    <string name="settings_kavita_ca_help">If your Kavita server uses a private certificate authority, import its root CA certificate (PEM or DER), then save the connection.</string>
-    <string name="settings_kavita_ca_selected">A custom CA is selected for this Kavita server.</string>
+    <string name="settings_kavita_ca_help">If your server uses a private certificate authority, import its root CA certificate (PEM or DER), then save the connection.</string>
+    <string name="settings_kavita_ca_selected">A custom CA is selected for this server.</string>
     <string name="settings_kavita_ca_import">Import CA certificate</string>
     <string name="settings_kavita_ca_remove">Remove</string>
     <string name="settings_kavita_ca_invalid">Could not import the file. Choose a valid root CA certificate in PEM or DER format.</string>
-    <string name="settings_kavita_http_error">The server returned HTTP %1$d. Check the Kavita address and try again.</string>
-    <string name="settings_kavita_unexpected_response">The server returned an unexpected response. Check the Kavita address.</string>
+    <string name="settings_kavita_http_error">The server returned HTTP %1$d. Check the address and try again.</string>
+    <string name="settings_kavita_unexpected_response">The server returned an unexpected response. Check the address.</string>
     <!-- About Kavern  -->
     <string name="settings_about_version">Version</string>
     <string name="settings_about_build_time">Build time</string>
@@ -383,7 +382,7 @@
     <!-- Others  -->
     <string name="settings_about_title">About Kavern</string>
     <string name="settings_about_website">Kavita Website</string>
-    <string name="settings_kavita_login_toast">Fill URL and API key.</string>
+    <string name="settings_kavita_login_toast">Fill in the address and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
     <string name="settings_appearance_dark">Dark</string>
     <string name="settings_appearance_eink">E-reader mode</string>
@@ -555,6 +554,8 @@
         <item quantity="one">%d page</item>
         <item quantity="other">%d pages</item>
     </plurals>
+    <string name="history_session_summary">%1$d pages · %2$d min</string>
+    <string name="history_session_percent_summary">+%1$d%% · %2$d min</string>
     <string name="server_status_connected">Connected to server</string>
     <string name="server_status_checking">Checking server connection</string>
     <string name="server_status_unknown">Server connection not checked yet</string>
@@ -568,6 +569,46 @@
     <string name="home_in_progress">In progress</string>
     <string name="home_want_to_read">Want to read</string>
     <string name="home_recently_added">Recently added</string>
+    <string name="grimmory_home_empty">Nothing to show yet. Add books to your library and they will appear here.</string>
+    <string name="grimmory_offline_notice">The server cannot be reached. These are the books from the last time it answered.</string>
+    <string name="grimmory_series_line">%1$s · Book %2$s</string>
+    <string name="grimmory_in_series">In this series</string>
+    <string name="grimmory_printed_pages">%1$d pages</string>
+    <string name="grimmory_unsupported_format">This book is a %1$s file, which Kavern cannot open yet.</string>
+    <string name="grimmory_download">Download</string>
+    <string name="grimmory_downloaded">Downloaded</string>
+    <string name="grimmory_downloading">Downloading…</string>
+    <string name="grimmory_mark_read">Mark as read</string>
+    <string name="grimmory_mark_unread">Mark as unread</string>
+    <string name="grimmory_book_not_found">This book could not be found.</string>
+    <string name="grimmory_search_hint">Search books</string>
+    <string name="grimmory_sort_title">Title</string>
+    <string name="grimmory_sort_recent">Recently read</string>
+    <string name="grimmory_sort_added">Recently added</string>
+    <string name="grimmory_sort_progress">Progress</string>
+    <string name="grimmory_filter_all">All</string>
+    <string name="grimmory_filter_reading">Reading</string>
+    <string name="grimmory_filter_unread">Unread</string>
+    <string name="grimmory_filter_finished">Finished</string>
+    <string name="grimmory_view_books">Books</string>
+    <string name="grimmory_view_series">Series</string>
+    <plurals name="grimmory_series_books">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <string name="grimmory_book_number">Book %s</string>
+    <string name="grimmory_series_finished">%1$d of %2$d finished</string>
+    <string name="grimmory_series_continue">Continue with %s</string>
+    <string name="grimmory_library_empty">No books match.</string>
+    <plurals name="grimmory_downloads_summary">
+        <item quantity="one">%1$d book · %2$s on this device</item>
+        <item quantity="other">%1$d books · %2$s on this device</item>
+    </plurals>
+    <string name="grimmory_downloads_empty">Nothing is downloaded. Open a book and tap Download to read it without the server.</string>
+    <string name="grimmory_download_progress">Downloading… %1$d%%</string>
+    <string name="grimmory_download_failed">The download failed</string>
+    <string name="grimmory_remove_download">Remove download</string>
+    <string name="settings_item_server">Server</string>
     <string name="home_empty">Nothing to show yet. Start a book or add one to Want to Read.</string>
     <string name="library_section_series">Series</string>
     <string name="library_section_collections">Collections</string>
@@ -588,4 +629,23 @@
         <item quantity="other">%1$d items</item>
     </plurals>
     <string name="library_all_libraries">All</string>
+    <string name="settings_server_type">Server type</string>
+    <string name="settings_server_type_kavita">Kavita</string>
+    <string name="settings_server_type_grimmory">Grimmory</string>
+    <string name="settings_server_kavita_help">Sign in with the API key from your Kavita user settings.</string>
+    <string name="settings_server_grimmory_help">Sign in with your Grimmory username and password.</string>
+    <string name="settings_server_status_in">Signed in to %1$s · %2$s</string>
+    <string name="settings_server_status_out">Not signed in</string>
+    <string name="settings_grimmory_login_toast">Fill in the address, username and password.</string>
+    <string name="settings_grimmory_rejected_login">Grimmory rejected the username or password. Check them and the account\'s permissions.</string>
+    <string name="settings_server_rate_limited">Too many failed sign-in attempts. Wait about 15 minutes before trying again.</string>
+    <string name="settings_grimmory_password_kept">Signed in. Type a password only to sign in again.</string>
+    <string name="settings_grimmory_sign_in_again">Grimmory no longer accepts the saved sign-in. Enter your password and save to sign in again.</string>
+    <string name="grimmory_sign_in_title">Sign in again</string>
+    <string name="grimmory_sign_in_body">Grimmory no longer accepts the saved sign-in for %1$s. This happens after about 30 days away, or when the password was changed. What you read in the meantime is kept and will be sent once you sign in.</string>
+    <string name="grimmory_sign_in_confirm">Sign in</string>
+    <string name="grimmory_sign_in_later">Not now</string>
+    <string name="grimmory_sign_in_wrong">That password was not accepted.</string>
+    <string name="settings_grimmory_user">Username</string>
+    <string name="settings_grimmory_password">Password</string>
 </resources>

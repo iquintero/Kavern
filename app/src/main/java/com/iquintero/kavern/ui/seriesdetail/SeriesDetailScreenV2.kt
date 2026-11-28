@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Downloading
 import androidx.compose.material.icons.filled.ExpandLess
@@ -45,6 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,6 +81,7 @@ import com.iquintero.kavern.core.downloadv2.strategies.DownloadApiStrategyV2
 import com.iquintero.kavern.core.downloadv2.strategies.EpubDownloadStrategyV2
 import com.iquintero.kavern.core.downloadv2.strategies.PdfDownloadStrategyV2
 import com.iquintero.kavern.core.network.NetworkUtils
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.util.formatBytes
@@ -92,6 +95,7 @@ import com.iquintero.kavern.ui.common.DownloadState
 import com.iquintero.kavern.ui.common.DownloadStateResolver
 import com.iquintero.kavern.ui.common.LoadingIndicator
 import com.iquintero.kavern.ui.common.PagedBox
+import com.iquintero.kavern.ui.common.StrongProgressBar
 import com.iquintero.kavern.ui.common.chapterCoverUrl
 import com.iquintero.kavern.ui.common.collectionCoverUrl
 import com.iquintero.kavern.ui.common.seriesCoverUrl
@@ -291,96 +295,99 @@ fun SeriesDetailScreenV2(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(com.iquintero.kavern.R.string.series_download_all)) },
-                            onClick = {
-                                showMenu = false
-                                if (offlineMode) {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(com.iquintero.kavern.R.string.general_offline_mode),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    return@DropdownMenuItem
-                                }
-                                val detail = uiState.detail
-                                val format = Format.fromId(detail?.series?.format)
-                                val isPdf = format == Format.Pdf
-                                val isEpub = format == Format.Epub
-                                val isImage = format == Format.Image
-                                val isArchive = format == Format.Archive
-                                if (!isPdf && !isEpub && !isImage && !isArchive) {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(com.iquintero.kavern.R.string.general_not_implemented),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    return@DropdownMenuItem
-                                }
-                                val volumes = detail?.detail?.volumes.orEmpty()
-                                val chaptersWithVolume =
-                                    buildList {
-                                        volumes.forEach { volume ->
-                                            volume.chapters
-                                                ?.forEach { chapter ->
-                                                    add(chapter to (chapter.volumeId ?: volume.id))
-                                                }
-                                        }
-                                        detail
-                                            ?.detail
-                                            ?.chapters
-                                            ?.forEach { chapter ->
-                                                add(chapter to chapter.volumeId)
-                                            }
-                                        detail
-                                            ?.detail
-                                            ?.specials
-                                            ?.forEach { chapter ->
-                                                add(chapter to chapter.volumeId)
-                                            }
-                                        detail
-                                            ?.detail
-                                            ?.storylineChapters
-                                            ?.forEach { chapter ->
-                                                add(chapter to chapter.volumeId)
-                                            }
-                                    }.distinctBy { it.first.id }
-                                        .filter { isPdf || isImage || isArchive || (it.first.pages ?: 0) > 0 }
-                                if (chaptersWithVolume.isEmpty()) {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(com.iquintero.kavern.R.string.series_detail_pages_unavailable),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    return@DropdownMenuItem
-                                }
-                                scope.launch {
-                                    val sid = detail?.series?.id ?: seriesId
-                                    chaptersWithVolume.forEach { (chapter, volumeId) ->
-                                        val pages = if (isPdf || isImage || isArchive) 1 else chapter.pages ?: return@forEach
-                                        val request =
-                                            DownloadRequestV2(
-                                                type = DownloadJobV2Entity.TYPE_CHAPTER,
-                                                format = formatKeyFor(detail?.series?.format),
-                                                seriesId = sid,
-                                                volumeId = volumeId,
-                                                chapterId = chapter.id,
-                                                pageCount = pages,
-                                            )
-                                        downloadManagerV2.enqueue(request)
+                        // Each Grimmory book has its own page and download button; the rest of its series is one tap away.
+                        if (!config.isGrimmory) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(com.iquintero.kavern.R.string.series_download_all)) },
+                                onClick = {
+                                    showMenu = false
+                                    if (offlineMode) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.general_offline_mode),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        return@DropdownMenuItem
                                     }
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(com.iquintero.kavern.R.string.download_queued),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                }
-                            },
-                        )
+                                    val detail = uiState.detail
+                                    val format = Format.fromId(detail?.series?.format)
+                                    val isPdf = format == Format.Pdf
+                                    val isEpub = format == Format.Epub
+                                    val isImage = format == Format.Image
+                                    val isArchive = format == Format.Archive
+                                    if (!isPdf && !isEpub && !isImage && !isArchive) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.general_not_implemented),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        return@DropdownMenuItem
+                                    }
+                                    val volumes = detail?.detail?.volumes.orEmpty()
+                                    val chaptersWithVolume =
+                                        buildList {
+                                            volumes.forEach { volume ->
+                                                volume.chapters
+                                                    ?.forEach { chapter ->
+                                                        add(chapter to (chapter.volumeId ?: volume.id))
+                                                    }
+                                            }
+                                            detail
+                                                ?.detail
+                                                ?.chapters
+                                                ?.forEach { chapter ->
+                                                    add(chapter to chapter.volumeId)
+                                                }
+                                            detail
+                                                ?.detail
+                                                ?.specials
+                                                ?.forEach { chapter ->
+                                                    add(chapter to chapter.volumeId)
+                                                }
+                                            detail
+                                                ?.detail
+                                                ?.storylineChapters
+                                                ?.forEach { chapter ->
+                                                    add(chapter to chapter.volumeId)
+                                                }
+                                        }.distinctBy { it.first.id }
+                                            .filter { isPdf || isImage || isArchive || (it.first.pages ?: 0) > 0 }
+                                    if (chaptersWithVolume.isEmpty()) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.series_detail_pages_unavailable),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        return@DropdownMenuItem
+                                    }
+                                    scope.launch {
+                                        val sid = detail?.series?.id ?: seriesId
+                                        chaptersWithVolume.forEach { (chapter, volumeId) ->
+                                            val pages = if (isPdf || isImage || isArchive) 1 else chapter.pages ?: return@forEach
+                                            val request =
+                                                DownloadRequestV2(
+                                                    type = DownloadJobV2Entity.TYPE_CHAPTER,
+                                                    format = formatKeyFor(detail?.series?.format),
+                                                    seriesId = sid,
+                                                    volumeId = volumeId,
+                                                    chapterId = chapter.id,
+                                                    pageCount = pages,
+                                                )
+                                            downloadManagerV2.enqueue(request)
+                                        }
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                context.getString(com.iquintero.kavern.R.string.download_queued),
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                    }
+                                },
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(com.iquintero.kavern.R.string.series_clear_downloads)) },
                             onClick = {
@@ -571,7 +578,9 @@ fun SeriesDetailScreenV2(
                             val continuePoint = detail?.continuePoint
                             val readerProgress = detail?.readerProgress
                             val continueLabel =
-                                if (continuePoint != null && detail?.hasProgress == true && Format.fromId(detail?.series?.format) == Format.Epub) {
+                                if (continuePoint != null && detail?.hasProgress == true && config.isGrimmory) {
+                                    stringResource(id = com.iquintero.kavern.R.string.home_resume)
+                                } else if (continuePoint != null && detail?.hasProgress == true && Format.fromId(detail?.series?.format) == Format.Epub) {
                                     // In EPUBs a "page" is a chapter (spine document), as in the reader header.
                                     stringResource(
                                         id = com.iquintero.kavern.R.string.series_detail_continue_epub_chapter,
@@ -619,6 +628,51 @@ fun SeriesDetailScreenV2(
                                 } else {
                                     stringResource(id = com.iquintero.kavern.R.string.series_detail_start_reading)
                                 }
+                            if (continuePoint != null && detail?.hasProgress == true && config.isGrimmory) {
+                                // Offline the continue point is rebuilt from local progress, so the book comes from the lists.
+                                val book =
+                                    detail
+                                        ?.detail
+                                        ?.volumes
+                                        .orEmpty()
+                                        .flatMap { it.chapters.orEmpty() }
+                                        .firstOrNull { it.id == continuePoint.id } ?: continuePoint
+                                val bookPages = book.pages ?: 0
+                                val bookDownloadState =
+                                    DownloadStateResolver.resolveChapterState(
+                                        format = Format.fromId(detail?.series?.format),
+                                        chapter = book,
+                                        items = downloadedItemsBySeries.value.filter { it.chapterId == book.id },
+                                    )
+                                CurrentBookCard(
+                                    title = book.titleName ?: book.title ?: book.range.orEmpty(),
+                                    percent = if (bookPages > 0) ((continuePoint.pagesRead ?: 0) * 100 / bookPages).coerceIn(0, 100) else 0,
+                                    coverUrl = chapterCoverUrl(config, continuePoint.id),
+                                    downloadState = bookDownloadState,
+                                    onDownload = {
+                                        if (bookDownloadState == DownloadState.Complete) {
+                                            Toast.makeText(context, context.getString(com.iquintero.kavern.R.string.series_detail_book_downloaded), Toast.LENGTH_SHORT).show()
+                                        } else if (bookPages <= 0) {
+                                            Toast.makeText(context, context.getString(com.iquintero.kavern.R.string.series_detail_pages_unavailable), Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            scope.launch {
+                                                downloadManagerV2.enqueue(
+                                                    DownloadRequestV2(
+                                                        type = DownloadJobV2Entity.TYPE_CHAPTER,
+                                                        format = formatKeyFor(detail?.series?.format),
+                                                        seriesId = seriesId,
+                                                        volumeId = book.volumeId,
+                                                        chapterId = book.id,
+                                                        pageCount = bookPages,
+                                                    ),
+                                                )
+                                                Toast.makeText(context, context.getString(com.iquintero.kavern.R.string.download_queued), Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
                             Button(
                                 onClick = {
                                     val chapterId = readerProgress?.chapterId ?: continuePoint?.id
@@ -732,7 +786,13 @@ fun SeriesDetailScreenV2(
                                 onGenreClick = { id, name -> onOpenBrowseGenre(id, name) },
                                 onTagClick = { id, name -> onOpenBrowseTag(id, name) },
                             )
-                            val booksCount = detail?.detail?.volumes?.size
+                            // A Grimmory book on its own has no other books to list.
+                            val booksCount =
+                                detail
+                                    ?.detail
+                                    ?.volumes
+                                    ?.size
+                                    ?.takeUnless { config.isGrimmory && it <= 1 }
                             val chaptersCount = detail?.detail?.chapters?.size
                             val specialsCount = detail?.detail?.specials?.size
                             val relatedCount =
@@ -770,7 +830,7 @@ fun SeriesDetailScreenV2(
                                     )
                                 }
                             }
-                            if (selectedTab == SeriesDetailTab.Books) {
+                            if (selectedTab == SeriesDetailTab.Books && (booksCount ?: 0) > 0) {
                                 val volumes = detail?.detail?.volumes.orEmpty()
                                 LaunchedEffect(volumes, downloadedItemsBySeries.value) {
                                     val format = Format.fromId(detail?.series?.format)
@@ -796,6 +856,11 @@ fun SeriesDetailScreenV2(
                                     seriesCoverUrl = series?.id?.let { seriesCoverUrl(config, it) },
                                     downloadStates = volumeDownloadStates,
                                     onOpenVolume = { volume ->
+                                        if (config.isGrimmory) {
+                                            // A book is the page of its own: there is no volume in between.
+                                            onOpenSeries(volume.id)
+                                            return@VolumeGridRow
+                                        }
                                         VolumeDetailCache.put(
                                             appPreferences.profile,
                                             VolumeDetailPayload(
@@ -2142,7 +2207,12 @@ private fun VolumeGridRow(
                 Text(
                     text =
                         stringResource(
-                            id = com.iquintero.kavern.R.string.series_detail_vol_short,
+                            id =
+                                if (config.isGrimmory) {
+                                    com.iquintero.kavern.R.string.series_detail_book_short
+                                } else {
+                                    com.iquintero.kavern.R.string.series_detail_vol_short
+                                },
                             (index + 1).toString(),
                         ),
                     style = MaterialTheme.typography.labelSmall,
@@ -2326,3 +2396,59 @@ private fun readStateLabel(
         ReadStatus.InProgress -> context.resources.getString(com.iquintero.kavern.R.string.general_reading_status_in_progress)
         null -> null
     }
+
+/** The book a series would resume with: its cover, title and how far along it is. */
+@Composable
+private fun CurrentBookCard(
+    title: String,
+    percent: Int,
+    coverUrl: String?,
+    downloadState: DownloadState,
+    onDownload: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            CoverImage(
+                coverUrl = coverUrl,
+                context = LocalContext.current,
+                modifier = Modifier.width(72.dp).aspectRatio(2f / 3f),
+            )
+            Column(
+                modifier = Modifier.weight(1f).align(Alignment.CenterVertically),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                StrongProgressBar(progress = percent / 100f)
+                Text(
+                    text = stringResource(id = com.iquintero.kavern.R.string.home_percent_read, percent),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = onDownload, modifier = Modifier.align(Alignment.CenterVertically)) {
+                Icon(
+                    imageVector =
+                        when (downloadState) {
+                            DownloadState.Complete -> Icons.Filled.DownloadDone
+                            DownloadState.Partial -> Icons.Filled.Downloading
+                            DownloadState.None -> Icons.Filled.Download
+                        },
+                    contentDescription = stringResource(id = com.iquintero.kavern.R.string.series_detail_download_chapter_confirm),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}

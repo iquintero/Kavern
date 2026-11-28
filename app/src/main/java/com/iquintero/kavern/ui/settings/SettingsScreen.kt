@@ -41,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.cache.CacheManager
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.domain.repository.AuthRepository
 import com.iquintero.kavern.ui.settings.screens.SettingsAboutScreen
@@ -48,9 +49,9 @@ import com.iquintero.kavern.ui.settings.screens.SettingsAdvancedScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsAppearanceScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsDownloadScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsGeneralScreen
-import com.iquintero.kavern.ui.settings.screens.SettingsKavitaScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsPlaceholderScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsReaderScreen
+import com.iquintero.kavern.ui.settings.screens.SettingsServerScreen
 import com.iquintero.kavern.ui.settings.screens.SettingsStatsScreen
 
 private sealed class SettingsCategory(
@@ -67,7 +68,7 @@ private sealed class SettingsCategory(
 
     object Security : SettingsCategory(R.string.settings_item_security, Icons.Filled.Security)
 
-    object Kavita : SettingsCategory(R.string.settings_item_kavita, Icons.Filled.Tune)
+    object Server : SettingsCategory(R.string.settings_item_server, Icons.Filled.Tune)
 
     object Advanced : SettingsCategory(R.string.settings_item_advanced, Icons.Filled.Lock)
 
@@ -88,6 +89,7 @@ fun SettingsScreen(
     var selected by remember { mutableStateOf<SettingsCategory?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val isGrimmory = appPreferences.sessionConfig?.isGrimmory == true
     val categories =
         listOf(
             SettingsCategory.General,
@@ -95,11 +97,12 @@ fun SettingsScreen(
             SettingsCategory.Reader,
             SettingsCategory.Downloads,
             SettingsCategory.Security,
-            SettingsCategory.Kavita,
+            SettingsCategory.Server,
             SettingsCategory.Advanced,
             SettingsCategory.Stats,
             SettingsCategory.About,
-        )
+            // Kavita's reading statistics are not something a Grimmory server has.
+        ).filter { !(isGrimmory && it == SettingsCategory.Stats) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -151,8 +154,8 @@ fun SettingsScreen(
                     }
                 }
             }
-            SettingsCategory.Kavita ->
-                SettingsKavitaScreen(
+            SettingsCategory.Server ->
+                SettingsServerScreen(
                     appPreferences = appPreferences,
                     authRepository = authRepository,
                     onBack = { selected = null },

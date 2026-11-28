@@ -75,6 +75,8 @@ object StartupManager {
         val appContext = context.applicationContext
         val preferences = AppPreferences(appContext)
         LoggingManager.init(appContext)
+        com.iquintero.kavern.core.network.grimmory.GrimmoryServers.storage = appContext.filesDir.resolve("grimmory")
+        installGrimmoryTokens(appContext, preferences)
         // Migrate legacy API key storage into encrypted prefs.
         runCatchingCancellable { kotlinx.coroutines.runBlocking { preferences.migrateSensitiveIfNeeded() } }
         AppNotificationManager.init(appContext)
@@ -176,6 +178,23 @@ object StartupManager {
         appScope.launch {
             val session = preferences.activeSessionFlow.first()
             if (session.config.isConfigured) ProgressSyncWorker.enqueue(appContext, session.profile, retryNow = true)
+        }
+    }
+
+    /** Lets the Grimmory code keep its sign-in tokens in the encrypted storage and drop an older save's password. */
+    private fun installGrimmoryTokens(
+        appContext: Context,
+        preferences: AppPreferences,
+    ) {
+        val storage =
+            com.iquintero.kavern.core.storage
+                .SecureStorage(appContext)
+        com.iquintero.kavern.core.network.grimmory.GrimmoryServers.tokenStores = { url, user, dropPassword ->
+            com.iquintero.kavern.core.network.grimmory
+                .SecureGrimmoryTokenStore(storage, url, user, dropPassword)
+        }
+        com.iquintero.kavern.core.network.grimmory.GrimmoryServers.passwordDropped = { url, user ->
+            kotlinx.coroutines.runBlocking { preferences.dropGrimmoryPassword(url, user) }
         }
     }
 }

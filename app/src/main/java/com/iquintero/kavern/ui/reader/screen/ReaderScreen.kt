@@ -53,6 +53,7 @@ import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.NetworkUtils
 import com.iquintero.kavern.core.network.ServerReachability
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.ReaderPrefs
 import com.iquintero.kavern.core.storage.ReaderThemeMode
@@ -566,7 +567,12 @@ internal fun BaseReaderScreen(
             val basePageText =
                 pageText(uiState.pageIndex, uiState.pageCount, uiState.bookInfo?.pageTitle, unitLabel)
             val barPageText =
-                if (pagedEnabled && pagedTotal > 0) {
+                if (config?.isGrimmory == true) {
+                    // A Grimmory book has no pages or chapters to count, only how far along it is.
+                    val within = if (pagedEnabled && pagedTotal > 0) (pagedPage + 1f) / pagedTotal else 0f
+                    val percent = if (uiState.pageCount > 0) ((uiState.pageIndex + within) * 100 / uiState.pageCount).toInt() else 0
+                    listOfNotNull(uiState.bookInfo?.pageTitle?.takeIf { it.isNotBlank() }, "$percent%").joinToString(" · ")
+                } else if (pagedEnabled && pagedTotal > 0) {
                     "$basePageText · ${stringResource(R.string.general_page)} ${pagedPage + 1}/$pagedTotal"
                 } else {
                     basePageText

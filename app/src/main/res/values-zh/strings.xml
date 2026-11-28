@@ -198,17 +198,13 @@
     <string name="settings_item_reader">阅读器</string>
     <string name="settings_item_downloads">下载</string>
     <string name="settings_item_security">安全</string>
-    <string name="settings_item_kavita">Kavita</string>
     <string name="settings_item_advanced">高级</string>
     <string name="settings_item_stats">我的统计数据</string>
     <string name="settings_item_about">关于</string>
 
     <!-- Kavita -->
-    <string name="settings_kavita_server">Kavita 服务器 URL</string>
     <string name="settings_kavita_use_https">使用 HTTPS</string>
     <string name="settings_kavita_api_key">API 密钥</string>
-    <string name="settings_kavita_status_in">状态：已配置（API 密钥已保存）</string>
-    <string name="settings_kavita_status_out">状态：未配置</string>
     <string name="settings_kavita_button_login">保存</string>
     <string name="settings_kavita_logout">登出</string>
     <string name="settings_kavita_logged_out">配置已清除。</string>
@@ -233,7 +229,6 @@
     <!-- Others -->
     <string name="settings_about_title">关于 Kavern</string>
     <string name="settings_about_website">Kavita 网页</string>
-    <string name="settings_kavita_login_toast">Fill URL and API key.</string>
     <string name="settings_appearance_by_system">跟随系统</string>
     <string name="settings_appearance_dark">暗色</string>
     <string name="settings_appearance_light">亮色</string>

@@ -6,6 +6,10 @@ import com.iquintero.kavern.core.downloadv2.DownloadStorageManager
 import com.iquintero.kavern.core.network.KavitaApiFactory
 import com.iquintero.kavern.core.network.NetworkMonitor
 import com.iquintero.kavern.core.network.ServerReachability
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
+import com.iquintero.kavern.core.sessions.ReadingPoint
+import com.iquintero.kavern.core.sessions.ReadingSessionRecorder
+import com.iquintero.kavern.core.sessions.ReadingSessionUploader
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.core.storage.KavitaProfile
 import com.iquintero.kavern.core.sync.ProgressSyncWorker
@@ -20,6 +24,7 @@ import com.iquintero.kavern.data.local.db.entity.DownloadedItemV2Entity
 import com.iquintero.kavern.data.local.db.entity.LocalReaderProgressEntity
 import com.iquintero.kavern.data.mapper.toDomain
 import com.iquintero.kavern.data.mapper.toDto
+import com.iquintero.kavern.data.mapper.toEntity
 import com.iquintero.kavern.domain.model.Format
 import com.iquintero.kavern.domain.model.ReaderBookInfo
 import com.iquintero.kavern.domain.model.ReaderChapterNav
@@ -94,6 +99,7 @@ class ReaderRepositoryImpl(
     private val archiveEntryCache = mutableMapOf<String, List<String>>()
     private val tocCache = mutableMapOf<Int, List<ReaderTocItem>>()
     private val downloadStorageManager = DownloadStorageManager(context, appPreferences)
+    private val sessionRecorder = ReadingSessionRecorder(readerDao)
 
     class PageNotDownloadedException(
         message: String,
@@ -274,6 +280,7 @@ class ReaderRepositoryImpl(
                 progress
             }
 
+        recordSession(progressWithTs, totalPages)
         if (!isOnlineAllowed()) {
             readerDao.upsertLocalProgress(progressWithTs.toEntity())
             ProgressSyncWorker.enqueue(context, appPreferences.profile)
@@ -305,8 +312,31 @@ class ReaderRepositoryImpl(
             } else {
                 progress
             }
+        recordSession(progressWithTs, totalPages = null)
         readerDao.upsertLocalProgress(progressWithTs.toEntity())
         ProgressSyncWorker.enqueue(context, appPreferences.profile)
+    }
+
+    /** Servers that keep reading sessions are told about them with the times the app measured, so each page turn is noted. */
+    private suspend fun recordSession(
+        progress: ReaderProgress,
+        totalPages: Int?,
+    ) {
+        if (!appPreferences.configFlow.first().isGrimmory) return
+        sessionRecorder.record(
+            ReadingPoint(
+                bookId = progress.chapterId,
+                seriesId = progress.seriesId,
+                page = progress.page,
+                pages = totalPages,
+                atMs = progress.lastModifiedUtcMillis,
+            ),
+        )
+    }
+
+    override suspend fun uploadReadingSessions() {
+        if (!appPreferences.configFlow.first().isGrimmory || !isOnlineAllowed()) return
+        runCatchingCancellable { ReadingSessionUploader(readerDao).upload(apiOrThrow()) }
     }
 
     override suspend fun getTimeLeft(
@@ -641,6 +671,7 @@ class ReaderRepositoryImpl(
 
     override suspend fun syncLocalProgress(): Boolean {
         if (!isOnlineAllowed()) return false
+        uploadReadingSessions()
         val locals = readerDao.getAllLocalProgress()
         if (locals.isEmpty()) return true
         val api = apiOrThrow()
@@ -880,28 +911,6 @@ class ReaderRepositoryImpl(
             pageTitle = title,
         )
     }
-
-    private fun LocalReaderProgressEntity.toDomain(): ReaderProgress =
-        ReaderProgress(
-            chapterId = chapterId,
-            page = page,
-            bookScrollId = bookScrollId,
-            seriesId = seriesId,
-            volumeId = volumeId,
-            libraryId = libraryId,
-            lastModifiedUtcMillis = lastModifiedUtc,
-        )
-
-    private fun ReaderProgress.toEntity(): LocalReaderProgressEntity =
-        LocalReaderProgressEntity(
-            chapterId = chapterId,
-            page = page,
-            bookScrollId = bookScrollId,
-            seriesId = seriesId,
-            volumeId = volumeId,
-            libraryId = libraryId,
-            lastModifiedUtc = lastModifiedUtcMillis,
-        )
 
     /**
      * Apply delete-after-read preferences: keep at most `depth` recently marked read volumes.

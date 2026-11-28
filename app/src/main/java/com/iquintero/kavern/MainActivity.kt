@@ -91,10 +91,14 @@ import com.iquintero.kavern.ui.common.PageKeyEvents
 import com.iquintero.kavern.ui.download.DownloadQueueScreen
 import com.iquintero.kavern.ui.download.DownloadQueueViewModel
 import com.iquintero.kavern.ui.download.DownloadQueueViewModelFactory
+import com.iquintero.kavern.ui.grimmory.GrimmorySignInPrompt
 import com.iquintero.kavern.ui.history.HistoryScreen
 import com.iquintero.kavern.ui.home.HomeScreen
 import com.iquintero.kavern.ui.library.LibraryV2Screen
+import com.iquintero.kavern.ui.navigation.AppMode
 import com.iquintero.kavern.ui.navigation.MainScreen
+import com.iquintero.kavern.ui.navigation.grimmoryGraph
+import com.iquintero.kavern.ui.navigation.kavitaGraph
 import com.iquintero.kavern.ui.reader.model.ReaderReturn
 import com.iquintero.kavern.ui.reader.screen.ReaderKeyEvents
 import com.iquintero.kavern.ui.reader.screen.ReaderScreen
@@ -138,6 +142,8 @@ class MainActivity : AppCompatActivity() {
             key(current) {
                 val components = remember { StartupManager.components(AppPreferences(applicationContext, current)) }
                 KavernApp(
+                    mode = AppMode.of(current.config),
+                    initialConfig = current.config,
                     initialLanguage = initialLanguage,
                     appPreferences = components.preferences,
                     libraryRepository = components.libraryRepository,
@@ -249,6 +255,8 @@ private const val COVER_CACHE_BYTES = 64L * 1024 * 1024
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun KavernApp(
+    mode: AppMode,
+    initialConfig: AppConfig,
     initialLanguage: String,
     appPreferences: AppPreferences,
     libraryRepository: LibraryRepository,
@@ -314,9 +322,7 @@ fun KavernApp(
     val currentRoute = backStackEntry?.destination?.route
     val mainRoutes = MainScreen.items.map { it.route }
     val isMainRoute = MainScreen.items.any { item -> currentRoute?.startsWith(item.route) == true }
-    val config by appPreferences.configFlow.collectAsState(
-        initial = AppConfig(serverUrl = "", apiKey = "", imageApiKey = "", userId = 0),
-    )
+    val config by appPreferences.configFlow.collectAsState(initial = initialConfig)
     val networkStatus by NetworkMonitor.getInstance(context, appPreferences).status.collectAsState()
 
     // The phone can have internet while a home-only server is out of reach, so ask the server directly
@@ -515,6 +521,7 @@ fun KavernApp(
                             }
                         }
                     }
+                    if (mode == AppMode.Grimmory) GrimmorySignInPrompt(config, appPreferences)
                     NavHost(
                         navController = navController,
                         startDestination = MainScreen.Home.route,
@@ -525,238 +532,21 @@ fun KavernApp(
                         popEnterTransition = { if (einkMode) EnterTransition.None else fadeIn(tween(SCREEN_FADE_MS)) },
                         popExitTransition = { if (einkMode) ExitTransition.None else fadeOut(tween(SCREEN_FADE_MS)) },
                     ) {
-                        composable(MainScreen.Home.route) {
-                            HomeScreen(
-                                seriesRepository = seriesRepository,
-                                cacheManager = cacheManager,
-                                appPreferences = appPreferences,
-                                onOpenSeries = { seriesId -> navController.navigate("series/$seriesId") },
-                                onOpenHistory = { navController.navigate(MainScreen.History.route) },
-                                onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
-                            )
-                        }
-                        composable(
-                            route =
-                                "${MainScreen.LibraryV2.route}?collectionId={collectionId}&collectionName={collectionName}" +
-                                    "&genreId={genreId}&tagId={tagId}&genreName={genreName}&tagName={tagName}",
-                            arguments =
-                                listOf(
-                                    navArgument("collectionId") {
-                                        type = NavType.IntType
-                                        defaultValue = -1
-                                    },
-                                    navArgument("collectionName") {
-                                        type = NavType.StringType
-                                        defaultValue = ""
-                                    },
-                                    navArgument("genreId") {
-                                        type = NavType.IntType
-                                        defaultValue = -1
-                                    },
-                                    navArgument("tagId") {
-                                        type = NavType.IntType
-                                        defaultValue = -1
-                                    },
-                                    navArgument("genreName") {
-                                        type = NavType.StringType
-                                        defaultValue = ""
-                                    },
-                                    navArgument("tagName") {
-                                        type = NavType.StringType
-                                        defaultValue = ""
-                                    },
-                                ),
-                        ) {
-                            val collectionIdArg = it.arguments?.getInt("collectionId")?.takeIf { id -> id >= 0 }
-                            val collectionNameArg = it.arguments?.getString("collectionName")?.takeIf { name -> name.isNotBlank() }
-                            val genreIdArg = it.arguments?.getInt("genreId")?.takeIf { id -> id >= 0 }
-                            val tagIdArg = it.arguments?.getInt("tagId")?.takeIf { id -> id >= 0 }
-                            val genreNameArg = it.arguments?.getString("genreName")?.takeIf { name -> name.isNotBlank() }
-                            val tagNameArg = it.arguments?.getString("tagName")?.takeIf { name -> name.isNotBlank() }
-                            LibraryV2Screen(
-                                libraryRepository = libraryRepository,
-                                seriesRepository = seriesRepository,
-                                collectionsRepository = collectionsRepository,
-                                readingListRepository = readingListRepository,
-                                personRepository = personRepository,
-                                cacheManager = cacheManager,
-                                appPreferences = appPreferences,
-                                onOpenSeries = { seriesId ->
-                                    navController.navigate("series/$seriesId")
-                                },
-                                onOpenSettings = { navController.navigate(MainScreen.SETTINGS_ROUTE) },
-                                initialCollectionId = collectionIdArg,
-                                initialCollectionName = collectionNameArg,
-                                initialGenreId = genreIdArg,
-                                initialGenreName = genreNameArg,
-                                initialTagId = tagIdArg,
-                                initialTagName = tagNameArg,
-                            )
-                        }
-                        composable(MainScreen.History.route) {
-                            HistoryScreen(
-                                appPreferences = appPreferences,
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                        composable(MainScreen.Downloads.route) {
-                            val vm: DownloadQueueViewModel =
-                                viewModel(factory = DownloadQueueViewModelFactory.create(appPreferences, cacheManager))
-                            DownloadQueueScreen(
-                                viewModel = vm,
-                                onOpenSeries = { seriesId -> navController.navigate("series/$seriesId") },
-                            )
-                        }
-                        composable(MainScreen.SETTINGS_ROUTE) {
-                            SettingsScreen(
-                                appPreferences = appPreferences,
-                                authRepository = authRepository,
-                                cacheManager = cacheManager,
-                                onOpenAbout = { navController.navigate("settings/about") },
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                        composable(
-                            route = "series/{seriesId}",
-                            arguments = listOf(navArgument("seriesId") { type = NavType.IntType }),
-                        ) { entry ->
-                            val seriesId = entry.arguments?.getInt("seriesId") ?: return@composable
-                            val readerReturn =
-                                entry.savedStateHandle
-                                    .getStateFlow<ReaderReturn?>(
-                                        "reader_return",
-                                        null,
-                                    ).collectAsState(initial = null)
-                            val refreshSignal =
-                                entry.savedStateHandle
-                                    .getStateFlow<Boolean>(
-                                        "series_refresh",
-                                        false,
-                                    ).collectAsState(initial = false)
-                            SeriesDetailScreenV2(
-                                seriesId = seriesId,
-                                appPreferences = appPreferences,
-                                collectionsRepository = collectionsRepository,
-                                readerRepository = readerRepository,
-                                cacheManager = cacheManager,
-                                onOpenReader = { chapterId, page, sid, vid, fmt ->
-                                    navController.navigate("reader/$chapterId?page=$page&sid=$sid&vid=$vid&fmt=${fmt ?: -1}")
-                                },
-                                onOpenVolume = { volumeId ->
-                                    navController.navigate("volume/$volumeId")
-                                },
-                                onOpenSeries = { id ->
-                                    navController.navigate("series/$id")
-                                },
-                                onOpenBrowseGenre = { id, name ->
-                                    val encoded = Uri.encode(name)
-                                    navController.navigate("${MainScreen.LibraryV2.route}?genreId=$id&genreName=$encoded")
-                                },
-                                onOpenBrowseTag = { id, name ->
-                                    val encoded = Uri.encode(name)
-                                    navController.navigate("${MainScreen.LibraryV2.route}?tagId=$id&tagName=$encoded")
-                                },
-                                onOpenCollection = { id, name ->
-                                    val encoded = Uri.encode(name)
-                                    navController.navigate("${MainScreen.LibraryV2.route}?collectionId=$id&collectionName=$encoded")
-                                },
-                                readerReturn = readerReturn.value,
-                                onConsumeReaderReturn = { entry.savedStateHandle["reader_return"] = null },
-                                refreshSignal = refreshSignal.value,
-                                onConsumeRefreshSignal = { entry.savedStateHandle["series_refresh"] = false },
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                        composable(
-                            route = "volume/{volumeId}",
-                            arguments = listOf(navArgument("volumeId") { type = NavType.IntType }),
-                        ) { entry ->
-                            val volumeId = entry.arguments?.getInt("volumeId") ?: return@composable
-                            val readerReturn =
-                                entry.savedStateHandle
-                                    .getStateFlow<ReaderReturn?>(
-                                        "reader_return",
-                                        null,
-                                    ).collectAsState(initial = null)
-                            com.iquintero.kavern.ui.seriesdetail.VolumeDetailScreenV2(
-                                volumeId = volumeId,
-                                appPreferences = appPreferences,
-                                readerRepository = readerRepository,
-                                readerReturn = readerReturn.value,
-                                onConsumeReaderReturn = {
-                                    entry.savedStateHandle["reader_return"] = null
-                                    navController.previousBackStackEntry?.savedStateHandle?.set("series_refresh", true)
-                                },
-                                onOpenReader = { chapterId, page, sid, vid, fmt ->
-                                    navController.navigate("reader/$chapterId?page=$page&sid=$sid&vid=$vid&fmt=${fmt ?: 0}")
-                                },
-                                onBack = {
-                                    navController.previousBackStackEntry?.savedStateHandle?.set("series_refresh", true)
-                                    navController.popBackStack()
-                                },
-                            )
-                        }
-                        composable("settings/about") {
-                            com.iquintero.kavern.ui.settings.screens.SettingsAboutScreen(
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                        composable(
-                            route = "reader/{chapterId}?page={page}&sid={sid}&vid={vid}&fmt={fmt}",
-                            arguments =
-                                listOf(
-                                    navArgument("chapterId") { type = NavType.IntType },
-                                    navArgument("page") {
-                                        type = NavType.IntType
-                                        defaultValue = 0
-                                    },
-                                    navArgument("sid") {
-                                        type = NavType.IntType
-                                        defaultValue = 0
-                                    },
-                                    navArgument("vid") {
-                                        type = NavType.IntType
-                                        defaultValue = 0
-                                    },
-                                    navArgument("fmt") {
-                                        type = NavType.IntType
-                                        defaultValue = -1
-                                    },
-                                ),
-                        ) { entry ->
-                            val chId = entry.arguments?.getInt("chapterId") ?: return@composable
-                            val page = entry.arguments?.getInt("page")
-                            val sid = entry.arguments?.getInt("sid")?.takeIf { it != 0 }
-                            val vid = entry.arguments?.getInt("vid")?.takeIf { it != 0 }
-                            val fmt = entry.arguments?.getInt("fmt")?.takeIf { it != -1 }
-                            ReaderScreen(
-                                chapterId = chId,
-                                initialPage = page,
-                                readerRepository = readerRepository,
-                                appPreferences = appPreferences,
-                                seriesId = sid,
-                                volumeId = vid,
-                                serverUrl = config.serverUrl,
-                                apiKey = config.apiKey,
-                                formatId = fmt,
-                                onBack = { _, pIdx, _, vIdBack ->
-                                    navController.previousBackStackEntry?.savedStateHandle?.set(
-                                        "reader_return",
-                                        ReaderReturn(
-                                            volumeId = vIdBack ?: 0,
-                                            page = pIdx,
-                                        ),
-                                    )
-                                    navController.popBackStack()
-                                },
-                                onNavigateToChapter = { targetChapter, targetPage, targetSid, targetVid ->
-                                    val nextSid = targetSid ?: sid ?: 0
-                                    val nextVid = targetVid ?: vid ?: 0
-                                    val fmtValue = fmt ?: -1
-                                    navController.navigate("reader/$targetChapter?page=${targetPage ?: 0}&sid=$nextSid&vid=$nextVid&fmt=$fmtValue") {
-                                        popUpTo("reader/$chId?page=${page ?: 0}&sid=${sid ?: 0}&vid=${vid ?: 0}&fmt=$fmtValue") { inclusive = true }
-                                    }
-                                },
+                        if (mode == AppMode.Grimmory) {
+                            grimmoryGraph(navController, appPreferences, config, authRepository, readerRepository, cacheManager)
+                        } else {
+                            kavitaGraph(
+                                navController,
+                                appPreferences,
+                                config,
+                                libraryRepository,
+                                authRepository,
+                                seriesRepository,
+                                collectionsRepository,
+                                readingListRepository,
+                                personRepository,
+                                readerRepository,
+                                cacheManager,
                             )
                         }
                     }

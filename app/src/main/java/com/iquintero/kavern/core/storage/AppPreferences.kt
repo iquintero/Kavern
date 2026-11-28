@@ -11,6 +11,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
+import com.iquintero.kavern.core.network.grimmory.grimmory
+import com.iquintero.kavern.core.network.grimmory.grimmorySecret
 import com.iquintero.kavern.core.prefetch.PrefetchPolicy
 import com.iquintero.kavern.domain.model.Collection
 import kotlinx.coroutines.Dispatchers
@@ -90,6 +93,9 @@ class AppPreferences(
         get() = context.applicationContext
     private val secureStorage by lazy { SecureStorage(appContext) }
     val profile: KavitaProfile = session?.profile ?: KavitaProfile.Guest
+
+    /** The connection this object was made for, when it was made for one. */
+    val sessionConfig: AppConfig? get() = session?.config
 
     companion object {
         private val authMutex = Mutex()
@@ -378,6 +384,26 @@ class AppPreferences(
 
     suspend fun updateKavitaConfig(config: AppConfig) = changeKavitaConfig { config }
 
+    /**
+     * An older save kept a Grimmory password in the saved secret. Once it has been used to sign in, only the user name stays.
+     */
+    suspend fun dropGrimmoryPassword(
+        serverUrl: String,
+        username: String,
+    ) {
+        withContext(Dispatchers.IO) {
+            authMutex.withLock {
+                val prefs = context.dataStore.data.first()
+                val config = readConfig(prefs)
+                val account = config.grimmory
+                if (account?.password == null || account.username != username || config.serverUrl.trimEnd('/') != serverUrl.trimEnd('/')) return@withLock
+                val kept = grimmorySecret(username)
+                val reference = prefs[KEY_CREDENTIALS_REF]
+                if (reference != null) secureStorage.saveKavitaKeys(reference, kept, kept) else secureStorage.setApiKey(kept)
+            }
+        }
+    }
+
     suspend fun clearAuth(clearServer: Boolean = false) =
         changeKavitaConfig { current ->
             current.copy(
@@ -420,6 +446,10 @@ class AppPreferences(
                         throw e
                     }
                     secureStorage.removeKavitaKeys(previousRef)
+                    // The tokens of a Grimmory account that is no longer the saved one are not kept.
+                    previous.grimmory?.takeIf { it.username != config.grimmory?.username || previous.serverUrl.trimEnd('/') != config.serverUrl.trimEnd('/') }?.let {
+                        GrimmoryServers.forget(previous.serverUrl, it.username)
+                    }
                 }
             }
         }

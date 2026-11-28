@@ -28,7 +28,7 @@ import com.iquintero.kavern.core.network.readKavitaCaCertificate
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.data.repository.AuthRepositoryImpl
 import com.iquintero.kavern.ui.reader.screen.KavitaWebResources
-import com.iquintero.kavern.ui.settings.screens.SettingsKavitaScreen
+import com.iquintero.kavern.ui.settings.screens.SettingsServerScreen
 import com.iquintero.kavern.ui.theme.KavernTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -256,7 +256,7 @@ class KavitaSettingsTest {
             CompositionLocalProvider(LocalActivityResultRegistryOwner provides testRegistry) {
                 KavernTheme(darkTheme = true, dynamicColor = false) {
                     Surface(Modifier.fillMaxSize()) {
-                        SettingsKavitaScreen(
+                        SettingsServerScreen(
                             configFlow = saved,
                             authRepository = AuthRepositoryImpl { saved.value = it },
                             onBack = {},
