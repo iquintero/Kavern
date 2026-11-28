@@ -91,6 +91,7 @@ import com.iquintero.kavern.ui.common.PageKeyEvents
 import com.iquintero.kavern.ui.download.DownloadQueueScreen
 import com.iquintero.kavern.ui.download.DownloadQueueViewModel
 import com.iquintero.kavern.ui.download.DownloadQueueViewModelFactory
+import com.iquintero.kavern.ui.grimmory.GrimmorySignInPrompt
 import com.iquintero.kavern.ui.history.HistoryScreen
 import com.iquintero.kavern.ui.home.HomeScreen
 import com.iquintero.kavern.ui.library.LibraryV2Screen
@@ -520,6 +521,7 @@ fun KavernApp(
                             }
                         }
                     }
+                    if (mode == AppMode.Grimmory) GrimmorySignInPrompt(config, appPreferences)
                     NavHost(
                         navController = navController,
                         startDestination = MainScreen.Home.route,

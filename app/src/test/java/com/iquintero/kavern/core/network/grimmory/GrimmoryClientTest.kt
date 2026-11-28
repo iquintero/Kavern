@@ -1,52 +1,16 @@
 package com.iquintero.kavern.core.network.grimmory
 
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
 import okhttp3.Request
-import okhttp3.Response
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 
-/** A Grimmory client talking to a server that exists only in this test: [answer] says what each request gets. */
-private class FakeServer(
-    private val answer: (Request) -> Triple<Int, String, Map<String, String>>,
-) {
-    val requests = mutableListOf<Request>()
-
-    val client: OkHttpClient =
-        OkHttpClient
-            .Builder()
-            .followRedirects(false)
-            .followSslRedirects(false)
-            .addInterceptor(
-                Interceptor { chain ->
-                    val request = chain.request()
-                    requests += request
-                    val (code, body, headers) = answer(request)
-                    Response
-                        .Builder()
-                        .request(request)
-                        .protocol(Protocol.HTTP_1_1)
-                        .code(code)
-                        .message(code.toString())
-                        .apply { headers.forEach { (k, v) -> header(k, v) } }
-                        .body(body.toResponseBody())
-                        .build()
-                },
-            ).build()
-
-    val logins: Int get() = requests.count { it.url.encodedPath == "/api/v1/auth/login" }
-}
-
 class GrimmoryClientTest {
     private val origin = "https://books.test/".toHttpUrlForTest()
     private var time = 1_000_000L
 
-    private fun clientOn(server: FakeServer) = GrimmoryClient(server.client, server.client, origin, GrimmoryCredentials("reader", "secret"), now = { time })
+    private fun clientOn(server: FakeServer) = GrimmoryClient(server.client, server.client, origin, GrimmoryAccount("reader", "secret"), now = { time })
 
     private fun GrimmoryClient.tryBooks(): Int? =
         try {
@@ -177,7 +141,7 @@ class GrimmoryClientTest {
     fun `a wrong login throws the server's answer`() {
         val server = FakeServer { Triple(401, "{}", emptyMap()) }
         try {
-            clientOn(server).verifyLogin()
+            clientOn(server).signIn("secret")
             fail("expected a refusal")
         } catch (e: GrimmoryHttpException) {
             assertEquals(401, e.code)

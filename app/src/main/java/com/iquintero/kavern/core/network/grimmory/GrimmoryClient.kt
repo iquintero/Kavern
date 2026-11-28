@@ -56,17 +56,19 @@ internal class GrimmoryClient(
     /** Makes calls that are never sent again after a lost connection, for requests that must not be doubled. */
     private val onceCalls: Call.Factory,
     private val origin: HttpUrl,
-    private val credentials: GrimmoryCredentials,
-    private val now: () -> Long = System::currentTimeMillis,
+    account: GrimmoryAccount,
+    store: GrimmoryTokenStore = MemoryTokenStore(),
+    now: () -> Long = System::currentTimeMillis,
+    onSignInRequired: (Boolean) -> Unit = {},
 ) {
-    @Volatile private var token: String? = null
-
-    /** Until when the server is not asked to sign in again, and the answer given instead; both are only used inside [lock]. */
-    private var loginBlockedUntil = 0L
-    private var loginBlockedCode = 0
-
-    private val lock = Any()
+    private val auth = GrimmoryAuth(calls, origin, account, store, now, onSignInRequired)
     private val jsonType = "application/json".toMediaType()
+
+    /** Whether the server no longer accepts the saved sign-in, so that the user has to enter the password again. */
+    val signInRequired: Boolean get() = auth.signInRequired
+
+    /** Signs in with a password the user has typed, and keeps the tokens it gives. */
+    fun signIn(password: String) = auth.signIn(password)
 
     fun url(path: String): HttpUrl =
         origin
@@ -81,18 +83,7 @@ internal class GrimmoryClient(
         accept: String? = null,
     ): Response {
         val target = url(path).newBuilder().apply { query.forEach { (k, v) -> addQueryParameter(k, v) } }.build()
-        var response = send(target, accept)
-        if (response.code == 401) {
-            response.close()
-            synchronized(lock) { token = null }
-            response = send(target, accept)
-        }
-        if (!response.isSuccessful) {
-            val code = response.code
-            response.close()
-            throw GrimmoryHttpException(code)
-        }
-        return response
+        return get(target, accept)
     }
 
     /** A GET of a path the app already built and encoded, returned unread. Used to hand covers and book files to image and web views. */
@@ -106,11 +97,20 @@ internal class GrimmoryClient(
                 .addEncodedPathSegments(encodedPath.trimStart('/'))
                 .encodedQuery(encodedQuery)
                 .build()
-        var response = send(target, null)
+        return get(target, null)
+    }
+
+    /** A GET with the token, tried again once with a new token when the server says the one it had has run out. */
+    private fun get(
+        target: HttpUrl,
+        accept: String?,
+    ): Response {
+        var response = send(target, accept)
         if (response.code == 401) {
+            val used = response.request.bearerToken()
             response.close()
-            synchronized(lock) { token = null }
-            response = send(target, null)
+            auth.rejected(used)
+            response = send(target, accept)
         }
         if (!response.isSuccessful) {
             val code = response.code
@@ -165,19 +165,14 @@ internal class GrimmoryClient(
             Request
                 .Builder()
                 .url(url(path))
-                .header("Authorization", "Bearer ${accessToken()}")
+                .header("Authorization", "Bearer ${auth.accessToken()}")
                 .method(if (put) "PUT" else "POST", payload)
                 .build()
         val caller = if (retry) calls else onceCalls
         caller.newCall(request).execute().use { response ->
-            if (response.code == 401) synchronized(lock) { token = null }
+            if (response.code == 401) auth.rejected(request.bearerToken())
             if (!response.isSuccessful) throw GrimmoryHttpException(response.code)
         }
-    }
-
-    /** Signs in and returns the user name the server knows, so that a wrong password is found when connecting. */
-    fun verifyLogin() {
-        synchronized(lock) { token = login() }
     }
 
     /** A GET with the token. A redirect is followed only to the same address, so the token never goes anywhere else. */
@@ -191,7 +186,7 @@ internal class GrimmoryClient(
                 Request
                     .Builder()
                     .url(url)
-                    .header("Authorization", "Bearer ${accessToken()}")
+                    .header("Authorization", "Bearer ${auth.accessToken()}")
                     .apply { if (accept != null) header("Accept", accept) }
                     .build()
             val response = calls.newCall(request).execute()
@@ -205,61 +200,10 @@ internal class GrimmoryClient(
         throw GrimmoryHttpException(HTTP_LOOP_DETECTED)
     }
 
-    private fun accessToken(): String = token ?: synchronized(lock) { token ?: login().also { token = it } }
-
-    private fun login(): String {
-        // The server counts every failed sign-in and locks the user name for a quarter of an hour after five, which would
-        // shut the account out of its own web page too. A login it has refused is not asked again until a pause has passed.
-        if (now() < loginBlockedUntil) throw GrimmoryHttpException(loginBlockedCode)
-        try {
-            return signIn()
-        } catch (e: GrimmoryHttpException) {
-            blockLogins(e)
-            throw e
-        }
-    }
-
-    private fun signIn(): String {
-        val body =
-            GrimmoryJson
-                .write(mapOf("username" to credentials.username, "password" to credentials.password))
-                .toRequestBody(jsonType)
-        val request =
-            Request
-                .Builder()
-                .url(url("api/v1/auth/login"))
-                .post(body)
-                .build()
-        calls.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw GrimmoryHttpException(response.code, response.header("Retry-After")?.toLongOrNull())
-            val parsed = GrimmoryJson.parse(response.body?.string().orEmpty()) as? Json
-            return parsed?.str("accessToken") ?: throw GrimmoryHttpException(response.code)
-        }
-    }
-
-    private fun blockLogins(refusal: GrimmoryHttpException) {
-        val pause =
-            when (refusal.code) {
-                HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> LOGIN_PAUSE_MS
-                HTTP_TOO_MANY_REQUESTS -> refusal.retryAfterSeconds?.times(MS_PER_SECOND)?.coerceIn(MS_PER_SECOND, LOCKOUT_MS) ?: LOCKOUT_MS
-                else -> return
-            }
-        loginBlockedUntil = now() + pause
-        loginBlockedCode = refusal.code
-    }
+    private fun Request.bearerToken(): String = header("Authorization").orEmpty().removePrefix("Bearer ")
 
     private companion object {
-        const val HTTP_UNAUTHORIZED = 401
-        const val HTTP_FORBIDDEN = 403
-        const val HTTP_TOO_MANY_REQUESTS = 429
         const val HTTP_LOOP_DETECTED = 508
         const val MAX_REDIRECTS = 3
-        const val MS_PER_SECOND = 1000L
-
-        /** Two tries in the server's fifteen minutes of counting, so a wrong password cannot use up its five. */
-        const val LOGIN_PAUSE_MS = 10 * 60_000L
-
-        /** How long the server locks a user name out. */
-        const val LOCKOUT_MS = 15 * 60_000L
     }
 }

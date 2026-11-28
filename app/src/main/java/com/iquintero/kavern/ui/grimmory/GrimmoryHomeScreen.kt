@@ -51,6 +51,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.iquintero.kavern.R
 import com.iquintero.kavern.core.network.ServerReachability
 import com.iquintero.kavern.core.network.grimmory.GrimmoryBook
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
 import com.iquintero.kavern.grimmory.GrimmoryBooks
 import com.iquintero.kavern.grimmory.GrimmoryDownloads
 import com.iquintero.kavern.ui.common.DownloadState
@@ -143,6 +144,9 @@ internal fun GrimmoryHomeScreen(
     // The lists are the server's or the kept copy; when the verdict on the server changes, ask again.
     val unreachable by ServerReachability.unreachable.collectAsState()
     LaunchedEffect(unreachable) { viewModel.refreshQuietly() }
+    // After signing in again, whatever could not be loaded is asked for again.
+    val signInNeeded by GrimmoryServers.signInRequired.collectAsState()
+    LaunchedEffect(signInNeeded) { viewModel.refreshQuietly() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(

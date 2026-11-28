@@ -19,7 +19,7 @@ class GrimmoryLiveTest {
                 serverUrl = url!!,
                 apiKey =
                     com.iquintero.kavern.core.network.grimmory
-                        .grimmorySecret(user!!, pass!!),
+                        .grimmoryPasswordSecret(user!!, pass!!),
                 imageApiKey = "",
                 userId = 0,
             ),

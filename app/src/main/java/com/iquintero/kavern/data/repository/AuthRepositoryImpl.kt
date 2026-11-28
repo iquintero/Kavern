@@ -1,10 +1,12 @@
 package com.iquintero.kavern.data.repository
 
 import com.iquintero.kavern.core.network.KavitaApiFactory
-import com.iquintero.kavern.core.network.grimmory.GrimmoryCredentials
+import com.iquintero.kavern.core.network.grimmory.GrimmoryAccount
 import com.iquintero.kavern.core.network.grimmory.GrimmoryHttpException
 import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
 import com.iquintero.kavern.core.network.grimmory.grimmory
+import com.iquintero.kavern.core.network.grimmory.grimmorySecret
+import com.iquintero.kavern.core.network.grimmory.isGrimmory
 import com.iquintero.kavern.core.storage.AppConfig
 import com.iquintero.kavern.core.storage.AppPreferences
 import com.iquintero.kavern.data.api.dto.UserDto
@@ -29,7 +31,9 @@ class AuthRepositoryImpl internal constructor(
 
     override suspend fun configure(config: AppConfig): AppConfig {
         val accountId = verifyConnection(config)
-        val verified = config.copy(userId = accountId)
+        // Whatever password was typed has been used to sign in; what is saved is only who is signed in.
+        val kept = config.grimmory?.let { grimmorySecret(it.username) } ?: config.apiKey
+        val verified = config.copy(userId = accountId, apiKey = kept, imageApiKey = if (config.isGrimmory) kept else config.imageApiKey)
         saveConfig(verified)
         return verified
     }
@@ -51,10 +55,11 @@ class AuthRepositoryImpl internal constructor(
     @Suppress("ThrowsCount")
     private fun verifyGrimmory(
         config: AppConfig,
-        credentials: GrimmoryCredentials,
+        account: GrimmoryAccount,
     ): Int {
         try {
-            GrimmoryServers.verify(config, credentials)
+            // A typed password signs in and its tokens are kept; with none, what is already saved has to still be accepted.
+            account.password?.let { GrimmoryServers.signIn(config, account.username, it) } ?: GrimmoryServers.checkSignedIn(config)
         } catch (e: IOException) {
             throw grimmoryFailure(e)
         } catch (e: GeneralSecurityException) {
@@ -63,7 +68,7 @@ class AuthRepositoryImpl internal constructor(
             throw grimmoryFailure(e)
         }
         // Grimmory does not number its users in what the app can read, so the login name stands in for an account id.
-        return (credentials.username.hashCode() and Int.MAX_VALUE).coerceAtLeast(1)
+        return (account.username.hashCode() and Int.MAX_VALUE).coerceAtLeast(1)
     }
 
     private suspend fun requestAccount(config: AppConfig): Response<UserDto> {

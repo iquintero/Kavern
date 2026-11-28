@@ -623,6 +623,13 @@
     <string name="settings_grimmory_login_toast">Fill in the address, username and password.</string>
     <string name="settings_grimmory_rejected_login">Grimmory rejected the username or password. Check them and the account\'s permissions.</string>
     <string name="settings_server_rate_limited">Too many failed sign-in attempts. Wait about 15 minutes before trying again.</string>
+    <string name="settings_grimmory_password_kept">Signed in. Type a password only to sign in again.</string>
+    <string name="settings_grimmory_sign_in_again">Grimmory no longer accepts the saved sign-in. Enter your password and save to sign in again.</string>
+    <string name="grimmory_sign_in_title">Sign in again</string>
+    <string name="grimmory_sign_in_body">Grimmory no longer accepts the saved sign-in for %1$s. This happens after about 30 days away, or when the password was changed. What you read in the meantime is kept and will be sent once you sign in.</string>
+    <string name="grimmory_sign_in_confirm">Sign in</string>
+    <string name="grimmory_sign_in_later">Not now</string>
+    <string name="grimmory_sign_in_wrong">That password was not accepted.</string>
     <string name="settings_grimmory_user">Username</string>
     <string name="settings_grimmory_password">Password</string>
 </resources>

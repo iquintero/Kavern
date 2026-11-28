@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,9 +47,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.iquintero.kavern.R
+import com.iquintero.kavern.core.network.grimmory.GrimmoryServers
 import com.iquintero.kavern.core.network.grimmory.grimmory
 import com.iquintero.kavern.core.network.grimmory.grimmoryLogin
-import com.iquintero.kavern.core.network.grimmory.grimmorySecret
+import com.iquintero.kavern.core.network.grimmory.grimmoryPasswordSecret
 import com.iquintero.kavern.core.network.isSameOrigin
 import com.iquintero.kavern.core.network.readKavitaCaCertificate
 import com.iquintero.kavern.core.storage.AppConfig
@@ -111,6 +113,7 @@ internal fun SettingsServerScreen(
     var caCertificate by remember { mutableStateOf<String?>(null) }
     var importingCertificate by remember { mutableStateOf(false) }
     val busy = isSaving || importingCertificate
+    val signInRequired by GrimmoryServers.signInRequired.collectAsState()
     // A saved key is only a Kavita key when what is saved is a Kavita server; a Grimmory login is kept in the same place.
     val hasKavitaKey = isConfigured && !savedGrimmory && storedApiKey.isNotBlank()
     val certificatePicker =
@@ -260,7 +263,7 @@ internal fun SettingsServerScreen(
                     value = grimmoryPassword,
                     onValueChange = { grimmoryPassword = it },
                     label = { Text(stringResource(R.string.settings_grimmory_password)) },
-                    placeholder = { if (isConfigured && storedApiKey.startsWith("grimmory:")) Text("********") },
+                    placeholder = { if (isConfigured && savedGrimmory) Text(stringResource(R.string.settings_grimmory_password_kept)) },
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
                     enabled = !busy,
@@ -362,6 +365,13 @@ internal fun SettingsServerScreen(
                     }
                 }
             }
+            if (signInRequired != null && grimmoryMode) {
+                Text(
+                    text = stringResource(R.string.settings_grimmory_sign_in_again),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             saveError?.let { message ->
                 Text(
                     text = message,
@@ -383,9 +393,15 @@ internal fun SettingsServerScreen(
                     val apiKey =
                         if (grimmoryMode) {
                             val user = grimmoryUser.trim()
-                            val kept = storedApiKey.grimmoryLogin()?.takeIf { sameServer && it.first == user }?.second
-                            val password = grimmoryPassword.ifEmpty { kept.orEmpty() }
-                            if (user.isBlank() || password.isEmpty()) "" else grimmorySecret(user, password)
+                            val signedInAsUser = savedGrimmory && sameServer && storedApiKey.grimmoryLogin()?.first == user
+                            when {
+                                user.isBlank() -> ""
+                                // A typed password signs in once; it is not saved.
+                                grimmoryPassword.isNotEmpty() -> grimmoryPasswordSecret(user, grimmoryPassword)
+                                // With none, the sign-in that is already saved is kept.
+                                signedInAsUser -> storedApiKey
+                                else -> ""
+                            }
                         } else {
                             apiKeyInput.trim().ifBlank { if (sameServer && hasKavitaKey) storedApiKey else "" }
                         }

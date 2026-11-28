@@ -39,7 +39,7 @@ private fun readCaCertificate(bytes: ByteArray): X509Certificate {
 internal fun HttpUrl.isSameOrigin(other: HttpUrl): Boolean = scheme == other.scheme && host == other.host && port == other.port
 
 internal fun OkHttpClient.forKavita(config: AppConfig): Call.Factory {
-    config.grimmory?.let { return GrimmoryServers.callsFor(this, config, it) }
+    config.grimmory?.let { return GrimmoryServers.callsFor(this, config) }
     return forServerCa(config)
 }
 

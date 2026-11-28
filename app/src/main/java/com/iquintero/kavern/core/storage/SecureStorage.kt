@@ -64,6 +64,20 @@ class SecureStorage(
             .apply()
     }
 
+    /** What is kept of a Grimmory sign-in (its tokens, as one piece of text), under [key]; empty when there is none. */
+    fun getGrimmoryTokens(key: String): String = safeGet("grimmory_tokens:$key")
+
+    fun saveGrimmoryTokens(
+        key: String,
+        tokens: String,
+    ) {
+        check(prefs.edit().putString("grimmory_tokens:$key", tokens).commit()) { "Unable to save the Grimmory sign-in" }
+    }
+
+    fun removeGrimmoryTokens(key: String) {
+        prefs.edit().remove("grimmory_tokens:$key").commit()
+    }
+
     fun clearLegacyTokens() {
         prefs
             .edit()
