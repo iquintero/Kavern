@@ -97,6 +97,7 @@ class AuthRepositoryImpl internal constructor(
     private fun grimmoryProblem(error: Exception): Problem =
         when {
             error is GrimmoryHttpException && error.code in REJECTED -> Problem.RejectedKey
+            error is GrimmoryHttpException && error.code == TOO_MANY_REQUESTS -> Problem.RateLimited
             error is GrimmoryHttpException || error is JsonDataException -> Problem.UnexpectedResponse
             error is SSLException || error is GeneralSecurityException -> Problem.Tls
             else -> Problem.Unreachable
@@ -104,5 +105,6 @@ class AuthRepositoryImpl internal constructor(
 
     private companion object {
         val REJECTED = setOf(400, 401, 403)
+        const val TOO_MANY_REQUESTS = 429
     }
 }

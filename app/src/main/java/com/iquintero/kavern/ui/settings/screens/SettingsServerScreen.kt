@@ -487,6 +487,7 @@ private fun Context.connectionErrorMessage(
         Problem.RejectedKey -> getString(if (grimmory) R.string.settings_grimmory_rejected_login else R.string.settings_kavita_rejected_key)
         Problem.Unreachable -> getString(R.string.settings_kavita_unreachable)
         Problem.Tls -> getString(R.string.settings_kavita_tls_failed)
+        Problem.RateLimited -> getString(R.string.settings_server_rate_limited)
         Problem.UnexpectedResponse ->
             connectionError.statusCode?.let { getString(R.string.settings_kavita_http_error, it) }
                 ?: getString(R.string.settings_kavita_unexpected_response)

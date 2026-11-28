@@ -10,5 +10,5 @@ class KavitaConnectionException(
     val problem: Problem,
     val statusCode: Int? = null,
 ) : Exception() {
-    enum class Problem { InvalidUrl, RejectedKey, Unreachable, Tls, UnexpectedResponse }
+    enum class Problem { InvalidUrl, RejectedKey, Unreachable, Tls, UnexpectedResponse, RateLimited }
 }

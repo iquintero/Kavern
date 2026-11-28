@@ -622,6 +622,7 @@
     <string name="settings_server_status_out">Not signed in</string>
     <string name="settings_grimmory_login_toast">Fill in the address, username and password.</string>
     <string name="settings_grimmory_rejected_login">Grimmory rejected the username or password. Check them and the account\'s permissions.</string>
+    <string name="settings_server_rate_limited">Too many failed sign-in attempts. Wait about 15 minutes before trying again.</string>
     <string name="settings_grimmory_user">Username</string>
     <string name="settings_grimmory_password">Password</string>
 </resources>
