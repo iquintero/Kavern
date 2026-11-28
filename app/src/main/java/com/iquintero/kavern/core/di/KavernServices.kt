@@ -32,6 +32,7 @@ data class KavernServices(
                         appPreferences,
                         database.readerDao(),
                         database.downloadV2Dao(),
+                        cachedSeriesName = { id -> runCatching { database.libraryV2Dao().seriesName(id) }.getOrNull() },
                     )
                 }
             return KavernServices(readerRepository = readerRepository)

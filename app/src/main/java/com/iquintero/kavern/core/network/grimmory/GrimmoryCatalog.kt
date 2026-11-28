@@ -101,6 +101,10 @@ internal class GrimmoryCatalog(
         cached = emptyList()
     }
 
+    /** A book from what is already held, in memory or kept from before, without asking the server, which may be out of reach. */
+    @Synchronized
+    fun heldBook(id: Int): GrimmoryBook? = cached.firstOrNull { it.id == id } ?: readStore()?.firstOrNull { it.id == id }
+
     fun book(id: Int): GrimmoryBook? = books().firstOrNull { it.id == id } ?: GrimmoryBook.from(client.getObject("api/v1/app/books/$id"))
 
     /** The books of the series this one belongs to, in reading order, or just itself when it has none. */

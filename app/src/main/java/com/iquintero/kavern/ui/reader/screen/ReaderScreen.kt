@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -728,10 +729,12 @@ internal fun BaseReaderScreen(
             }
 
             val einkOverlays = LocalEinkMode.current
+            // Just below the top bar, not over the line of text it holds.
+            val offlineNoticeTop = if (topBarPx > 0) with(LocalDensity.current) { topBarPx.toDp() } + 6.dp else 40.dp
             AnimatedVisibility(
                 // Shown while the server cannot be used, not merely because the page came from a download.
                 visible = withoutServer,
-                modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp),
+                modifier = Modifier.align(Alignment.TopCenter).padding(top = offlineNoticeTop),
                 enter = if (einkOverlays) EnterTransition.None else fadeIn() + expandVertically(),
                 exit = if (einkOverlays) ExitTransition.None else fadeOut() + shrinkVertically(),
             ) {

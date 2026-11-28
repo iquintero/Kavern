@@ -382,6 +382,7 @@
     <!-- Others  -->
     <string name="settings_about_title">About Kavern</string>
     <string name="settings_about_website">Kavita Website</string>
+    <string name="settings_about_grimmory_website">Grimmory Website</string>
     <string name="settings_kavita_login_toast">Fill in the address and API key.</string>
     <string name="settings_appearance_by_system">Follow system</string>
     <string name="settings_appearance_dark">Dark</string>
@@ -598,6 +599,7 @@
         <item quantity="other">%d books</item>
     </plurals>
     <string name="grimmory_book_number">Book %s</string>
+    <string name="grimmory_series_books_of">%1$d of %2$d books</string>
     <string name="grimmory_series_finished">%1$d of %2$d finished</string>
     <string name="grimmory_series_continue">Continue with %s</string>
     <string name="grimmory_library_empty">No books match.</string>

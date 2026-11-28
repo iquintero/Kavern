@@ -33,6 +33,7 @@ Kavern now works with Grimmory as well as Kavita. The two are kept apart: a Kavi
 
 ### Fixed
 
+- Reading offline in Kavita no longer shows "Reader" as the title: the series name is used. The "Reading offline" notice also sits below the top bar now, instead of covering the chapter line.
 - The app could keep believing it was online after the connection dropped, so the cloud icon and the "reading offline" notice lagged behind. A lost connection is now noticed at once, and a single dropped answer from the server no longer marks it unreachable.
 
 ### Security

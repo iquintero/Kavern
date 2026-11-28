@@ -95,6 +95,8 @@ class ReaderRepositoryImpl(
     private val appPreferences: AppPreferences,
     private val readerDao: ReaderDao,
     private val downloadV2Dao: DownloadV2Dao? = null,
+    /** The name of a series from what was listed before, for a title when the server cannot be asked. */
+    private val cachedSeriesName: suspend (Int) -> String? = { null },
 ) : ReaderRepository {
     private val archiveEntryCache = mutableMapOf<String, List<String>>()
     private val tocCache = mutableMapOf<Int, List<ReaderTocItem>>()
@@ -884,7 +886,7 @@ class ReaderRepositoryImpl(
                         seriesId = progress?.seriesId ?: fileItem.seriesId,
                         volumeId = progress?.volumeId ?: fileItem.volumeId,
                         libraryId = progress?.libraryId,
-                        title = null,
+                        title = (progress?.seriesId ?: fileItem.seriesId)?.let { cachedSeriesName(it) },
                         pageTitle = title,
                     )
                 }
@@ -907,7 +909,7 @@ class ReaderRepositoryImpl(
             seriesId = seriesId,
             volumeId = volumeId,
             libraryId = libraryId,
-            title = null,
+            title = seriesId?.let { cachedSeriesName(it) },
             pageTitle = title,
         )
     }

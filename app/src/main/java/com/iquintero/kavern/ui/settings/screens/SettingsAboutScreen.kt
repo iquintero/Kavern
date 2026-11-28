@@ -65,7 +65,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                 formatter.format(Date(pkg.lastUpdateTime))
             }.getOrDefault("--")
         }
-    val kavitaTarget = "nightly-0.8.8.15"
+    val kavitaTarget = "nightly-0.9.1.20"
     val openUrl: (String) -> Unit = { url ->
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -132,6 +132,28 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             modifier =
                 Modifier
                     .clickable { openUrl("https://discord.gg/b52wT37kt7") }
+                    .padding(vertical = 2.dp),
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.settings_about_grimmory_website)) },
+            leadingContent = { Icon(Icons.Outlined.Language, contentDescription = null, modifier = Modifier.size(24.dp)) },
+            modifier =
+                Modifier
+                    .clickable { openUrl("https://grimmory.org") }
+                    .padding(vertical = 2.dp),
+        )
+        ListItem(
+            headlineContent = { Text("Grimmory Discord") },
+            leadingContent = {
+                Icon(
+                    painterResource(id = R.drawable.ic_discord),
+                    contentDescription = "Discord",
+                    modifier = Modifier.size(24.dp),
+                )
+            },
+            modifier =
+                Modifier
+                    .clickable { openUrl("https://discord.gg/9YJ7HB4n8T") }
                     .padding(vertical = 2.dp),
         )
         ListItem(

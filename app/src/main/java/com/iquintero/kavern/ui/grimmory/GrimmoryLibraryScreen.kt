@@ -97,6 +97,8 @@ internal enum class LibraryView(
 internal data class BookGroup(
     val series: String?,
     val books: List<GrimmoryBook>,
+    /** How many books the series has in all, when [books] holds only those that match what was asked for. */
+    val total: Int = books.size,
 ) {
     val first: GrimmoryBook get() = books.first()
     val finished: Int get() = books.count { it.progress >= GrimmoryBook.FINISHED }
@@ -151,7 +153,7 @@ internal data class GrimmoryLibraryState(
             val grouped =
                 bySeries
                     .filterKeys { it != null }
-                    .map { (name, list) -> BookGroup(name, list.sortedBy { it.seriesNumber ?: Float.MAX_VALUE }) }
+                    .map { (name, list) -> BookGroup(name, list.sortedBy { it.seriesNumber ?: Float.MAX_VALUE }, total = books.count { it.seriesName == name }) }
             val single = bySeries[null].orEmpty().map { BookGroup(null, listOf(it)) }
             val all = grouped + single
             return when (sort) {

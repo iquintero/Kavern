@@ -156,6 +156,10 @@ interface LibraryV2Dao {
         page: Int,
     ): Long?
 
+    /** The name of a series that has been listed before, for screens that have no connection to ask for it. */
+    @Query("SELECT name FROM cached_series_v2 WHERE id = :seriesId")
+    suspend fun seriesName(seriesId: Int): String?
+
     @Query("SELECT COUNT(*) FROM cached_series_v2")
     suspend fun getSeriesCount(): Int
 

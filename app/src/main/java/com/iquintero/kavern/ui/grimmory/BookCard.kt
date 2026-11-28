@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -103,7 +104,12 @@ internal fun SeriesCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(text = name, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(
-            text = pluralStringResource(R.plurals.grimmory_series_books, group.books.size, group.books.size),
+            text =
+                if (group.total > group.books.size) {
+                    stringResource(R.string.grimmory_series_books_of, group.books.size, group.total)
+                } else {
+                    pluralStringResource(R.plurals.grimmory_series_books, group.books.size, group.books.size)
+                },
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

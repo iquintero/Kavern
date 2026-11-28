@@ -313,7 +313,8 @@ internal class GrimmoryReaderRepository(
                 .filter { it.status == DownloadedItemV2Entity.STATUS_COMPLETED && it.page != null }
                 .filter { it.localPath?.let { path -> storage.exists(path) } == true }
         if (parts.isEmpty()) return null
-        val book = runCatching { server.catalog.book(bookId) }.getOrNull()
+        // Without the server the title comes from the list already held, which asking for it would not get.
+        val book = server.catalog.heldBook(bookId)
         return ReaderBookInfo(
             pages = (parts.maxOf { it.page ?: 0 }) + 1,
             seriesId = bookId,

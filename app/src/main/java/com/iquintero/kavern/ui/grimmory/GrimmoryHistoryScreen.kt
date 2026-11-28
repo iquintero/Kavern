@@ -68,7 +68,8 @@ internal fun GrimmoryHistoryScreen(
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.general_back)) } },
             actions = { ServerConnectionIndicator(connection = rememberServerConnection(), modifier = Modifier.padding(horizontal = 8.dp)) },
         )
-        val list = sessions
+        // A book opened and left, with no progress, is a visit and not reading; Kavita's history leaves those out as well.
+        val list = sessions?.readingOnly()
         when {
             list == null && !failed -> Unit
             list == null -> MessageState(icon = Icons.Filled.CloudOff, text = stringResource(R.string.library_home_load_failed), actionLabel = null, onAction = {})
@@ -118,8 +119,15 @@ private fun SessionRow(
                     )
                 }
                 Text(range, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val minutes = maxOf(1, (session.durationSeconds + SECONDS - 1) / SECONDS)
                 Text(
-                    text = stringResource(R.string.history_session_percent_summary, session.percentRead, maxOf(1, (session.durationSeconds + SECONDS - 1) / SECONDS)),
+                    // The progress is counted in parts of the book, so reading within one part moves nothing; only the time is shown then.
+                    text =
+                        if (session.percentRead > 0) {
+                            stringResource(R.string.history_session_percent_summary, session.percentRead, minutes)
+                        } else {
+                            stringResource(R.string.history_duration_min, minutes)
+                        },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -135,3 +143,9 @@ private fun dayLabel(day: LocalDate): String {
 }
 
 private const val SECONDS = 60
+
+/** A session shorter than this that moved the place nowhere is not counted as reading. */
+private const val MIN_READING_SECONDS = 60
+
+/** The sessions that are reading: a book opened and left, with no progress, is a visit and not counted. */
+internal fun List<GrimmorySession>.readingOnly(): List<GrimmorySession> = filter { it.percentRead > 0 || it.durationSeconds >= MIN_READING_SECONDS }
